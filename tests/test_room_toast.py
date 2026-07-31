@@ -104,26 +104,27 @@ def test_reentering_a_room_never_queues_a_second_call():
     assert client.calls == calls_after_both       # no third call
 
 
-# -- the shared GraderMetrics (DELVE-0062 follow-up) ---------------------------------------------
+# -- per-model GraderMetrics (DELVE-0066) ---------------------------------------------------------
 
 
-def test_an_ambient_call_is_recorded_in_the_grader_tabs_own_metrics():
-    """A playtesting note: the Grader tab showed no change at all right after an ambient toast
-    appeared, because `RoomBackstoryRunner` never touched `LLMGrader`'s `GraderMetrics`. It now
-    shares the same instance (`RunState._backstory_metrics`) and counts itself separately from an
-    actual verdict."""
+def test_an_ambient_call_is_recorded_in_the_runs_own_ambient_metrics():
+    """A playtesting note (DELVE-0062) found the Grader tab showed no change at all right after an
+    ambient toast appeared, because `RoomBackstoryRunner` never touched any metrics. DELVE-0066
+    then split grading and ambient into two separate `GraderMetrics` instances, so an ambient call
+    is counted on `RunState._ambient_metrics` and never on the configured `LLMGrader`'s own."""
     client = FakeClient(reply="text")
     client.model, client.host = "qwen2.5:3b", "http://localhost:11434"
     grader = LLMGrader(client)
     run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(grader))
     _settle(run)
-    assert grader.metrics.ambient_calls == 1
+    assert run._ambient_metrics.ambient_calls == 1
+    assert grader.metrics.ambient_calls == 0
     assert grader.metrics.llm_verdicts == 0 and grader.metrics.keyword_verdicts == 0
     texts = [b.text for b in run._grader_body()]
-    assert any("ambient 1" in t.lower() for t in texts)
+    assert any("calls 1" in t.lower() for t in texts)
 
 
-def test_grader_body_shows_average_latency_across_ambient_and_grading_calls():
+def test_grader_body_reports_grading_and_ambient_latency_separately():
     class TimedClient:
         model = "qwen2.5:3b"
         host = "http://localhost:11434"
@@ -142,8 +143,9 @@ def test_grader_body_shows_average_latency_across_ambient_and_grading_calls():
     run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(grader))
     _settle(run)                                        # the starting room's own call, 800ms
     texts = [b.text for b in run._grader_body()]
-    assert any("ambient 1" in t.lower() for t in texts)
-    assert any("600 ms" in t for t in texts)             # mean of 400 and 800
+    assert any("calls 1" in t.lower() for t in texts)
+    assert any("400 ms" in t for t in texts)             # the grading section's own mean
+    assert any("800 ms" in t for t in texts)             # the ambient section's own mean
 
 
 # -- non-blocking, ageing -----------------------------------------------------------------------

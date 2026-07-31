@@ -118,10 +118,12 @@ class GraderMetrics:
     many verdicts each source decided. A fresh instance is the empty/offline state a Grader tab can
     render as-is, before any call has happened.
 
-    `RunState._room_backstory` (the ambient toast, DELVE-0060) shares this same instance and calls
-    `record_call` too, so the Grader tab's token/latency figures reflect *all* LLM traffic this run,
-    not only examinations; `ambient_calls` keeps that traffic visible as its own count, separate
-    from `llm_verdicts`/`keyword_verdicts`, since a scene-setting passage is never a verdict.
+    Each model gets its own instance (DELVE-0066): the configured `LLMGrader` accumulates into its
+    own `metrics`, and `RunState._room_backstory` (the ambient toast, DELVE-0060) accumulates into
+    a separate `RunState._ambient_metrics`, so the Grader tab can report each model's workload on
+    its own rather than one blended total. `ambient_calls` is only ever non-zero on the ambient
+    instance, since a scene-setting passage is never a verdict; `llm_verdicts`/`keyword_verdicts`
+    are only ever non-zero on the grading instance.
 
     `latency_ms_history` (DELVE-0077) is the bounded per-call series the Grader tab's sparkline
     line reads; it is capped to `SPARK_WIDTH` because that is also the most the tab ever draws, so
