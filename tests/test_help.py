@@ -10,7 +10,7 @@ from test_dungeon import _approach, _pass_room
 
 from delve.session.commands import Confirm, Consult, Dismiss, Drop, Help, Inventory, TabCycle, Talk
 from delve.session.run import new_run
-from delve.session.views import HelpView, InfoView, MenuView, PromptView, TextView
+from delve.session.views import AmountView, HelpView, InfoView, MenuView, PromptView, TextView
 from delve.strings import load as load_strings
 from delve.ui import keys
 
@@ -176,17 +176,23 @@ def test_help_renders_in_dutch_with_the_same_entry_set_as_english():
 # -- app.py's pagination-key routing (space/'-' page a HelpView like an InfoView) ------------------
 
 
-def test_drop_menu_still_reachable_after_help_is_dismissed():
-    """A regression guard for `_close_help`: dismissing help over the drop menu must hand back the
-    exact same droppables list, not a cleared one (`_close_item` must never run for help)."""
+def test_drop_amount_still_reachable_after_help_is_dismissed():
+    """A regression guard for `_close_help`: dismissing help over a Pack-tab drop's amount field
+    must hand back the exact same pending drop, not a cleared one (`_close_item`/`_close_pack_drop`
+    must never run for help)."""
+    from delve.session.commands import Select
+
     run = new_run(seed=1, cols=100, rows=30)
     run.player.gold = 5
+    frame = run.apply(Inventory())                        # a fresh run also carries a lit torch,
+    while "coins" not in frame.overlay.pack_rows[frame.overlay.pack_selected]:
+        frame = run.apply(Select(1))                       # so focus the multi-count coins row
     frame = run.apply(Drop())
-    assert isinstance(frame.overlay, MenuView)
+    assert isinstance(frame.overlay, AmountView)
     run.apply(Help())
     frame = run.apply(Dismiss())
-    assert isinstance(frame.overlay, MenuView)
-    assert run._droppables
+    assert isinstance(frame.overlay, AmountView)
+    assert run._pending is not None
 
 
 # -- ? over the scroll (win) screen ----------------------------------------------------------------

@@ -26,7 +26,7 @@ from delve.session.commands import (
     Talk,
     Wait,
 )
-from delve.session.views import AmountView, HelpView, MenuItem, MenuView, PromptView
+from delve.session.views import AmountView, HelpView, InfoView, MenuItem, MenuView, PromptView
 from delve.ui import keys
 
 ESC = keys.ESC
@@ -37,7 +37,7 @@ _WALK_LABEL = {
     curses.KEY_LEFT: "←↑→↓", curses.KEY_RIGHT: "←↑→↓",
     curses.KEY_UP: "←↑→↓", curses.KEY_DOWN: "←↑→↓",
     ord("t"): "t", ord("s"): "s", ord(">"): ">", ord("<"): "<", ord(","): ",",
-    ord("d"): "d", ord("i"): "i", ord(" "): "Space", ord("q"): "q",
+    ord("i"): "i", ord(" "): "Space", ord("q"): "q",
     ord("?"): "?",
 }
 
@@ -66,7 +66,7 @@ def test_walk_command_matches_are_the_expected_commands():
     label and a Command haven't drifted apart, e.g. a key repurposed without updating help.py)."""
     expect = {
         curses.KEY_LEFT: Move, ord("t"): Talk, ord("s"): Rest, ord(">"): Descend,
-        ord("<"): Ascend, ord(","): Pickup, ord("d"): Drop, ord("i"): Inventory,
+        ord("<"): Ascend, ord(","): Pickup, ord("i"): Inventory,
         ord(" "): Wait, ord("?"): Help,
     }
     for ch, cls in expect.items():
@@ -89,7 +89,6 @@ _OVERLAY_FOR_CONTEXT = {
     "scroll": lambda: HelpView(tabs=[], active=0, body=[]),
     "repelled": lambda: HelpView(tabs=[], active=0, body=[]),
     "info": lambda: HelpView(tabs=[], active=0, body=[]),
-    "drop_menu": lambda: MenuView(prompt="", items=[MenuItem("1", "x")]),
     "pickup_menu": lambda: MenuView(prompt="", items=[MenuItem("1", "x")]),
     "drop_amount": lambda: AmountView(prompt="", typed="", maximum=9, footer=""),
     "pickup_amount": lambda: AmountView(prompt="", typed="", maximum=9, footer=""),
@@ -115,13 +114,24 @@ def test_esc_dismisses_in_every_context_the_catalogue_claims():
 # -- per-widget contexts: drop/pickup menus, the amount field, the two question kinds -------------
 
 
-def test_drop_and_pickup_menu_keys_match_the_catalogue():
-    for context in ("drop_menu", "pickup_menu"):
-        entries = {e.key for e in help_catalogue.entries_for(context)}
-        assert "1-9" in entries
-        view = MenuView(prompt="", items=[MenuItem("1", "a"), MenuItem("2", "b")])
-        assert keys.panel_command(ord("1"), view) == Answer(0)
-        assert keys.panel_command(ord("2"), view) == Answer(1)
+def test_pickup_menu_keys_match_the_catalogue():
+    entries = {e.key for e in help_catalogue.entries_for("pickup_menu")}
+    assert "1-9" in entries
+    view = MenuView(prompt="", items=[MenuItem("1", "a"), MenuItem("2", "b")])
+    assert keys.panel_command(ord("1"), view) == Answer(0)
+    assert keys.panel_command(ord("2"), view) == Answer(1)
+
+
+def test_d_only_drops_from_the_pack_tabs_row_list():
+    """DELVE-0081: `d` is bound nowhere in `_WALK` any more; it only exists inside `panel_command`,
+    and only while the Pack tab's own compact row list is showing (`overlay.pack_rows`), not on any
+    other Info tab or HelpView."""
+    assert keys.walk_command(ord("d")) is None
+    pack_view = InfoView(tabs=[], active=0, body=[], pack_rows=["a coin"], pack_selected=0)
+    assert keys.panel_command(ord("d"), pack_view) == Drop()
+    empty_pack_view = InfoView(tabs=[], active=0, body=[], pack_rows=[], pack_selected=-1)
+    assert keys.panel_command(ord("d"), empty_pack_view) is None
+    assert keys.panel_command(ord("d"), HelpView(tabs=[], active=0, body=[])) is None
 
 
 def test_amount_field_keys_match_the_catalogue():
@@ -174,7 +184,7 @@ def test_info_and_help_tab_strip_keys_match_the_catalogue():
 def test_every_catalogue_context_is_a_real_overlay_kind():
     real = {
         "walking", "lesson", "explanation", "question_mcq", "question_assertion",
-        "question_freetext", "grading", "scroll", "info", "help", "drop_menu", "drop_amount",
+        "question_freetext", "grading", "scroll", "info", "help", "drop_amount",
         "pickup_menu", "pickup_amount", "repelled",
     }
     seen = {c for e in help_catalogue.CATALOGUE for c in e.contexts}

@@ -25,8 +25,9 @@ def test_walking_context_keys_fit_on_one_page_at_100x30():
     view = frame.overlay
     pages = windows._text_pages(view, windows._body(30))
     assert len(pages) == 1
-    # 11 walking-context entries, packed tight ('p' retired: the message log lives in Info now).
-    assert len(pages[0]) == 11
+    # 10 walking-context entries, packed tight ('p' retired: the message log lives in Info now;
+    # 'd' moved to the Pack tab, DELVE-0081).
+    assert len(pages[0]) == 10
 
 
 def test_page_count_agrees_with_text_pages_for_the_keys_tab():

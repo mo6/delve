@@ -345,13 +345,12 @@ def test_snapshot_round_trips_torch_charge():
 
 
 def test_dropping_a_partially_burned_torch_keeps_its_remaining_charge_not_full_duration():
-    from delve.session.commands import Answer, Drop
+    from delve.session.commands import Drop, Inventory
 
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.player.torch_charge = 42
-    droppables = run._droppable_list()
+    run.apply(Inventory())        # DELVE-0081: the lit torch heads the Pack tab, already focused
     run.apply(Drop())
-    run.apply(Answer(len(droppables) - 1))          # the lit torch is always the last menu entry
     pile = run.items[run.player.pos]
     torch_stack = next(s for s in pile if s.defn.id == TORCH.id)
     assert torch_stack.charge == 42

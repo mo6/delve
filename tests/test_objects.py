@@ -16,7 +16,7 @@ from delve.content.errors import PackError
 from delve.content.parser import parse_item, parse_room
 from delve.content.schema import validate_pack
 from delve.engine.items import MONEY, ItemDef, Stack, register
-from delve.session.commands import Answer, Confirm, Digit, Drop, Move, Pickup
+from delve.session.commands import Confirm, Digit, Drop, Inventory, Move, Pickup, Select
 from delve.session.run import new_game, new_run
 from delve.session.snapshot import apply_dict, to_dict
 from delve.session.views import AmountView
@@ -271,8 +271,11 @@ def test_pickup_asks_how_many_and_messages_read_grammatically():
     frame = run.apply(Confirm())
     assert any("two coconut halves" in m for m in frame.messages)   # plural, number word
 
+    frame = run.apply(Inventory())                       # DELVE-0081: drop from Info/Pack now
+    idx = next(i for i, label in enumerate(frame.overlay.pack_rows) if "coconut half" in label)
+    while frame.overlay.pack_selected != idx:
+        frame = run.apply(Select(1))
     run.apply(Drop())
-    run.apply(Answer(0))                                 # the one kind held
     run.apply(Digit(1))
     frame = run.apply(Confirm())
     assert any("You drop a coconut half" in m for m in frame.messages)   # singular, article
