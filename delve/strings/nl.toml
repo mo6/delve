@@ -258,6 +258,9 @@ pet_key_none = "n"
 pet_name_cat = "Hoe heet je kat?"
 pet_name_dog = "Hoe heet je hond?"
 
+[toast]
+loading = "Je hoort een ver gemompel, dat steeds duidelijker wordt..."
+
 [format]
 currency     = "€"
 currency_sep = " "

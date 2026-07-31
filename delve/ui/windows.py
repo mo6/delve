@@ -16,6 +16,7 @@ tools/screens.py) is a further refinement still to land in the engine.
 
 import curses
 import textwrap
+import time
 import unicodedata
 from dataclasses import replace
 
@@ -59,6 +60,16 @@ PACK_DESC_W = TEXT_W - PACK_LIST_W - 3
 TOAST_W = 44
 TOAST_TEXT_W = TOAST_W - 4
 TOAST_TOP = 2                # just under the message line, the same row the map itself starts on
+
+# The toast's own "still generating" spinner (DELVE-0082): the "dots" braille sequence (one of the
+# well-known set at stackoverflow.com/questions/2685435, the default in most modern CLI spinner
+# libraries). Single-codepoint, BMP, narrow, so it's the same class of Unicode bet this file's own
+# double-line window borders already make (proven macOS/Linux, unverified Windows/PDCurses) rather
+# than a new one. `_SPINNER_MS` is how long each glyph holds; the animation frame is derived from
+# wall-clock time at paint time, not any counter threaded through the Frame or the app loop, since
+# it is purely cosmetic (rule 2: nothing here is state `session` needs to know about).
+_SPINNER = "⣾⣽⣻⢿⡿⣟⣯⣷"
+_SPINNER_MS = 120
 
 
 def _body(rows: int) -> int:
@@ -632,6 +643,27 @@ def draw_toast(stdscr, view: ToastView, map_cols: int, player_x: int = 0) -> Non
     _put(stdscr, TOAST_TOP + 1, col, view.title[:TOAST_TEXT_W], curses.A_BOLD)
     for i, segs in enumerate(lines):
         _put_line(stdscr, TOAST_TOP + 3 + i, col, False, segs)
+
+
+def draw_toast_loading(stdscr, text: str, map_cols: int, player_x: int = 0) -> None:
+    """The toast's own "still generating" spinner window (DELVE-0082), shown by `ui/render.py` in
+    place of `draw_toast` while the call behind it is still running: the same corner-anchoring
+    logic as `draw_toast` (top-left/top-right, whichever side the learner isn't standing on), but
+    smaller (no title row, since there is nothing yet to title) and with the spinner glyph
+    prefixing the wrapped text's first line; every continuation line indents to sit under it."""
+    rows, cols = stdscr.getmaxyx()
+    width = min(cols, map_cols)
+    left = 0 if player_x >= width // 2 else max(0, width - TOAST_W)
+    col = left + 2
+    glyph = _SPINNER[int(time.monotonic() * 1000 / _SPINNER_MS) % len(_SPINNER)]
+    lines = _wrap(text, TOAST_TEXT_W - 2) or [""]
+    max_lines = max(1, (rows - 3) - TOAST_TOP - 2)   # never run into the status/hint rows
+    lines = lines[:max_lines]
+    height = 2 + len(lines)
+    _box(stdscr, TOAST_TOP, left, height, TOAST_W)
+    _put(stdscr, TOAST_TOP + 1, col, f"{glyph} {lines[0]}")
+    for i, line in enumerate(lines[1:], start=1):
+        _put(stdscr, TOAST_TOP + 1 + i, col + 2, line)
 
 
 def _draw_menu(stdscr, view: MenuView, top: int, col: int) -> None:
