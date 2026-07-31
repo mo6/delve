@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.28.0] — 2026-07-31
+
+- **The Grader tab grows a latency sparkline** (DELVE-0077, feature, assess/session): `GraderMetrics` gains a bounded `latency_ms_history` deque (capped at ten, the mock-up's own width), appended in `record_call` alongside the existing last/max/avg bookkeeping, plus a pure `_sparkline` quantiser onto eight-level Unicode block glyphs (`▁▂▃▄▅▆▇█`). `_grader_body` appends one more `Latency` line reading it, shown only once two or more calls have been recorded this run (a lone glyph has no shape to show). Ships flat within the Grader tab's existing single body, no `Live`/`Run` sub-tab split (still separately unfiled future work); the axis is labelled `(calls)`, not INFOSCREEN.md §7's mock-up `(sittings)`, since `GraderMetrics` has no sitting boundary to group by and the ambient toast's own calls aren't tied to one at all.
+
 ## [1.27.2] — 2026-07-31
 
 - **Info/Pack highlights the focused item's name in the list, not its description** (DELVE-0076, bug, ui): reverses DELVE-0075's own placement, shipped earlier the same day; playtesting a running panel found the solid highlight block reading heavier than intended sitting over the whole description, when it's the list a learner actually scans to find "which one am I looking at". `ui/windows._draw_pack_columns` now applies the `bar_attr` highlight to the focused row's name in the left column instead, leaving the description column plain.

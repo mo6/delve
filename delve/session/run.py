@@ -1647,7 +1647,9 @@ class RunState:
         because it used to read only `LLMGrader`'s own, separate accumulator. `Avg latency` reads
         the mean over every call this run, grading or ambient, since `avg_latency_ms` folds both in
         the same way `max_latency_ms` already did (tracked since DELVE-0053 but never actually
-        shown until now). Condensed into one block via `_condensed` (DELVE-0059)."""
+        shown until now). `Latency` (DELVE-0077) appends a block-glyph sparkline of the run's most
+        recent calls, omitted below two recorded calls since a lone glyph has no shape to show.
+        Condensed into one block via `_condensed` (DELVE-0059)."""
         grader = self._grader_info()
         if grader is None:
             return [TextBlock("plain", self.strings("item.grader_offline"))]
@@ -1669,6 +1671,9 @@ class RunState:
         avg = metrics.avg_latency_ms if metrics else None
         if avg is not None:
             lines.append(self.strings("item.grader_avg", ms=avg))
+        spark = metrics.latency_sparkline if metrics else None
+        if spark is not None:
+            lines.append(self.strings("item.grader_latency", spark=spark))
         return self._condensed(lines)
 
     def _status_body(self) -> list[TextBlock]:

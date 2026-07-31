@@ -217,6 +217,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0074](DELVE-0074-generic-per-unit-item-properties.md) | Generalise Stack's torch-only charge field into per-unit item properties | feature | high | proposed | - |
 | [DELVE-0075](archive/DELVE-0075-pack-two-column-layout.md) | Info/Pack becomes a two-column list-plus-description layout with a scrolling list | feature | medium | implemented | 1.27.1 |
 | [DELVE-0076](archive/DELVE-0076-pack-highlight-list-not-description.md) | Info/Pack highlights the focused item's name in the list, not its description | bug | low | implemented | 1.27.2 |
+| [DELVE-0077](archive/DELVE-0077-grader-latency-sparkline.md) | Grader tab grows a latency sparkline | story | medium | implemented | 1.28.0 |
 
 ### Epics
 
@@ -227,7 +228,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | DELVE-0018 |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | DELVE-0020, DELVE-0021, DELVE-0022, DELVE-0023 |
 | [DELVE-0024](archive/DELVE-0024-security-scanning.md) | Security scanning for code and dependencies | DELVE-0025, DELVE-0026, DELVE-0027 |
-| [DELVE-0035](DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055, DELVE-0056 |
+| [DELVE-0035](DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055, DELVE-0056, DELVE-0077 |
 
 ```mermaid
 flowchart LR
@@ -297,7 +298,9 @@ flowchart LR
     DELVE_0035 --> DELVE_0055
     DELVE_0056["DELVE-0056<br/>Arrow-key row focus and a distinct colour for the Info panel's focused tab strip"]
     DELVE_0035 --> DELVE_0056
+    DELVE_0077["DELVE-0077<br/>Grader tab grows a latency sparkline"]
+    DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0077**.
+Next free id: **DELVE-0078**.
 <!-- issues:index:end -->
