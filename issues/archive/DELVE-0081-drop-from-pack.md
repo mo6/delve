@@ -1,23 +1,23 @@
 ---
 id: DELVE-0081
 title: Drop an item straight from Info/Pack instead of a standalone drop menu
-status: in-progress
+status: implemented
 area: [session, ui]
 type: feature
 epic:
 effort: medium
 milestone:
-version:
+version: 1.31.0
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [d3abf3f]
 related: []
 supersedes: []
 docs: []
-changelog:
+changelog: "1.31.0"
 reason:
 ---
 
