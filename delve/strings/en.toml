@@ -95,30 +95,32 @@ progress_chapters = "Chapters"
 # Scoring > Rooms body (DELVE-0055): the legend line after the pass-map rows. The glyphs
 # (· sealed, ░ sat, ▒ ok, █ clear) never translate; only the words do.
 rooms_legend  = "· sealed   ░ sat   ▒ ok   █ clear"
-# Status tab body (DELVE-0044): plain key/value rows of app and run diagnostics. `status_size` is
+# Status tab body (DELVE-0044): plain key/value rows of app and run diagnostics, "Label: value"
+# (DELVE-0078, matching Objectives' own convention so `ui` can colour the label). `status_size` is
 # only the row's label; `ui` appends the live "rows x cols" at paint time (rule 2, see
 # windows._fill_status_size). `status_grader` is omitted, not shown blank, with no model configured.
-status_version = "Version     {version}"
-status_pack    = "Pack        {pack}"
-status_locale  = "Locale      {locale}"
-status_size    = "Terminal   "
-status_grader  = "Grader      {model} @ {host}"
+status_version = "Version: {version}"
+status_pack    = "Pack: {pack}"
+status_locale  = "Locale: {locale}"
+status_size    = "Terminal:"
+status_grader  = "Grader: {model} @ {host}"
 # Grader tab body (DELVE-0054, INFOSCREEN.md §7): read from LLMGrader's run-scoped GraderMetrics
-# (DELVE-0053). `grader_offline` is the whole body when no model is configured (the default
-# keyword floor); `grader_model`/`grader_status_*`/`grader_run` are the three rows shown when one
-# is. `grader_status_none` covers a configured grader with no grade yet this run. `grader_run`'s
-# `ambient` and `grader_avg` (DELVE-0062 follow-up) fold in the ambient toast's own calls, which
-# share the same GraderMetrics instance so the tab actually changes after one resolves.
+# (DELVE-0053), "Label: value" per row (DELVE-0078). `grader_offline` is the whole body when no
+# model is configured (the default keyword floor); `grader_model`/`grader_status_*`/`grader_run`
+# are the three rows shown when one is. `grader_status_none` covers a configured grader with no
+# grade yet this run. `grader_run`'s `ambient` and `grader_avg` (DELVE-0062 follow-up) fold in the
+# ambient toast's own calls, which share the same GraderMetrics instance so the tab actually
+# changes after one resolves.
 # `grader_latency` (DELVE-0077) is the block-glyph sparkline, shown only once two or more calls
 # have been recorded this run; the axis is calls, not sittings, matching what GraderMetrics tracks.
 grader_offline     = "Keyword floor, no model configured."
-grader_model       = "Model       {model} @ {host}"
-grader_status_warm = "Status      warm, last grade {ms} ms"
-grader_status_cold = "Status      cold, last grade {ms} ms"
-grader_status_none = "Status      no grade yet this run"
-grader_run         = "This run    In {tin}   Out {tout}   LLM {llm}   keyword {keyword}   ambient {ambient}"
-grader_avg         = "Avg latency {ms} ms"
-grader_latency     = "Latency     {spark}  (calls)"
+grader_model       = "Model: {model} @ {host}"
+grader_status_warm = "Status: warm, last grade {ms} ms"
+grader_status_cold = "Status: cold, last grade {ms} ms"
+grader_status_none = "Status: no grade yet this run"
+grader_run         = "This run: In {tin}   Out {tout}   LLM {llm}   keyword {keyword}   ambient {ambient}"
+grader_avg         = "Avg latency: {ms} ms"
+grader_latency     = "Latency: {spark}  (calls)"
 reward        = "{name} leaves {coins} on the floor."
 amount_range  = "1 to {max}"
 pet_grab      = "{name} pounces on {coins} and pockets them."

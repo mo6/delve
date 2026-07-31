@@ -64,7 +64,7 @@ class StatusView:
 
 @dataclass(frozen=True)
 class TextBlock:
-    kind: str   # 'para' | 'bullet' | 'quote' | 'plain' | 'code' | 'table' | 'bar'
+    kind: str   # 'para' | 'bullet' | 'quote' | 'plain' | 'code' | 'table' | 'bar' | 'kv'
     text: str
     # Inline (text, strong) runs for bold, and a table's cell grid (rows -> cells -> runs). Empty
     # `spans` means render `text` plain. compare=False so constructing a TextBlock by (kind, text)
@@ -76,6 +76,10 @@ class TextBlock:
     # count (DELVE-0043); `text` still carries a plain-text fallback for tests and any surface that
     # only reads text.
     bar: tuple = field(default=(), compare=False)
+    # A 'kv' block's lines are each "Label: value" (DELVE-0078): `ui` colon-splits every line at
+    # its first ": " and colours the label half, independent of `spans`. Used only where every line
+    # genuinely is a label/value pair (Keys, Objectives, Grader, Status); a 'plain' block with an
+    # incidental colon in its prose is never colon-split.
 
 
 @dataclass(frozen=True)

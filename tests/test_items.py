@@ -822,13 +822,14 @@ def test_status_body_terminal_row_carries_only_a_label_for_ui_to_fill_in():
 
 
 def test_status_body_condenses_every_row_including_the_size_one():
-    """Every Status row, including the terminal-size one, folds into a single block via
-    `_condensed`: no gap anywhere in the tab any more. `ui/windows.py:_fill_status_size` splices
-    the live size into that block's last line at paint time instead of swapping a whole block."""
+    """Every Status row, including the terminal-size one, folds into a single `kind="kv"` block
+    (DELVE-0078: "Label: value" rows, so `ui` colours each label) via `_condensed`: no gap anywhere
+    in the tab any more. `ui/windows.py:_fill_status_size` splices the live size into that block's
+    last line at paint time instead of swapping a whole block."""
     run = _pilot_game(pet_species="none")
     body = run._status_body()
     assert len(body) == 1
-    assert body[0].kind == "plain" and body[0].spans
+    assert body[0].kind == "kv" and body[0].spans
     lines = body[0].text.split("\n")
     assert lines[-1] == run.strings("item.status_size")  # the size row stays last
 
