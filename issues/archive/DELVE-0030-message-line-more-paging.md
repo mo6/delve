@@ -10,7 +10,7 @@ version: 1.10.2
 version_span:
 created: 2026-07-25
 updated: 2026-07-25
-commits: [4aa2d77]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: [docs/SCREENS.md]

@@ -10,7 +10,7 @@ version: 1.12.0
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [1caffae, 119927e]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: []

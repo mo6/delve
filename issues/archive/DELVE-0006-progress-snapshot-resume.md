@@ -7,7 +7,7 @@ milestone: M5
 version: 0.5.0
 created: 2026-07-18
 updated: 2026-07-18
-commits: [ffc80a5, f7e2899, 08f6d78]
+commits: [pre-reset]
 related: [DELVE-0005]
 supersedes: []
 docs: [docs/PLAN.md]

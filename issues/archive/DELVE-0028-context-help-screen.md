@@ -13,7 +13,7 @@ created: 2026-07-25
 updated: 2026-07-30
 accepted_by: George Moses
 accepted_at: 2026-07-30
-commits: [7c334a6]
+commits: [pre-reset]
 related: [DELVE-0018, DELVE-0013, DELVE-0035, DELVE-0040, DELVE-0041, DELVE-0055, DELVE-0033]
 supersedes: []
 docs: [docs/SCREENS.md, docs/PLAN.md]

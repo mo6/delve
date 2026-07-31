@@ -10,7 +10,7 @@ version: 1.10.0
 version_span:
 created: 2026-07-25
 updated: 2026-07-25
-commits: [736efa9]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: [docs/PETS.md, docs/OBJECTS.md]

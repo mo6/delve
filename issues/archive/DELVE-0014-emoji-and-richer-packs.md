@@ -8,7 +8,7 @@ version: 1.8.0
 version_span: 1.8.0-1.9.0
 created: 2026-07-25
 updated: 2026-07-25
-commits: [6861859, b4615d0, 7aef192, 9c464b3, eaa4671]
+commits: [pre-reset]
 related: [DELVE-0013]
 supersedes: []
 docs: [docs/DISPLAY.md, docs/WIDEMAP.md]

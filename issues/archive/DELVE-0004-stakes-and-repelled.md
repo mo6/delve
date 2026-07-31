@@ -7,7 +7,7 @@ milestone: M4
 version: 0.4.0
 created: 2026-07-17
 updated: 2026-07-17
-commits: [4ce7fc9, 68de4f4]
+commits: [pre-reset]
 related: [DELVE-0011]
 supersedes: []
 docs: [docs/PLAN.md]

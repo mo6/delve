@@ -7,7 +7,7 @@ milestone:
 version: 0.5.1
 created: 2026-07-18
 updated: 2026-07-18
-commits: [87d9a4e]
+commits: [pre-reset]
 related: [DELVE-0003, DELVE-0008]
 supersedes: []
 docs: [docs/PLAN.md]

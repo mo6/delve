@@ -9,7 +9,7 @@ version: 1.9.1
 version_span:
 created: 2026-07-25
 updated: 2026-07-25
-commits: [96e1b15, 86b1e1d]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: [docs/SECURITY.md]

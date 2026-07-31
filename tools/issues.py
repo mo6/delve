@@ -17,7 +17,8 @@ What --check enforces, gathering every problem before it exits (so one run repor
   - implemented/superseded carry >=1 commit; proposed/in-progress/rejected carry none;
   - the optional `type` is a known tier (epic|feature|story|bug), and an optional `epic:` links to a
     real requirement that is itself `type: epic` (so the generated Epics rollup is trustworthy);
-  - every listed commit exists in git (skipped when not run inside a work tree);
+  - every listed commit exists in git (skipped when not run inside a work tree), except the
+    'pre-reset' sentinel used on every issue archived before the 2026-07-31 history squash;
   - every `assets/...` reference in an issue body names a file that exists next to it, starting
     with that issue's own id (DELVE-NNNN-slug.ext), and every file actually in an `assets/`
     directory is referenced by some issue there (no orphans left behind by a move);
@@ -41,6 +42,12 @@ REQUIRED_KEYS = ['id', 'title', 'status', 'area', 'version', 'created', 'updated
                  'commits', 'related', 'supersedes', 'docs']
 STATUSES = {'proposed', 'in-progress', 'implemented', 'superseded', 'rejected'}
 SHIPPED = {'implemented', 'superseded'}          # these must carry commits
+# A commit recorded before the deliberate history squash documented in CLAUDE.md (2026-07-31,
+# ahead of first pushing to a remote): the object is gone from git for good, by design, not a
+# broken reference to fix. Every pre-squash `commits:` list was rewritten to this one sentinel so
+# `implemented`/`superseded`'s "must list at least one commit" rule still holds without claiming a
+# hash git can no longer resolve; it is exempt from the existence check below.
+PRE_RESET_SENTINEL = 'pre-reset'
 # The agile tiers plus 'bug': epic/feature/story are the planned hierarchy (AGILE.md), 'bug' is a
 # reported defect that may still hang off an epic like a story does.
 TYPES = {'epic', 'feature', 'story', 'bug'}
@@ -227,6 +234,8 @@ def git_known_commits(shas):
         return set()
     missing = set()
     for sha in shas:
+        if sha == PRE_RESET_SENTINEL:
+            continue
         r = subprocess.run(['git', 'cat-file', '-e', sha], cwd=ROOT, capture_output=True)
         if r.returncode != 0:
             missing.add(sha)

@@ -10,7 +10,7 @@ version: 1.11.0
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [46abf9c]
+commits: [pre-reset]
 related: [DELVE-0031]
 supersedes: []
 docs: [docs/PLAN.md]

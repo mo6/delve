@@ -11,7 +11,7 @@ version: 1.15.0
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [e3b4dd4]
+commits: [pre-reset]
 related: [DELVE-0040, DELVE-0041]
 supersedes: []
 docs: [docs/INFOSCREEN.md]

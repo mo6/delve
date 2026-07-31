@@ -11,7 +11,7 @@ version: 1.14.0
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [00d4dc1]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: [docs/INFOSCREEN.md, docs/SCREENS.md]

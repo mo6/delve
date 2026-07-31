@@ -11,7 +11,7 @@ version: 1.13.0
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [d54aa19, 4096e8c]
+commits: [pre-reset]
 related: [DELVE-0012]
 supersedes: []
 docs: [docs/PHASE2.md]

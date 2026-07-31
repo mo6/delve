@@ -13,7 +13,7 @@ created: 2026-07-30
 updated: 2026-07-30
 accepted_by: George Moses
 accepted_at: 2026-07-30
-commits: [af154fa]
+commits: [pre-reset]
 related: [DELVE-0028, DELVE-0057, DELVE-0059]
 supersedes: []
 docs: [docs/SCREENS.md, docs/PHASE2.md]

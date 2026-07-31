@@ -7,7 +7,7 @@ milestone: M2
 version: 0.2.0
 created: 2026-07-17
 updated: 2026-07-17
-commits: [3d87aac, ba42389]
+commits: [pre-reset]
 related: [DELVE-0001, DELVE-0003]
 supersedes: []
 docs: [docs/PLAN.md, docs/SCREENS.md]

@@ -10,7 +10,7 @@ version: 1.11.0
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [5d99271]
+commits: [pre-reset]
 related: [DELVE-0008, DELVE-0017, DELVE-0018]
 supersedes: []
 docs: [docs/PLAN.md, docs/AUTHORING.md, docs/STYLE.md]

@@ -13,7 +13,7 @@ created: 2026-07-29
 updated: 2026-07-29
 accepted_by: George Moses
 accepted_at: 2026-07-29
-commits: [7c8f02a]
+commits: [pre-reset]
 related: [DELVE-0051]
 supersedes: []
 docs: []

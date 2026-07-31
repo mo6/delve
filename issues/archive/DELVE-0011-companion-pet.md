@@ -8,7 +8,7 @@ milestone:
 version: 1.2.0
 created: 2026-07-19
 updated: 2026-07-23
-commits: [701a170, ad13120, 905d2f4]
+commits: [pre-reset]
 related: [DELVE-0004, DELVE-0010]
 supersedes: []
 docs: [docs/PETS.md]

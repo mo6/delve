@@ -12,7 +12,7 @@ created: 2026-07-27
 updated: 2026-07-27
 accepted_by: George Moses
 accepted_at: 2026-07-27
-commits: [6f88950]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: []

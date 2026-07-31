@@ -7,7 +7,7 @@ milestone: M6
 version: 0.6.0
 created: 2026-07-18
 updated: 2026-07-25
-commits: [563220f, 6f6a6de, 02d8a39, 92701d6]
+commits: [pre-reset]
 related: [DELVE-0005, DELVE-0007]
 supersedes: []
 docs: [docs/PLAN.md, docs/STYLE.md]

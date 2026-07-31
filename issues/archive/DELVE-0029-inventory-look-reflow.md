@@ -10,7 +10,7 @@ version: 1.10.1
 version_span:
 created: 2026-07-25
 updated: 2026-07-25
-commits: [24aea9d]
+commits: [pre-reset]
 related: [DELVE-0016]
 supersedes: []
 docs: [docs/OBJECTS.md]

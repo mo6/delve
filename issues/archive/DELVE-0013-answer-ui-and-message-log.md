@@ -7,7 +7,7 @@ milestone:
 version: 1.7.0
 created: 2026-07-23
 updated: 2026-07-25
-commits: [873bc4a, 3c1c7d5, a3cb3f1]
+commits: [pre-reset]
 related: [DELVE-0002]
 supersedes: []
 docs: [docs/BUTTONS.md]

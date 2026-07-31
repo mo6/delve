@@ -8,7 +8,7 @@ version: 0.8.0
 version_span: 0.8.0-0.8.4
 created: 2026-07-18
 updated: 2026-07-18
-commits: [2d5dd3e, 3980617, ef4e20b, 52fb161, f9edcae]
+commits: [pre-reset]
 related: [DELVE-0002]
 supersedes: []
 docs: [docs/PLAN.md, docs/SCREENS.md]

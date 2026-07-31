@@ -8,7 +8,7 @@ version: 1.4.0
 version_span: 1.4.0-1.6.1
 created: 2026-07-21
 updated: 2026-07-22
-commits: [ac754a6, 431a209, 455f5eb]
+commits: [pre-reset]
 related: [DELVE-0003]
 supersedes: []
 docs: [docs/PHASE2.md]

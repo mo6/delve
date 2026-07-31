@@ -10,7 +10,7 @@ version: 1.11.2
 version_span:
 created: 2026-07-26
 updated: 2026-07-26
-commits: [2846bd5]
+commits: [pre-reset]
 related: [DELVE-0034, DELVE-0035]
 supersedes: []
 docs: []

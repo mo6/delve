@@ -13,7 +13,7 @@ created: 2026-07-29
 updated: 2026-07-29
 accepted_by: George Moses
 accepted_at: 2026-07-29
-commits: [d4894a0]
+commits: [pre-reset]
 related: [DELVE-0040, DELVE-0044, DELVE-0053]
 supersedes: []
 docs: [docs/INFOSCREEN.md]

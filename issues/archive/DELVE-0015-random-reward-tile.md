@@ -10,7 +10,7 @@ version: 1.9.2
 version_span:
 created: 2026-07-25
 updated: 2026-07-25
-commits: [4c7263a]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: [docs/OBJECTS.md]

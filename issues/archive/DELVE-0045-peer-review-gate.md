@@ -13,7 +13,7 @@ created: 2026-07-26
 updated: 2026-07-26
 accepted_by: George Moses
 accepted_at: 2026-07-26
-commits: [c2b4fc7]
+commits: [pre-reset]
 related: []
 supersedes: []
 docs: [SDLC.md]

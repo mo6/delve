@@ -7,7 +7,7 @@ milestone: M3
 version: 0.3.0
 created: 2026-07-17
 updated: 2026-07-17
-commits: [d026b4c]
+commits: [pre-reset]
 related: [DELVE-0002]
 supersedes: []
 docs: [docs/AUTHORING.md, docs/PLAN.md]
