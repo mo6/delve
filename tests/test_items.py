@@ -809,6 +809,27 @@ def test_status_body_includes_the_grader_model_and_host_when_one_is_configured()
     assert any("qwen2.5:3b" in b.text and "localhost:11434" in b.text for b in body)
 
 
+def test_status_body_names_the_ambient_model_as_a_separate_row_from_the_grader():
+    """DELVE-0066: the Status tab names both the configured grader model and the ambient toast's
+    own (fixed) model as two distinct rows, not folded into the grader row's own text."""
+    from delve.assess.grader import LLMGrader
+    from delve.session.grading import ThreadedGrader
+    from delve.session.run import _BACKSTORY_MODEL
+
+    class FakeClient:
+        model = "qwen2.5:3b"
+        host = "http://localhost:11434"
+
+    run = _pilot_game(pet_species="none", grader_runner=ThreadedGrader(LLMGrader(FakeClient())))
+    body = run._status_body()
+    text = body[0].text
+    assert "qwen2.5:3b" in text
+    assert _BACKSTORY_MODEL in text
+    grader_line = next(line for line in text.split("\n") if "qwen2.5:3b" in line)
+    ambient_line = next(line for line in text.split("\n") if _BACKSTORY_MODEL in line)
+    assert grader_line != ambient_line
+
+
 def test_status_body_terminal_row_carries_only_a_label_for_ui_to_fill_in():
     # session never reads stdscr (rule 2): the last line is a bare label until ui fills in the
     # live size (`_fill_status_size` splices it into the sole body block's last line now, a

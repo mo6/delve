@@ -236,10 +236,11 @@ class RoomBackstoryRunner:
         # second client object, which would lose the grader's own host/timeout/test double.
         # `None` (the default) just uses whatever the client is already configured with.
         self.model = model
-        # The same `GraderMetrics` instance the configured `LLMGrader` uses, if any (duck-typed:
-        # only `.record_call`/`.ambient_calls` are read, no `assess.grader` import, rule 1). A
+        # A `GraderMetrics` instance of its own (DELVE-0066, `RunState._ambient_metrics`), separate
+        # from whatever the configured `LLMGrader` accumulates into (duck-typed: only
+        # `.record_call`/`.ambient_calls` are read, no `assess.grader` import, rule 1). A
         # playtesting note: the Grader tab used to show no change at all after an ambient toast,
-        # even though a real call had just happened, because this runner never touched it.
+        # even though a real call had just happened, because this runner never touched any metrics.
         self.metrics = metrics
         self._queue: deque[tuple[str, object, str]] = deque()   # (room_id, context, prompt)
         self._current: str | None = None                        # room_id whose call is in flight

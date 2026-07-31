@@ -21,6 +21,12 @@ from datetime import datetime
 
 import delve
 
+# DELVE-0066: the ambient toast gets its own GraderMetrics instance, separate from whatever the
+# configured LLMGrader accumulates, so the Grader tab can report each model's workload on its own
+# rather than one blended total. `session/grading.py` already imports this same module directly
+# (rule 1's diagram predates that; the boundary that matters is engine/ui, not session/assess).
+from delve.assess.grader import GraderMetrics
+
 # The M2 slice: the pilot's first room is gated; the rest of the Sorting Office is walkable but
 # has no keeper. It is kept exactly as it was, the independent reference the parser is checked
 # against, while the full pack loads through new_game below.
@@ -544,9 +550,12 @@ class RunState:
         # with no grader model configured, or if a room's call fails; entering it then simply grows
         # no toast (no error, no gating, DELVE-0033's opposite: this is flavour, not required to
         # play). Reuses whichever `OllamaClient` the free-text grader is already configured with,
-        # so this needs no config of its own.
+        # so this needs no config of its own. `_ambient_metrics` (DELVE-0066) is its own
+        # `GraderMetrics`, separate from the configured `LLMGrader`'s own, so the Grader tab can
+        # report the ambient model's tokens/latency/call count apart from grading's.
+        self._ambient_metrics = GraderMetrics()
         self._room_backstory = backstory.RoomBackstoryRunner(
-            self._backstory_client(), model=_BACKSTORY_MODEL, metrics=self._backstory_metrics())
+            self._backstory_client(), model=_BACKSTORY_MODEL, metrics=self._ambient_metrics)
         self._toast: ToastView | None = None
         self._toast_turn: int = 0             # the turn `_toast` was shown, for ageing it out
         # DELVE-0070: the TTL only starts counting down once the learner has taken a turn since the
@@ -1634,28 +1643,41 @@ class RunState:
         return (client.model, client.host) if client is not None else None
 
     def _grader_body(self) -> list[TextBlock]:
-        """The Grader tab's body (DELVE-0054, INFOSCREEN.md §7): `Model`/`Status`/`This run` rows
-        read from the configured `LLMGrader`'s run-scoped `GraderMetrics` (DELVE-0053), reached by
-        the same duck-typed attribute read `_grader_info` already uses (rule 1: no new
-        `assess.grader`/`assess.llm` import here). No model configured is a first-class state, not
-        an error, so it renders as a single explanatory line instead of the three rows.
+        """The Grader tab's body (DELVE-0054, INFOSCREEN.md §7; split into two sections at
+        DELVE-0066): a heading plus `Model`/`Status`/`This run` rows for the configured grader
+        model, then the same shape again for the ambient toast model, each reading its own
+        `GraderMetrics` instance rather than one blended total (`RunState._ambient_metrics`,
+        separate from whatever the configured `LLMGrader` accumulates into on its own). No model
+        configured is a first-class state, not an error, so it renders as a single explanatory
+        line instead of either section (the ambient toast is never reachable without the same
+        client the grader uses, `_backstory_client`/`_ambient_info`, so there is nothing of its own
+        to show either).
 
-        The ambient toast (DELVE-0060/0062) shares this same `GraderMetrics` instance
-        (`RunState._backstory_metrics`), so `This run` folds in its tokens/latency too and
-        `ambient` tallies how many of those calls happened, distinct from an actual verdict; a
-        playtesting note found the tab showing no change at all right after a toast appeared,
-        because it used to read only `LLMGrader`'s own, separate accumulator. `Avg latency` reads
-        the mean over every call this run, grading or ambient, since `avg_latency_ms` folds both in
-        the same way `max_latency_ms` already did (tracked since DELVE-0053 but never actually
-        shown until now). `Latency` (DELVE-0077) appends a block-glyph sparkline of the run's most
-        recent calls, omitted below two recorded calls since a lone glyph has no shape to show.
-        Every row is `Label: value` (DELVE-0078), condensed into one `kind="kv"` block via
-        `_condensed(kv=True)` (DELVE-0059/DELVE-0078) so `ui` colours each label."""
+        `Avg latency` and `Latency` (DELVE-0077's sparkline) are each section's own mean/series now,
+        not a blend of grading and ambient traffic the way one shared accumulator used to report
+        them. The ambient section always renders, even at zero calls, so its presence is
+        predictable rather than conditional on traffic having happened yet (a run with no keeper
+        rooms visited still shows a zeroed ambient block). Every row is `Label: value`
+        (DELVE-0078), each section condensed into its own `kind="kv"` block via `_condensed
+        (kv=True)` (DELVE-0059/DELVE-0078) so `ui` colours each label, and the pager's own blank
+        row between distinct blocks is what visually separates the two sections."""
         grader = self._grader_info()
         if grader is None:
             return [TextBlock("plain", self.strings("item.grader_offline"))]
         model, host = grader
         metrics = getattr(self._grader_runner.grader, "metrics", None)
+        body = [TextBlock("plain", self.strings("item.grader_section_grading"))]
+        body += self._grader_metrics_lines(model, host, metrics)
+        ambient = self._ambient_info()
+        model, host = ambient if ambient is not None else ("", "")
+        body.append(TextBlock("plain", self.strings("item.grader_section_ambient")))
+        body += self._ambient_metrics_lines(model, host, self._ambient_metrics)
+        return body
+
+    def _grader_metrics_lines(self, model: str, host: str, metrics) -> list[TextBlock]:
+        """The grading model's own `Model`/`Status`/`This run`/`Avg latency`/`Latency` rows
+        (DELVE-0066), factored out of `_grader_body` so the same shape (bar the verdict-count
+        row, `_ambient_metrics_lines`'s own concern) is not duplicated across the two sections."""
         lines = [self.strings("item.grader_model", model=model, host=host)]
         if metrics is None or metrics.last_latency_ms is None:
             lines.append(self.strings("item.grader_status_none"))
@@ -1666,9 +1688,7 @@ class RunState:
         tout = metrics.completion_tokens if metrics else 0
         llm = metrics.llm_verdicts if metrics else 0
         keyword = metrics.keyword_verdicts if metrics else 0
-        ambient = metrics.ambient_calls if metrics else 0
-        lines.append(self.strings(
-            "item.grader_run", tin=tin, tout=tout, llm=llm, keyword=keyword, ambient=ambient))
+        lines.append(self.strings("item.grader_run", tin=tin, tout=tout, llm=llm, keyword=keyword))
         avg = metrics.avg_latency_ms if metrics else None
         if avg is not None:
             lines.append(self.strings("item.grader_avg", ms=avg))
@@ -1677,10 +1697,36 @@ class RunState:
             lines.append(self.strings("item.grader_latency", spark=spark))
         return self._condensed(lines, kv=True)
 
+    def _ambient_metrics_lines(self, model: str, host: str, metrics) -> list[TextBlock]:
+        """The ambient toast model's own `Model`/`Status`/`This run`/`Avg latency`/`Latency` rows
+        (DELVE-0066): the same shape `_grader_metrics_lines` renders, but `This run` reports a
+        single call count (`ambient_calls`) rather than an LLM/keyword verdict split, since an
+        ambient passage is never graded. Always renders, even with `model`/`host` blank (no grader
+        configured) and every count at zero, so the section's presence never depends on whether a
+        room with a toast has been entered yet this run."""
+        lines = [self.strings("item.ambient_model", model=model, host=host)]
+        if metrics.last_latency_ms is None:
+            lines.append(self.strings("item.ambient_status_none"))
+        else:
+            key = "item.ambient_status_warm" if metrics.last_warm else "item.ambient_status_cold"
+            lines.append(self.strings(key, ms=metrics.last_latency_ms))
+        lines.append(self.strings(
+            "item.ambient_run", tin=metrics.prompt_tokens, tout=metrics.completion_tokens,
+            calls=metrics.ambient_calls))
+        avg = metrics.avg_latency_ms
+        if avg is not None:
+            lines.append(self.strings("item.ambient_avg", ms=avg))
+        spark = metrics.latency_sparkline
+        if spark is not None:
+            lines.append(self.strings("item.ambient_latency", spark=spark))
+        return self._condensed(lines, kv=True)
+
     def _status_body(self) -> list[TextBlock]:
         """The Status tab's body (DELVE-0044, INFOSCREEN.md §9): plain key/value rows of app and
-        run diagnostics that already exist elsewhere, no new plumbing. The grader row is omitted,
-        not shown blank, when no model is configured.
+        run diagnostics that already exist elsewhere, no new plumbing. The grader row, and the
+        ambient row beside it (DELVE-0066), are both omitted, not shown blank, when no model is
+        configured; they share that one condition, since the ambient toast is never reachable
+        without the same client the grader uses.
 
         Every row, including the terminal-size one, condenses into a single `kind="kv"` block via
         `_condensed(kv=True)` (DELVE-0059/DELVE-0078): a playtesting fix closed the tab's last
@@ -1703,6 +1749,9 @@ class RunState:
         if grader is not None:
             model, host = grader
             lines.append(self.strings("item.status_grader", model=model, host=host))
+            ambient_model, ambient_host = self._ambient_info()
+            lines.append(self.strings(
+                "item.status_ambient", model=ambient_model, host=ambient_host))
         lines.append(self.strings("item.status_size"))
         return self._condensed(lines, kv=True)
 
@@ -1767,12 +1816,14 @@ class RunState:
         still works unchanged here too."""
         return getattr(getattr(self._grader_runner, "grader", None), "client", None)
 
-    def _backstory_metrics(self):
-        """The same `GraderMetrics` instance the configured `LLMGrader` accumulates into (duck-typed
-        like `_backstory_client`), or `None` when no model is configured. Handed to
-        `RoomBackstoryRunner` so an ambient call folds its tokens/latency into the Grader tab's
-        figures too, and counts itself under `ambient_calls`, distinct from an actual verdict."""
-        return getattr(getattr(self._grader_runner, "grader", None), "metrics", None)
+    def _ambient_info(self) -> tuple[str, str] | None:
+        """The ambient toast's own model/host (DELVE-0066), the same shape `_grader_info` returns:
+        `_BACKSTORY_MODEL` (the fixed override `RoomBackstoryRunner` asks the shared client for)
+        paired with that client's host, or `None` on the same default keyword-only floor
+        `_grader_info`/`_backstory_client` already treat as absent, since the ambient toast reuses
+        the grader's own client and never runs without one."""
+        client = self._backstory_client()
+        return (_BACKSTORY_MODEL, client.host) if client is not None else None
 
     def _next_gate(self) -> Gate | None:
         """The current chapter's next unpassed gate, in room order: the learner's next objective,
