@@ -1,23 +1,23 @@
 ---
 id: DELVE-0083
 title: The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge
-status: in-progress
+status: implemented
 area: [session]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.32.1
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [0b15cac]
 related: []
 supersedes: []
 docs: []
-changelog:
+changelog: "1.32.1"
 reason:
 ---
 
