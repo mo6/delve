@@ -1,23 +1,23 @@
 ---
 id: DELVE-0080
 title: Instruct the ambient toast model with an explicit character budget, so the sentence-boundary cap rarely fires
-status: in-progress
+status: implemented
 area: [session]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.29.2
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [4c5ac48]
 related: []
 supersedes: []
 docs: []
-changelog:
+changelog: "1.29.2"
 reason:
 ---
 
