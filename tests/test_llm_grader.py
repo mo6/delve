@@ -11,7 +11,14 @@ import json
 
 from test_freetext import _freetext_run, _walk_beside_keeper
 
-from delve.assess.grader import KeywordGrader, LLMGrader, Verdict
+from delve.assess.grader import (
+    _SPARK_GLYPHS,
+    SPARK_WIDTH,
+    KeywordGrader,
+    LLMGrader,
+    Verdict,
+    _sparkline,
+)
 from delve.assess.llm import ChatMetrics, ChatReply, LLMUnavailable, OllamaClient
 from delve.assess.question import Question
 from delve.session.commands import AnswerText, Confirm, GradeReady, Talk
@@ -168,6 +175,57 @@ def test_max_latency_tracks_across_calls():
     grader.grade_text(Q, "urgency")
     assert grader.metrics.last_latency_ms == 50     # last call, not the max
     assert grader.metrics.max_latency_ms == 400
+
+
+# -- latency history and the sparkline (DELVE-0077) -----------------------------------------------
+
+
+def test_latency_history_accumulates_and_is_bounded():
+    grader = LLMGrader(FakeClient(_reply("ACCEPT", 0.9), metrics=ChatMetrics(100, 0, 10, 5)))
+    for ms in range(1, SPARK_WIDTH + 5):              # more calls than the history can hold
+        grader.client.metrics = ChatMetrics(ms, 0, 10, 5)
+        grader.grade_text(Q, "urgency")
+    hist = list(grader.metrics.latency_ms_history)
+    assert len(hist) == SPARK_WIDTH
+    assert hist == list(range(5, SPARK_WIDTH + 5))    # only the most recent calls survive
+
+
+def test_a_call_with_no_duration_does_not_append_to_the_history():
+    grader = LLMGrader(FakeClient(_reply("ACCEPT", 0.9), metrics=_NO_METRICS))
+    grader.grade_text(Q, "urgency")
+    assert list(grader.metrics.latency_ms_history) == []
+    assert grader.metrics.latency_sparkline is None
+
+
+def test_sparkline_is_none_below_two_points():
+    grader = LLMGrader(FakeClient(_reply("ACCEPT", 0.9), metrics=ChatMetrics(100, 0, 10, 5)))
+    assert grader.metrics.latency_sparkline is None   # zero calls
+    grader.grade_text(Q, "urgency")
+    assert grader.metrics.latency_sparkline is None   # one call
+
+
+def test_sparkline_shows_a_shape_once_two_or_more_points_exist():
+    grader = LLMGrader(FakeClient(_reply("ACCEPT", 0.9), metrics=ChatMetrics(100, 0, 10, 5)))
+    grader.grade_text(Q, "urgency")
+    grader.client.metrics = ChatMetrics(400, 0, 10, 5)
+    grader.grade_text(Q, "time pressure")
+    spark = grader.metrics.latency_sparkline
+    assert spark is not None and len(spark) == 2
+    assert spark[0] < spark[1]                        # 100ms quantises lower than 400ms
+
+
+def test_sparkline_ascending_values_are_monotonically_non_decreasing():
+    levels = [_SPARK_GLYPHS.index(g) for g in _sparkline([10, 20, 30, 40, 50])]
+    assert levels == sorted(levels)
+
+
+def test_sparkline_flat_input_renders_one_repeated_glyph_with_no_crash():
+    assert _sparkline([50, 50, 50]) == _SPARK_GLYPHS[0] * 3
+    assert _sparkline([7]) == _SPARK_GLYPHS[0]
+
+
+def test_sparkline_of_empty_input_is_empty():
+    assert _sparkline([]) == ""
 
 
 # -- the runners (PHASE2.md 5.3) ------------------------------------------------------------------

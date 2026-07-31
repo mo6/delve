@@ -14,7 +14,9 @@ and matches the rubric's accept/reject sets, with no model. It is the offline pa
 
 import json
 import re
-from dataclasses import dataclass
+from collections import deque
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from typing import Protocol
 
 from delve.assess.llm import ChatMetrics, LLMUnavailable
@@ -88,6 +90,27 @@ class KeywordGrader:
         return Verdict(False, 1.0, "keyword")
 
 
+_SPARK_GLYPHS = "▁▂▃▄▅▆▇█"
+SPARK_WIDTH = 10  # matches INFOSCREEN.md section 7's ten-glyph mock-up
+
+
+def _sparkline(values: Sequence[int]) -> str:
+    """Quantise a sequence of latencies (any length) onto `_SPARK_GLYPHS`'s eight levels, scaled to
+    the sequence's own min/max so a run's typical latency always uses the glyph range, not a fixed
+    external scale. Pure and side-effect free (DELVE-0077): no dependency on `GraderMetrics` or any
+    session/UI type, so it is testable directly against literal lists. A flat sequence (every value
+    equal, including a single value) renders every glyph at the lowest level rather than dividing by
+    a zero-width range."""
+    if not values:
+        return ""
+    lo, hi = min(values), max(values)
+    span = hi - lo
+    if span == 0:
+        return _SPARK_GLYPHS[0] * len(values)
+    levels = len(_SPARK_GLYPHS) - 1
+    return "".join(_SPARK_GLYPHS[round((v - lo) / span * levels)] for v in values)
+
+
 @dataclass
 class GraderMetrics:
     """A run-scoped accumulator of every model call that reached the same `OllamaClient`
@@ -98,7 +121,13 @@ class GraderMetrics:
     `RunState._room_backstory` (the ambient toast, DELVE-0060) shares this same instance and calls
     `record_call` too, so the Grader tab's token/latency figures reflect *all* LLM traffic this run,
     not only examinations; `ambient_calls` keeps that traffic visible as its own count, separate
-    from `llm_verdicts`/`keyword_verdicts`, since a scene-setting passage is never a verdict."""
+    from `llm_verdicts`/`keyword_verdicts`, since a scene-setting passage is never a verdict.
+
+    `latency_ms_history` (DELVE-0077) is the bounded per-call series the Grader tab's sparkline
+    line reads; it is capped to `SPARK_WIDTH` because that is also the most the tab ever draws, so
+    no separate truncation step is needed at render time. The axis is calls, not sittings: a call
+    here is any `record_call`, examination or ambient toast alike, since neither this accumulator
+    nor its callers track sitting boundaries."""
 
     llm_verdicts: int = 0
     keyword_verdicts: int = 0
@@ -108,6 +137,7 @@ class GraderMetrics:
     last_latency_ms: int | None = None
     max_latency_ms: int | None = None
     last_warm: bool | None = None
+    latency_ms_history: deque[int] = field(default_factory=lambda: deque(maxlen=SPARK_WIDTH))
     _latency_sum_ms: int = 0
     _latency_count: int = 0
 
@@ -123,6 +153,7 @@ class GraderMetrics:
             self.max_latency_ms = max(self.max_latency_ms or 0, metrics.total_duration_ms)
             self._latency_sum_ms += metrics.total_duration_ms
             self._latency_count += 1
+            self.latency_ms_history.append(metrics.total_duration_ms)
         self.last_warm = metrics.warm
 
     @property
@@ -130,6 +161,14 @@ class GraderMetrics:
         if not self._latency_count:
             return None
         return round(self._latency_sum_ms / self._latency_count)
+
+    @property
+    def latency_sparkline(self) -> str | None:
+        """The Grader tab's `Latency` line body, or None below two points (a lone glyph has no
+        shape to show and would look like a bug, not a feature, DELVE-0077)."""
+        if len(self.latency_ms_history) < 2:
+            return None
+        return _sparkline(self.latency_ms_history)
 
 
 class LLMGrader:

@@ -902,6 +902,65 @@ def test_info_panel_grader_tab_renders_the_body():
     assert frame.overlay.body == run._grader_body()
 
 
+# -- the Grader tab's latency sparkline (DELVE-0077) ---------------------------------------------
+
+
+def test_grader_body_omits_the_latency_line_below_two_calls():
+    from delve.assess.grader import LLMGrader
+    from delve.assess.llm import ChatMetrics, ChatReply
+
+    class FakeClient:
+        model = "qwen2.5:3b"
+        host = "http://localhost:11434"
+
+        def chat(self, prompt):
+            return ChatReply(
+                text='{"verdict": "ACCEPT", "confidence": 0.9}',
+                metrics=ChatMetrics(total_duration_ms=520, load_duration_ms=0,
+                                     prompt_tokens=180, completion_tokens=40))
+
+    grader = LLMGrader(FakeClient())
+    from delve.assess.question import Question
+    grader.grade_text(Question(prompt="p", explanation="e", accept=("x",)), "x")
+
+    run = _pilot_game(pet_species="none")
+    run._grader_runner = type("R", (), {"grader": grader})()
+    body = run._grader_body()
+    texts = [b.text for b in body]
+    assert not any("latency" in t.lower() and "(calls)" in t.lower() for t in texts)
+
+
+def test_grader_body_shows_the_latency_line_from_two_calls_on():
+    from delve.assess.grader import LLMGrader
+    from delve.assess.llm import ChatMetrics, ChatReply
+
+    class FakeClient:
+        model = "qwen2.5:3b"
+        host = "http://localhost:11434"
+
+        def __init__(self):
+            self.ms = 100
+
+        def chat(self, prompt):
+            self.ms += 100
+            return ChatReply(
+                text='{"verdict": "ACCEPT", "confidence": 0.9}',
+                metrics=ChatMetrics(total_duration_ms=self.ms, load_duration_ms=0,
+                                     prompt_tokens=10, completion_tokens=5))
+
+    grader = LLMGrader(FakeClient())
+    from delve.assess.question import Question
+    q = Question(prompt="p", explanation="e", accept=("x",))
+    grader.grade_text(q, "x")
+    grader.grade_text(q, "x")
+
+    run = _pilot_game(pet_species="none")
+    run._grader_runner = type("R", (), {"grader": grader})()
+    body = run._grader_body()
+    texts = [b.text for b in body]
+    assert any("(calls)" in t.lower() for t in texts)
+
+
 def test_mcq_is_answered_by_number_not_letter():
     from delve.session.views import MenuItem
 
