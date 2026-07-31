@@ -222,7 +222,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0079](archive/DELVE-0079-esc-delay.md) | Esc takes a full second to close a panel, because ncurses' default ESCDELAY is untouched | bug | low | implemented | 1.29.1 |
 | [DELVE-0080](archive/DELVE-0080-toast-character-budget.md) | Instruct the ambient toast model with an explicit character budget, so the sentence-boundary cap rarely fires | bug | low | implemented | 1.29.2 |
 | [DELVE-0081](archive/DELVE-0081-drop-from-pack.md) | Drop an item straight from Info/Pack instead of a standalone drop menu | feature | medium | implemented | 1.31.0 |
-| [DELVE-0082](DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | in-progress | - |
+| [DELVE-0082](archive/DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | implemented | 1.32.0 |
 
 ### Epics
 
