@@ -224,13 +224,21 @@ otherwise the single first-shipped `version`.
 | [DELVE-0081](archive/DELVE-0081-drop-from-pack.md) | Drop an item straight from Info/Pack instead of a standalone drop menu | feature | medium | implemented | 1.31.0 |
 | [DELVE-0082](archive/DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | implemented | 1.32.0 |
 | [DELVE-0083](archive/DELVE-0083-doomed-nudge-loading-spinner.md) | The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge | bug | low | implemented | 1.32.1 |
+| [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | proposed | - |
+| [DELVE-0085](DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | proposed | - |
+| [DELVE-0086](DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | proposed | - |
+| [DELVE-0087](DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | proposed | - |
+| [DELVE-0088](DELVE-0088-pet-ignores-you-leaving-for-a-reward-coin.md) | The pet chases a keeper's dropped reward coin even after you've already left for the next room | bug | medium | proposed | - |
+| [DELVE-0089](DELVE-0089-rebalance-ambient-toast-prompt.md) | Rebalance the ambient toast prompt away from carried items, toward the keeper and the room's lesson goal | feature | medium | proposed | - |
+| [DELVE-0090](DELVE-0090-dragon-companion.md) | A third companion species, the Dragon, that hunts torches and breathes fire once fed | feature | high | proposed | - |
+| [DELVE-0091](DELVE-0091-suggested-pet-names.md) | Suggest a proper default name for a new companion when no env-var name is set | feature | low | proposed | - |
 
 ### Epics
 
 | Epic | Title | Children |
 |------|-------|----------|
 | [DELVE-0010](archive/DELVE-0010-objects-and-money.md) | Objects, money, on-pass reward | DELVE-0015 |
-| [DELVE-0011](archive/DELVE-0011-companion-pet.md) | The companion pet | DELVE-0016, DELVE-0029 |
+| [DELVE-0011](archive/DELVE-0011-companion-pet.md) | The companion pet | DELVE-0016, DELVE-0029, DELVE-0090, DELVE-0091 |
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | DELVE-0018 |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | DELVE-0020, DELVE-0021, DELVE-0022, DELVE-0023 |
 | [DELVE-0024](archive/DELVE-0024-security-scanning.md) | Security scanning for code and dependencies | DELVE-0025, DELVE-0026, DELVE-0027 |
@@ -250,6 +258,10 @@ flowchart LR
     DELVE_0011 --> DELVE_0016
     DELVE_0029["DELVE-0029<br/>Inventory item descriptions keep their source line breaks instead of reflowing"]
     DELVE_0011 --> DELVE_0029
+    DELVE_0090["DELVE-0090<br/>A third companion species, the Dragon, that hunts torches and breathes fire once fed"]
+    DELVE_0011 --> DELVE_0090
+    DELVE_0091["DELVE-0091<br/>Suggest a proper default name for a new companion when no env-var name is set"]
+    DELVE_0011 --> DELVE_0091
 ```
 
 ```mermaid
@@ -308,5 +320,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0084**.
+Next free id: **DELVE-0092**.
 <!-- issues:index:end -->
