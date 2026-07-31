@@ -1,23 +1,23 @@
 ---
 id: DELVE-0078
 title: Info/Help panels colour labels and item titles instead of flattening them plain
-status: in-progress
+status: implemented
 area: [session, ui, docs]
 type: story
 epic:
 effort: medium
 milestone:
-version:
+version: 1.29.0
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [3f93afd]
 related: [DELVE-0044, DELVE-0054, DELVE-0075, DELVE-0076]
 supersedes: []
 docs: [docs/INFOSCREEN.md]
-changelog:
+changelog: "1.29.0"
 reason:
 ---
 
