@@ -1,23 +1,23 @@
 ---
 id: DELVE-0066
 title: Show the grader model and the ambient model as separate rows in Info/Grader and Info/Status
-status: in-progress
+status: implemented
 area: [assess, session, ui]
 type: feature
 epic:
 effort: high
 milestone:
-version:
+version: 1.30.0
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [7d936ba]
 related: []
 supersedes: []
 docs: []
-changelog:
+changelog: "1.30.0"
 reason:
 ---
 

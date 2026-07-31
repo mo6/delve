@@ -206,7 +206,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0063](archive/DELVE-0063-info-help-panel-playtesting-fixes.md) | Five playtesting fixes to the Info/Help panels and the torch | bug | low | implemented | 1.25.1 |
 | [DELVE-0064](archive/DELVE-0064-ambient-prompt-items-first.md) | Rework the room ambient prompt to lead with floor items, not atmosphere | feature | low | implemented | 1.26.0 |
 | [DELVE-0065](archive/DELVE-0065-keeper-candle-light.md) | A keeper's own candle lights their immediate surroundings regardless of the player's torch | feature | medium | implemented | 1.26.7 |
-| [DELVE-0066](DELVE-0066-per-model-grader-metrics.md) | Show the grader model and the ambient model as separate rows in Info/Grader and Info/Status | feature | high | in-progress | - |
+| [DELVE-0066](archive/DELVE-0066-per-model-grader-metrics.md) | Show the grader model and the ambient model as separate rows in Info/Grader and Info/Status | feature | high | implemented | 1.30.0 |
 | [DELVE-0067](archive/DELVE-0067-torch-charge-preserved-across-drop-pickup.md) | A dropped torch remembers its remaining burn steps instead of relighting at full duration | bug | high | implemented | 1.26.5 |
 | [DELVE-0068](archive/DELVE-0068-playtesting-fixes-hints-drop-messages.md) | Three playtesting fixes: stale hint-line key, torch drop label, and a longer Messages tab | bug | low | implemented | 1.26.1 |
 | [DELVE-0069](archive/DELVE-0069-info-pack-item-subnavigation.md) | Info/Pack becomes a selectable item list with descriptions on demand, instead of one long page | feature | high | implemented | 1.27.0 |
