@@ -2436,11 +2436,24 @@ class RunState:
             # DELVE-0082: only while a call is genuinely running (queued, in flight, or resolved
             # but not yet delivered) and there is no fresher toast or panel already showing; the
             # idle-nudge timer's own "waiting" (armed, not yet queued) state names nothing yet.
+            # DELVE-0083: a fired nudge whose text is now guaranteed to be dropped on arrival
+            # (`_poll_toast`'s own `is_nudge and self.turn != 0` rule, since the learner has since
+            # moved, which is exactly what the nudge exists to prompt) must not keep naming itself
+            # here too, unless something else is queued behind it that genuinely will show.
             toast_loading=(self.strings("toast.loading")
                           if self._overlay_kind is None and self._toast is None
                              and self._room_backstory.pending()
+                             and not self._doomed_nudge_only()
                           else None),
         )
+
+    def _doomed_nudge_only(self) -> bool:
+        """Whether the sole thing keeping `_room_backstory.pending()` true is a fired idle nudge
+        that will be dropped the instant it resolves (DELVE-0083): fired (`"queued"`, its one-shot
+        name for "submitted") and the learner has since moved, mirroring `_poll_toast`'s own drop
+        condition exactly, with nothing else queued behind it to still show for."""
+        return (self._nudge_state == "queued" and self.turn != 0
+               and not self._room_backstory.pending_other_than(self._nudge_room_id))
 
     def _visible_message(self) -> list[str]:
         """The top line, aged: a message shows on the turn it is posted and briefly after, then
