@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "delve"
+# 1.0.0 release; ordinary semver from here. See delve/__init__.py. Keep the two in step.
+version = "1.27.2"
+description = "A NetHack-style training application: descend a dungeon, learn a topic, pass the keeper."
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "Proprietary" }
+authors = [{ name = "George Moses", email = "gmo6nl@gmail.com" }]
+
+# The only runtime dependency, and it is platform-conditional and invisible on Unix.
+# curses is stdlib on macOS and Linux; on Windows it needs the PDCurses wrapper.
+# windows-curses 2.4.2 ships cp314 wheels (verified). See PLAN.md section 3.
+dependencies = ["windows-curses; sys_platform == 'win32'"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "pip-audit>=2.7"]
+
+[project.scripts]
+delve = "delve.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["delve"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+
+# Standing exceptions are summarised in docs/SECURITY.md. Keep each ignore narrow.
+[tool.ruff.lint.per-file-ignores]
+# pytest assert is the test idiom; S101 would be pure noise.
+"tests/**" = ["S101"]
+# Deterministic game RNG (tile-for-tile regen); not a crypto source.
+"delve/engine/rng.py" = ["S311"]
+# The sole core socket: local Ollama over http(s). Scheme is validated in-module; ruff S310
+# still flags urllib regardless (see docs/SECURITY.md).
+"delve/assess/llm.py" = ["S310"]
+# Maintainer tooling: fixed argv lists to `git` on PATH (no shell, no user input as argv0);
+# screens.py / similar check scripts use assert as their failure mode (same idea as tests).
+"tools/**" = ["S101", "S603", "S607"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

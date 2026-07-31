@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Delve — web display mock-ups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e1218;
+      --bg-elev: #161c26;
+      --floor: #1a2230;
+      --floor-lit: #243044;
+      --floor-dim: #151a24;
+      --wall: #3a4558;
+      --wall-edge: #5a6a82;
+      --corridor: #1e2636;
+      --amber: #e8a84a;
+      --gold: #f0d060;
+      --hp: #e85d6a;
+      --mist: #c8d0dc;
+      --mist-dim: #8a94a8;
+      --panel: #182030;
+      --panel-edge: #4a6a82;
+      --quote: #7ec8d8;
+      --shadow: rgba(0, 0, 0, 0.55);
+      --tile: 30px;
+      --radius: 10px;
+      --font-ui: "Bricolage Grotesque", system-ui, sans-serif;
+      --font-prose: "Instrument Serif", Georgia, serif;
+      --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(ellipse 90% 60% at 50% -10%, #1a2438 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 100%, #1a1810 0%, transparent 45%),
+        var(--bg);
+      color: var(--mist);
+      font-family: var(--font-ui);
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+
+    header.hero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .brand {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #f2f4f8;
+      margin: 0;
+    }
+    .brand span { color: var(--amber); }
+
+    .tagline {
+      margin: 0.35rem 0 0;
+      color: var(--mist-dim);
+      font-size: 0.95rem;
+      max-width: 36rem;
+      line-height: 1.4;
+    }
+
+    nav.tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    nav.tabs button {
+      appearance: none;
+      border: 1px solid transparent;
+      background: var(--bg-elev);
+      color: var(--mist-dim);
+      font: 500 0.8rem/1 var(--font-ui);
+      padding: 0.55rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+    nav.tabs button:hover { color: var(--mist); border-color: #334155; }
+    nav.tabs button.active {
+      color: #0e1218;
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .screen {
+      display: none;
+      background: linear-gradient(180deg, #1a2230 0%, #141a24 100%);
+      border: 1px solid #2a3548;
+      border-radius: calc(var(--radius) + 4px);
+      box-shadow: 0 24px 60px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    .screen.active { display: block; }
+
+    .message {
+      padding: 0.65rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: #e8eef6;
+      background: #0c1016;
+      border-bottom: 1px solid #252e3e;
+      min-height: 2.4rem;
+    }
+
+    .playfield {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+      gap: 0;
+      min-height: 340px;
+    }
+    .playfield.solo { grid-template-columns: 1fr; }
+
+    .map-wrap {
+      padding: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 27px,
+          rgba(255,255,255,0.015) 27px,
+          rgba(255,255,255,0.015) 28px
+        );
+    }
+
+    .map {
+      display: grid;
+      gap: 0;
+      line-height: 0;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
+    }
+
+    .tile {
+      width: var(--tile);
+      height: var(--tile);
+      display: grid;
+      place-items: center;
+      font-size: calc(var(--tile) * 0.72);
+      user-select: none;
+      position: relative;
+    }
+
+    .tile.floor { background: var(--floor-lit); }
+    .tile.floor.dim { background: var(--floor-dim); opacity: 0.72; }
+    .tile.wall {
+      background:
+        linear-gradient(145deg, #4a5568 0%, var(--wall) 40%, #2a3344 100%);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
+    }
+    .tile.wall.dim { filter: brightness(0.65); }
+    .tile.corridor {
+      background: var(--corridor);
+      box-shadow: inset 0 0 0 1px #121820;
+    }
+    .tile.corridor.dim { opacity: 0.55; }
+    .tile.door {
+      background: linear-gradient(180deg, #3d2a18, #2a1c10);
+      box-shadow: inset 0 0 0 1px #c4893a, 0 0 12px rgba(232,168,74,0.35);
+    }
+    .tile.stairs {
+      background: var(--floor-lit);
+      box-shadow: inset 0 0 0 1px rgba(232,168,74,0.45);
+    }
+    .tile.black { background: #07090c; }
+
+    .tile .g {
+      font-style: normal;
+      line-height: 1;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));
+    }
+    .tile.player { outline: 2px solid rgba(232,168,74,0.55); outline-offset: -2px; z-index: 1; }
+    .tile.coin .g { filter: drop-shadow(0 0 6px rgba(240,208,96,0.7)); }
+
+    .panel {
+      border-left: 1px solid #2a3548;
+      background: var(--panel);
+      padding: 1.1rem 1.2rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      font-family: var(--font-prose);
+      color: #dce4f0;
+    }
+    .panel h2 {
+      margin: 0;
+      font-family: var(--font-ui);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #f4f7fb;
+      letter-spacing: -0.02em;
+    }
+    .panel .kind {
+      font-family: var(--font-ui);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--amber);
+      margin: 0;
+    }
+    .panel p {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.45;
+      color: #c5d0e0;
+    }
+    .panel p.quote {
+      color: var(--quote);
+      border-left: 3px solid rgba(126,200,216,0.45);
+      padding-left: 0.75rem;
+    }
+    .panel .more {
+      margin-top: auto;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--mist-dim);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .options {
+      list-style: none;
+      margin: 0.4rem 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      font-family: var(--font-ui);
+    }
+    .options li {
+      display: grid;
+      grid-template-columns: 1.6rem 1fr;
+      gap: 0.5rem;
+      align-items: start;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #2a3548;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+    .options .n {
+      color: var(--amber);
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+
+    .pack-list {
+      list-style: none;
+      margin: 0.5rem 0 0;
+      padding: 0;
+      font-family: var(--font-ui);
+    }
+    .pack-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid #243044;
+      font-size: 0.95rem;
+    }
+    .pack-list .ico { font-size: 1.35rem; width: 1.75rem; text-align: center; }
+
+    .repel-actions {
+      margin-top: 0.5rem;
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      display: grid;
+      gap: 0.4rem;
+    }
+    .repel-actions div {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 0.5rem;
+      padding: 0.4rem 0.5rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+    }
+    .repel-actions kbd {
+      font-family: var(--font-mono);
+      color: var(--amber);
+      font-size: 0.8rem;
+    }
+    .repel-actions .note { color: var(--mist-dim); font-size: 0.75rem; }
+
+    .chrome {
+      border-top: 1px solid #252e3e;
+      background: #0c1016;
+      padding: 0.55rem 1rem 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+    .status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem 1.25rem;
+      color: #d6deea;
+      margin-bottom: 0.35rem;
+    }
+    .status .stat { display: inline-flex; align-items: center; gap: 0.3rem; }
+    .status .gold { color: var(--gold); }
+    .status .hp { color: var(--hp); }
+    .hints { color: var(--mist-dim); }
+
+    .caption {
+      margin-top: 0.85rem;
+      color: var(--mist-dim);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+    .caption code {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: #a8b4c8;
+    }
+
+    @media (max-width: 820px) {
+      .playfield { grid-template-columns: 1fr; }
+      .panel { border-left: none; border-top: 1px solid #2a3548; }
+      :root { --tile: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div>
+        <h1 class="brand">Delve <span>web</span></h1>
+        <p class="tagline">
+          Static mock-ups of a browser look: CSS tile grid, curated emoji, panel beside the room.
+          Parallel to SCREENS.md and DISPLAY.md §11. Not wired to the engine.
+        </p>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Screens">
+      <button type="button" class="active" data-screen="arrival">Arrival</button>
+      <button type="button" data-screen="lesson">Lesson</button>
+      <button type="button" data-screen="exam">Exam</button>
+      <button type="button" data-screen="door">Door</button>
+      <button type="button" data-screen="coins">Coins</button>
+      <button type="button" data-screen="dungeon">Dungeon</button>
+      <button type="button" data-screen="pack">Pack</button>
+      <button type="button" data-screen="repelled">Repelled</button>
+    </nav>
+
+    <!-- ═══ Arrival ═══ -->
+    <section class="screen active" id="arrival" data-label="Arrival">
+      <div class="message">Ada the Suspicious does not look up. There is no way out of this room.</div>
+      <div class="playfield solo">
+        <div class="map-wrap">
+          <div class="map" id="map-arrival" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:0/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:14</span>
+        </div>
+        <div class="hints">Move: arrows · Talk: t · Look: ; · Help: ? · Quit: Q</div>
+      </div>
+    </section>
+
+    <!-- ═══ Lesson ═══ -->
+    <section class="screen" id="lesson">
+      <div class="message">Ada the Suspicious, wizard, teaches.</div>
+      <div class="playfield">
+        <div class="map-wrap">
+          <div class="map" id="map-lesson" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+        <aside class="panel">
+          <p class="kind">Lesson · page 1 of 4</p>
+          <h2>Recognising a Phish</h2>
+          <p>Ada does not look up. She is holding a letter to the lamp, and she keeps holding it while she talks.</p>
+          <p class="quote">“Everyone wants me to teach them the tell,” she says. “The spelling mistake. The odd greeting. They want a checklist so they can stop thinking.”</p>
+          <div class="more"><span>--More--</span><span>(page 1 of 4)</span></div>
+        </aside>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:0/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:14</span>
+        </div>
+        <div class="hints">Next page: space · Back: - · Put it down: Esc</div>
+      </div>
+    </section>
+
+    <!-- ═══ Exam ═══ -->
+    <section class="screen" id="exam">
+      <div class="message">Ada the Suspicious examines you.</div>
+      <div class="playfield">
+        <div class="map-wrap">
+          <div class="map" id="map-exam" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+        <aside class="panel">
+          <p class="kind">Examination · question 1 of 4</p>
+          <h2>A message asks you to click a link and confirm your password “within the hour.”</h2>
+          <p>What do you do first?</p>
+          <ol class="options">
+            <li><span class="n">1</span><span>Click the link; the hour is almost up.</span></li>
+            <li><span class="n">2</span><span>Forward it to a colleague and ask if it looks real.</span></li>
+            <li><span class="n">3</span><span>Slow down and check one thing that is hard to forge.</span></li>
+            <li><span class="n">4</span><span>Reply asking who sent it.</span></li>
+          </ol>
+          <div class="more"><span>Answer: 1–4</span><span>Consult: ?</span></div>
+        </aside>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:0/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:18</span>
+        </div>
+        <div class="hints">Answer: 1–4 · Ask your kitten: ? · Put it down: Esc</div>
+      </div>
+    </section>
+
+    <!-- ═══ Door ═══ -->
+    <section class="screen" id="door">
+      <div class="message">The wall grinds. Where there was stone, there is a door.</div>
+      <div class="playfield solo">
+        <div class="map-wrap">
+          <div class="map" id="map-door" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:1/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:14</span>
+        </div>
+        <div class="hints">Move: arrows · The door is open. Walk through it.</div>
+      </div>
+    </section>
+
+    <!-- ═══ Coins ═══ -->
+    <section class="screen" id="coins">
+      <div class="message">Ada the Suspicious leaves 20 coins on the floor.</div>
+      <div class="playfield solo">
+        <div class="map-wrap">
+          <div class="map" id="map-coins" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:1/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:14</span>
+        </div>
+        <div class="hints">Move: arrows · Coins collect when you step on them.</div>
+      </div>
+    </section>
+
+    <!-- ═══ Dungeon ═══ -->
+    <section class="screen" id="dungeon">
+      <div class="message">Grigor, Who Was Impersonated, looks up. There are two nameplates on his desk.</div>
+      <div class="playfield solo">
+        <div class="map-wrap">
+          <div class="map" id="map-dungeon" style="grid-template-columns: repeat(52, var(--tile));"></div>
+        </div>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:1/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:14</span>
+        </div>
+        <div class="hints">Talk to Grigor: t · Move: arrows · Help: ?</div>
+      </div>
+    </section>
+
+    <!-- ═══ Pack ═══ -->
+    <section class="screen" id="pack">
+      <div class="message">You look through your pack.</div>
+      <div class="playfield">
+        <div class="map-wrap">
+          <div class="map" id="map-pack" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+        <aside class="panel">
+          <p class="kind">Inventory</p>
+          <h2>Your pack</h2>
+          <ul class="pack-list">
+            <li><span class="ico">🪙</span><span>70 coins</span></li>
+            <li><span class="ico">🥥</span><span>coconut half (2)</span></li>
+            <li><span class="ico">💾</span><span>USB stick</span></li>
+          </ul>
+          <div class="more"><span>Drop: d</span><span>Esc closes</span></div>
+        </aside>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:2/3</span>
+          <span class="stat gold">🪙 70</span>
+          <span class="stat hp">💛 12(12)</span>
+          <span class="stat">T:52</span>
+        </div>
+        <div class="hints">Put it away: Esc · Drop: d · Move: arrows</div>
+      </div>
+    </section>
+
+    <!-- ═══ Repelled ═══ -->
+    <section class="screen" id="repelled">
+      <div class="message">Ada the Suspicious shakes her head. You are pushed back from the door.</div>
+      <div class="playfield">
+        <div class="map-wrap">
+          <div class="map" id="map-repelled" style="grid-template-columns: repeat(22, var(--tile));"></div>
+        </div>
+        <aside class="panel">
+          <p class="kind">Not death</p>
+          <h2>REPELLED</h2>
+          <p>Ada the Suspicious turns back to her work. “Not yet,” she says. There is no edge in it. “You have read it once. Read it twice.”</p>
+          <p>The wall is stone again. Nothing you earned is gone: every door you opened is still open.</p>
+          <div class="repel-actions">
+            <div><span>Ask her to teach it again</span><kbd>t</kbd><span class="note">free, always</span></div>
+            <div><span>Ask your kitten</span><kbd>?</kbd><span class="note">costs score</span></div>
+            <div><span>Rest until you heal</span><kbd>s</kbd><span class="note"></span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="chrome">
+        <div class="status">
+          <span class="stat">George the Novice</span>
+          <span class="stat">Dlvl:1</span>
+          <span class="stat">Rooms:0/3</span>
+          <span class="stat gold">🪙 0</span>
+          <span class="stat hp">💛 3(12)</span>
+          <span class="stat">T:31</span>
+        </div>
+        <div class="hints">Read it again: t · Ask your kitten: ? · Rest: s · Help: ?</div>
+      </div>
+    </section>
+
+    <p class="caption" id="caption">
+      <strong>Arrival</strong> — SCREENS §1. Sealed room; learner, wizard and kitten are distinct
+      glyphs (DISPLAY §11.1). Open <code>docs/WEBDISPLAY.md</code> for the plan behind these frames.
+    </p>
+  </div>
+
+  <script>
+    const W = "wall", F = "floor", C = "corridor", B = "black";
+    const captions = {
+      arrival: "<strong>Arrival</strong> — SCREENS §1. Sealed room; learner, wizard and kitten are distinct glyphs (DISPLAY §11.1).",
+      lesson: "<strong>Lesson</strong> — SCREENS §2. Panel beside the room; the dungeon stays visible while Ada teaches.",
+      exam: "<strong>Exam</strong> — SCREENS §3. Numbered options (1–n); map still shows who is examining you.",
+      door: "<strong>Door</strong> — SCREENS §5. The one-tile payoff, now a 🚪 instead of <code>+</code>.",
+      coins: "<strong>Coins</strong> — SCREENS §11. Reward in the room, away from the exit; 🪙 until you walk onto it.",
+      dungeon: "<strong>Dungeon</strong> — SCREENS §7. Two rooms and a corridor; 🧙 Ada remembered, 💂 Grigor lit.",
+      pack: "<strong>Pack</strong> — SCREENS §11 + objects. Inventory panel with emoji matching the floor alphabet.",
+      repelled: "<strong>Repelled</strong> — SCREENS §6. A pause, not a defeat; earned doors stay open.",
+    };
+
+    function cell(kind, glyph, extra = "") {
+      const el = document.createElement("div");
+      el.className = `tile ${kind}${extra ? " " + extra : ""}`;
+      if (glyph) {
+        const g = document.createElement("span");
+        g.className = "g";
+        g.textContent = glyph;
+        el.appendChild(g);
+      }
+      return el;
+    }
+
+    /** Fill a rectangular room: outer walls, inner floor. entities: [{x,y,glyph,extra}] in interior coords */
+    function roomGrid(cols, rows, entities = [], { doorAt = null, dim = false } = {}) {
+      const grid = [];
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const edge = x === 0 || y === 0 || x === cols - 1 || y === rows - 1;
+          if (doorAt && x === doorAt.x && y === doorAt.y) {
+            grid.push({ kind: "door", glyph: "🚪", extra: dim ? "dim" : "" });
+          } else if (edge) {
+            grid.push({ kind: "wall", glyph: "", extra: dim ? "dim" : "" });
+          } else {
+            grid.push({ kind: "floor", glyph: "", extra: dim ? "dim" : "" });
+          }
+        }
+      }
+      for (const e of entities) {
+        const i = e.y * cols + e.x;
+        if (!grid[i] || grid[i].kind === "wall" || grid[i].kind === "door") continue;
+        grid[i].glyph = e.glyph;
+        if (e.extra) grid[i].extra = (grid[i].extra + " " + e.extra).trim();
+        if (e.kind) grid[i].kind = e.kind;
+      }
+      return { cols, rows, grid };
+    }
+
+    function paint(hostId, model) {
+      const host = document.getElementById(hostId);
+      host.innerHTML = "";
+      host.style.gridTemplateColumns = `repeat(${model.cols}, var(--tile))`;
+      for (const t of model.grid) {
+        host.appendChild(cell(t.kind, t.glyph, t.extra));
+      }
+    }
+
+    // Shared Ada room entities (interior includes walls: x 0..21, y 0..8)
+    const adaRoom = (overrides = {}) => roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 20, y: 4, glyph: "🧙" },
+      { x: 8, y: 6, glyph: "🧑", extra: "player" },
+      { x: 7, y: 7, glyph: "🐈" },
+      ... (overrides.entities || []),
+    ], { doorAt: overrides.doorAt || null, dim: overrides.dim || false });
+
+    paint("map-arrival", adaRoom());
+
+    paint("map-lesson", roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 19, y: 4, glyph: "🧑", extra: "player" },
+      { x: 20, y: 4, glyph: "🧙" },
+      { x: 17, y: 5, glyph: "🐈" },
+    ]));
+
+    paint("map-exam", roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 19, y: 4, glyph: "🧑", extra: "player" },
+      { x: 20, y: 4, glyph: "🧙" },
+      { x: 17, y: 5, glyph: "🐈" },
+    ]));
+
+    paint("map-door", roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 15, y: 4, glyph: "🐈" },
+      { x: 16, y: 4, glyph: "🧑", extra: "player" },
+      { x: 20, y: 4, glyph: "🧙" },
+    ], { doorAt: { x: 21, y: 4 } }));
+
+    paint("map-coins", roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 18, y: 4, glyph: "🧑", extra: "player" },
+      { x: 20, y: 4, glyph: "🧙" },
+      { x: 17, y: 5, glyph: "🐈" },
+      { x: 4, y: 6, glyph: "🪙", extra: "coin" },
+    ], { doorAt: { x: 21, y: 4 } }));
+
+    paint("map-pack", roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 19, y: 4, glyph: "🧑", extra: "player" },
+      { x: 20, y: 4, glyph: "🧙" },
+      { x: 17, y: 5, glyph: "🐈" },
+    ]));
+
+    paint("map-repelled", roomGrid(22, 9, [
+      { x: 3, y: 2, glyph: "🔼", kind: "stairs" },
+      { x: 13, y: 4, glyph: "🧑", extra: "player" },
+      { x: 20, y: 4, glyph: "🧙" },
+      { x: 12, y: 5, glyph: "🐈" },
+    ]));
+
+    // Two-room dungeon: 22 + gap + corridor + room2(25) ≈ 52 cols, 11 rows
+    (function buildDungeon() {
+      const cols = 52, rows = 11;
+      const grid = Array.from({ length: cols * rows }, () => ({ kind: "black", glyph: "", extra: "" }));
+      const set = (x, y, t) => { grid[y * cols + x] = t; };
+
+      function carveRoom(x0, y0, w, h, { dim = false, door = null } = {}) {
+        for (let y = y0; y < y0 + h; y++) {
+          for (let x = x0; x < x0 + w; x++) {
+            const edge = x === x0 || y === y0 || x === x0 + w - 1 || y === y0 + h - 1;
+            if (door && x === door.x && y === door.y) {
+              set(x, y, { kind: "door", glyph: "🚪", extra: dim ? "dim" : "" });
+            } else if (edge) {
+              set(x, y, { kind: "wall", glyph: "", extra: dim ? "dim" : "" });
+            } else {
+              set(x, y, { kind: "floor", glyph: "", extra: dim ? "dim" : "" });
+            }
+          }
+        }
+      }
+
+      carveRoom(0, 2, 22, 9, { dim: true, door: { x: 21, y: 6 } });
+      carveRoom(28, 0, 24, 9, { door: null });
+      // corridor
+      for (let x = 22; x < 28; x++) {
+        set(x, 6, { kind: "corridor", glyph: "", extra: "dim" });
+      }
+      // punch room2 west entrance
+      set(28, 6, { kind: "door", glyph: "🚪", extra: "" });
+
+      set(3, 4, { kind: "stairs", glyph: "🔼", extra: "dim" });
+      set(20, 6, { kind: "floor", glyph: "🧙", extra: "dim" });
+      set(48, 4, { kind: "floor", glyph: "🧑", extra: "player" });
+      set(49, 4, { kind: "floor", glyph: "💂", extra: "" });
+      set(46, 5, { kind: "floor", glyph: "🐈", extra: "" });
+
+      paint("map-dungeon", { cols, rows, grid });
+      document.getElementById("map-dungeon").style.setProperty("--tile", "18px");
+    })();
+
+    // Tabs
+    const buttons = document.querySelectorAll("nav.tabs button");
+    const screens = document.querySelectorAll(".screen");
+    const caption = document.getElementById("caption");
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.screen;
+        buttons.forEach((b) => b.classList.toggle("active", b === btn));
+        screens.forEach((s) => s.classList.toggle("active", s.id === id));
+        caption.innerHTML = captions[id] + ' Open <code>docs/WEBDISPLAY.md</code> for the plan.';
+      });
+    });
+  </script>
+</body>
+</html>

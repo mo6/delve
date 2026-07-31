@@ -1,0 +1,314 @@
+# English engine strings. The format is English; the values are content (CLAUDE.md). Map glyphs
+# and key letters (arrows, t, q, space, Esc, >, <, ?) are the game's alphabet and never translate;
+# only the words around them do. See nl.toml for the Dutch twin, kept in step.
+
+[msg]
+no_exit       = "{keeper} does not look up. There is no way out of this room."
+cant_go       = "You can't go that way."
+no_one        = "There is no one here to talk to."
+put_down      = "You put it down."
+bump_passed   = "\"You've had this one,\" {first} says, and turns back to the desk."
+examines      = "{name} examines you."
+correct       = "Correct."
+not_quite     = "Not quite."
+grading       = "You hand your answer over. The keeper reads it, and considers."
+greet         = "{name} does not look up."
+fail          = "Not yet. Read it again, then talk to {first}."
+repelled      = "{name} shakes their head. You are pushed back from the door."
+respawn       = "The dark closes over you. You wake at the entrance, whole. Every door you earned is still open."
+descend       = "You descend the stairs. {title}."
+no_stairs_down = "There are no stairs down here."
+ascend        = "You climb back up. {title}."
+no_stairs_up  = "There are no stairs up here."
+already_whole = "You are already whole."
+rested        = "You rest a while. Your strength returns and your head clears."
+scroll_taken  = "You lift the scroll from the pedestal. The keepers stay down here; the habits do not."
+# The companion (PETS.md): {name} is the pet's name (a cat 'your kitten' by default, or a dog).
+no_companion  = "You have no companion to ask."
+pet_nothing   = "{name} blinks at you. There is nothing here to ask about."
+pet_already   = "{name} has already told you what it thinks of this one."
+pet_strike    = "{name} noses at one answer and turns up its nose. That question no longer counts toward your score."
+pet_free      = "{name} noses one answer aside, a favour this once, and it costs you nothing."
+pet_pat       = "You ruffle {name}. It has nothing for you."
+retrieve_cat  = "You corner {name} and prise {coins} loose."
+retrieve_dog  = "You take {coins} back from {name}."
+retrieve_dog_item = "{name} gives up {what}; it drops beside you."
+# The torch (DELVE-0062): burnout with a spare relighting in the same breath, and burnout with
+# none. Pickup wording (stowed vs. lit on the spot) lives in [item] beside pickup/pickup_none.
+torch_burnout_relit = "Your torch gutters out, but a spare catches at once."
+torch_burnout_dark = "Your torch gutters out. You have no light of your own left."
+
+# Objects (OBJECTS.md): money banks with {coins} (coin_one/coins handle 1 vs many); pickup and
+# drop name what changed hands. Money auto-collects on a step, so `collect` needs no key.
+[item]
+collect       = "You pick up {coins}."
+coin_one      = "a coin"
+coins         = "{n} coins"
+pickup        = "You pick up {what}."
+pickup_none   = "There is nothing here to pick up."
+# The torch's own display name (DELVE-0062): engine-owned, not pack content, so it bypasses
+# `ItemDef.name` here the same way coin_one/coins bypass money's, which pins the Dutch word to
+# "fakkel" regardless of what the ambient prose model says.
+torch_one     = "a torch"
+torches       = "{n} torches"
+torch_pickup_stowed = "You already have a torch burning; you stow this one away."
+torch_pickup_lit = "You pick up the torch. It catches at once."
+torch_lit_menu = "torch, lit ({n} steps left)"
+# An unlit torch's own charge (DELVE-0067), spare in the pack or lying on the floor, distinct from
+# torch_lit_menu above (which is only the one currently burning).
+torch_charge_one  = "torch ({n} steps left)"
+torch_charge_many = "torches ({count}, {n} steps left)"
+torch_look    = "A hand torch. It lights the whole room while it burns and dies out after a while; a spare in your pack relights automatically the moment it does."
+money_look    = "Coin. It banks itself the moment you step over it, adding straight to your running total."
+pickup_prompt = "Pick up what?"
+pickup_amount = "Pick up how many?"
+here          = "You see {what} lying here."
+one           = "a {name}"
+many          = "{count} {plural}"
+numbers       = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"]
+drop          = "You drop {what}."
+nothing       = "You have nothing to drop."
+no_room       = "There is no room to drop that here."
+drop_prompt   = "Drop what?"
+amount_prompt = "Drop how many?"
+inv_title     = "Your pack"
+inv_empty     = "You are carrying nothing."
+# The `i` panel's tab strip (DELVE-0040): Pack is the default tab; Grader is reachable but shows
+# `tab_soon` until its own child story (DELVE-0035) gives it real content. Scoring (renamed from
+# "Progress", DELVE-0043: it shows score, not completion) and Status (DELVE-0044) have real
+# content since DELVE-0042/DELVE-0044. `info_title` is the fixed panel name shown before the tab
+# strip (DELVE-0041).
+info_title    = "Info"
+tab_pack      = "Pack"
+tab_scoring   = "Scoring"
+tab_grader    = "Grader"
+tab_status    = "Status"
+tab_messages  = "Messages"
+tab_soon      = "Coming soon."
+# Scoring's own sub-tab strip (DELVE-0055, INFOSCREEN.md §5): Now is the DELVE-0042/0043 bars,
+# unchanged; Rooms is the room pass map.
+tab_now       = "Now"
+tab_rooms     = "Rooms"
+# Scoring tab body (DELVE-0042/0043): a header above the per-chapter bar rows; the rows themselves
+# (chapter titles, percentages, "HP") are built from run data, not catalogue strings.
+progress_chapters = "Chapters"
+# Scoring > Rooms body (DELVE-0055): the legend line after the pass-map rows. The glyphs
+# (· sealed, ░ sat, ▒ ok, █ clear) never translate; only the words do.
+rooms_legend  = "· sealed   ░ sat   ▒ ok   █ clear"
+# Status tab body (DELVE-0044): plain key/value rows of app and run diagnostics. `status_size` is
+# only the row's label; `ui` appends the live "rows x cols" at paint time (rule 2, see
+# windows._fill_status_size). `status_grader` is omitted, not shown blank, with no model configured.
+status_version = "Version     {version}"
+status_pack    = "Pack        {pack}"
+status_locale  = "Locale      {locale}"
+status_size    = "Terminal   "
+status_grader  = "Grader      {model} @ {host}"
+# Grader tab body (DELVE-0054, INFOSCREEN.md §7): read from LLMGrader's run-scoped GraderMetrics
+# (DELVE-0053). `grader_offline` is the whole body when no model is configured (the default
+# keyword floor); `grader_model`/`grader_status_*`/`grader_run` are the three rows shown when one
+# is. `grader_status_none` covers a configured grader with no grade yet this run. `grader_run`'s
+# `ambient` and `grader_avg` (DELVE-0062 follow-up) fold in the ambient toast's own calls, which
+# share the same GraderMetrics instance so the tab actually changes after one resolves.
+grader_offline     = "Keyword floor, no model configured."
+grader_model       = "Model       {model} @ {host}"
+grader_status_warm = "Status      warm, last grade {ms} ms"
+grader_status_cold = "Status      cold, last grade {ms} ms"
+grader_status_none = "Status      no grade yet this run"
+grader_run         = "This run    In {tin}   Out {tout}   LLM {llm}   keyword {keyword}   ambient {ambient}"
+grader_avg         = "Avg latency {ms} ms"
+reward        = "{name} leaves {coins} on the floor."
+amount_range  = "1 to {max}"
+pet_grab      = "{name} pounces on {coins} and pockets them."
+pet_give      = "{name} trots back and drops {coins} beside you."
+pet_grab_item = "{name} snatches up {what}."
+pet_give_item = "{name} trots back and sets {what} down beside you."
+
+# The companion's per-species defaults, used when the learner names it nothing (PETS.md).
+[pet]
+default_cat = "your kitten"
+default_dog = "your dog"
+# The bare species noun and the phrase joining it to the pet's own name, for prose that names the
+# companion outside a fixed sentence (the ambient prompt's `carrying`/`pet` facts, DELVE-0060):
+# `run.py:_pet_description` used to hardcode "named" regardless of locale, so a Dutch run's prompt
+# said "hond named Rex" rather than "hond genaamd Rex".
+noun_cat = "cat"
+noun_dog = "dog"
+phrase = "{species} named {name}"
+
+# Question chrome the panel shows: the progress counter under the options, and the word joining an
+# assertion's two labels ('Waar of Niet waar?'). Both are English format, so `ui` never assembles a
+# word (rule 2). The counter's English wording is a test fixture (test_slice).
+[question]
+counter = "Question {idx} of {total}."
+or      = "or"
+# The header over a free-text explanation when the learner submitted an empty answer (Phase 2).
+blank   = "(you left this blank)"
+
+# The pending-grade pause (Phase 2): shown while a free-text answer is graded by the local model.
+# Never seen on the offline keyword floor, where grading is instant.
+[grading]
+title = "Checking your answer"
+body  = "The keeper reads what you wrote, and weighs it against what they were looking for."
+
+[pass]
+door     = "The wall grinds. Where there was stone, there is a door."
+stairs   = "The far wall opens onto a stairway down."
+# Shown when the stairs down were already open (the tutorial floor paints them from the start).
+stairs_open = "The way down was open all along. Go down when you are ready."
+pedestal = "The stone parts. Beyond it, a pedestal, and on it a scroll."
+
+[keeper_kind]
+wizard     = "wizard"
+gatekeeper = "gatekeeper"
+shopkeeper = "shopkeeper"
+
+# The keeper's voice as the lesson opens (M8). Voice and cost are all that separate the keeper
+# kinds (PLAN §5); this is the engine's share of it. `default` covers any unlisted kind.
+[teach]
+wizard     = "{name} settles in, and sets the lesson out like a proof."
+gatekeeper = "{name} keeps it short. Listen once."
+shopkeeper = "{name} lays the knowledge out like goods on a counter."
+default    = "{name} begins the lesson."
+
+# The win screen, shown once the scroll is put down and the run is over (M8). There is no death
+# screen by design: REPELLED is not death and HP:0 respawns you at the entrance (CLAUDE.md rule 4).
+[win]
+title = "You climb back into the daylight."
+body  = "{pack}, finished. Score: {score}. The scroll is yours; the keepers stay below, but the habits come up with you."
+wealth = "You carry {coins} out with you."
+
+[status]
+rooms = "Rooms"
+
+[hint]
+walk     = "Move: arrows    Wait: space    Talk: t    Info: i    Help: ?    Quit: q"
+read     = "Next page: space    Back: -    Put it down: Esc    Help: ?"
+more     = "Continue: space    Put it down: Esc    Help: ?"
+repelled = "Read it again: t    Ask your companion: @    Rest: s    Help: ?"
+scroll   = "Put it down: space    Quit: q    Help: ?"
+talk     = "Talk to {first}: t    Move: arrows    Quit: q    Help: ?"
+descend  = "Descend: >    Move: arrows    Quit: q    Help: ?"
+ascend   = "Ascend: <    Move: arrows    Quit: q    Help: ?"
+rest     = "Move: arrows    Rest: s    Quit: q    Help: ?"
+answer_two  = "Answer: {k1} or {k2}    Ask companion: @    Put it down: Esc    Help: ?"
+answer_many = "Answer: 1-{last}    Ask companion: @    Put it down: Esc    Help: ?"
+answer_text = "Type your answer    Backspace: fix    Answer: Enter    Put it down: Esc    Help: ?"
+grading     = "Checking your answer..."
+pickup      = "Pick up: ,    Move: arrows    Quit: q    Help: ?"
+carrying    = "Move: arrows    Info: i    Drop: d    Help: ?"
+inventory   = "Tabs: arrows or Tab    Put away: Esc    Help: ?"
+inventory_sub = "Tabs: left/right    Rows: up/down    Put away: Esc    Help: ?"
+drop_menu   = "Drop which? press its number    Cancel: Esc    Help: ?"
+drop_amount = "Type a number    Backspace: fix    Drop: Enter    Cancel: Esc    Help: ?"
+help        = "Tabs: Tab or arrows    Put away: ? or Esc"
+
+[help]
+# The `?` panel (DELVE-0028): its two tab labels, the panel title, the Keys tab's per-key
+# explanations (`session/help.py`'s catalogue), and the Objectives tab's static labels.
+title           = "Help"
+tab_keys        = "Keys"
+tab_objectives  = "Objectives"
+no_keys         = "Nothing to show here."
+move            = "Move around the room"
+talk            = "Talk to (or re-read) an adjacent keeper"
+rest            = "Rest until your HP is full"
+descend         = "Take the stairs down, while standing on them"
+ascend          = "Take the stairs up, while standing on them"
+pickup          = "Pick up whatever is on your tile"
+drop            = "Drop something from your pack"
+inventory       = "Open your pack and progress"
+wait            = "Stand still for a turn"
+quit            = "Quit"
+help            = "Open or close this help"
+dismiss         = "Put this panel down"
+page_next       = "Read on to the next page"
+page_prev       = "Back to the previous page"
+lesson_continue = "Start the examination"
+answer_many     = "Answer with its number"
+answer_select   = "Move the highlight, then answer with Enter"
+answer_two      = "Choose one of the two answers"
+answer_text     = "Type your answer, then submit"
+consult         = "Ask your companion for a hint (costs score)"
+tab_cycle       = "Switch tabs"
+subtab_cycle    = "Switch the second row of tabs"
+focus_row       = "Move keyboard focus between the tab rows"
+amount_digit    = "Type how many"
+amount_backspace = "Fix the number you typed"
+amount_confirm  = "Confirm the amount"
+menu_choose     = "Choose one, by its number"
+# Objectives' static summary (`RunState._objectives_facts`).
+obj_pack        = "Pack: {pack}"
+obj_chapter     = "Chapter {dlvl} of {total}: {title}"
+obj_progress    = "Rooms passed: {done} of {total}"
+obj_keeper      = "Next: {name}, requiring a score of {pct}% to pass"
+# The one-shot idle nudge's deterministic safety net (DELVE-0061): appended only if the model's own
+# reply didn't already name the arrow keys itself, so the one thing the nudge exists to say is never
+# left to chance.
+nudge_fallback  = "Try the arrow keys to move."
+
+[overlay]
+repelled_title = "REPELLED"
+repelled_body = [
+  '{name} turns back to the work. "Not yet," they say, and there is no edge in it. "You have read it once. Read it twice."',
+  "The wall is stone again. Nothing you earned is gone: every door you opened is still open, and the way back is still the way back.",
+  "Ask {first} to teach it again with t, free, always and forever. Ask your companion with @, which costs score and not health. Or rest until you heal with s.",
+]
+scroll_fallback_title = "A Scroll"
+scroll_fallback_body  = "You have finished."
+
+[ui]
+# The affirmative/negative keys for a [yn] prompt (the resume/skip offers). Localised so a Dutch
+# prompt reads [Jn] and takes 'j', not [Yn]; 'y'/'n' stay accepted everywhere as a fallback.
+yes_key      = "y"
+no_key       = "n"
+no_messages  = "Nothing has happened yet."
+# Pager chrome for a paginated panel; page_fmt is a template the UI fills with {page}/{total}.
+more         = "--More--"
+end          = "(end)"
+page_fmt     = "(page {page} of {total})"
+who_are_you  = "Who are you?"
+name_hint    = "(type a name, then Enter)"
+default_name = "Adventurer"
+trophy_title = "Your trophy case"
+press_any    = "(press any key)"
+resume       = "{name}, you left {pack} unfinished. Descend again where you stood?"
+skip         = "You have the look of someone who has done this before. Skip the orientation?"
+pick_pet     = "Who comes down with you?"
+# The keys are filled from pet_key_* below, so the bracketed letter always matches the key that works.
+pick_pet_hint = "[{cat}] a cat    [{dog}] a dog    [{none}] no one, I go alone"
+pet_key_cat  = "c"
+pet_key_dog  = "d"
+pet_key_none = "n"
+pet_name_cat = "What is your cat's name?"
+pet_name_dog = "What is your dog's name?"
+
+[format]
+currency     = "$"
+currency_sep = ""
+thousands    = ","
+decimal      = "."
+date         = "{d} {month} {y}"
+months = ["January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"]
+
+# Global keyword -> emoji table for the question-text garnish (session/flavour.py). One emoji is
+# prepended to at most one matching keyword per question, sparsely; an author writes plain prose.
+# Single-codepoint emoji only, so the panel (which measures display columns) can size them.
+[flavour_emoji]
+email      = "📧"
+password   = "🔑"
+passphrase = "🔑"
+link       = "🔗"
+attachment = "📎"
+file       = "📄"
+document   = "📄"
+phone      = "📱"
+lock       = "🔒"
+badge      = "🪪"
+usb        = "🔌"
+device     = "🔌"
+report     = "🚨"
+meeting    = "📅"
+call       = "📞"
+money      = "💰"
+door       = "🚪"

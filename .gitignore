@@ -1,0 +1,25 @@
+# Reference material — upstream NetHack source, cloned separately.
+# Not part of this project; has its own .git and weighs ~200 MB.
+NetHack/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Runtime state
+*.sqlite3
+*.db
+delve.log
+
+# OS
+.DS_Store
+
+# Distribution builds (./dist.sh output)
+delve-*-windows-test.zip
+ANNOUNCEMENT.md
