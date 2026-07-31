@@ -1,23 +1,23 @@
 ---
 id: DELVE-0077
 title: Grader tab grows a latency sparkline
-status: in-progress
+status: implemented
 area: [assess, session, docs]
 type: story
 epic: DELVE-0035
 effort: medium
 milestone:
-version:
+version: 1.28.0
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [5c808a9]
 related: [DELVE-0053, DELVE-0054]
 supersedes: []
 docs: [docs/INFOSCREEN.md]
-changelog:
+changelog: "1.28.0"
 reason:
 ---
 

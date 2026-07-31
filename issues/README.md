@@ -217,7 +217,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0074](DELVE-0074-generic-per-unit-item-properties.md) | Generalise Stack's torch-only charge field into per-unit item properties | feature | high | proposed | - |
 | [DELVE-0075](archive/DELVE-0075-pack-two-column-layout.md) | Info/Pack becomes a two-column list-plus-description layout with a scrolling list | feature | medium | implemented | 1.27.1 |
 | [DELVE-0076](archive/DELVE-0076-pack-highlight-list-not-description.md) | Info/Pack highlights the focused item's name in the list, not its description | bug | low | implemented | 1.27.2 |
-| [DELVE-0077](DELVE-0077-grader-latency-sparkline.md) | Grader tab grows a latency sparkline | story | medium | in-progress | - |
+| [DELVE-0077](archive/DELVE-0077-grader-latency-sparkline.md) | Grader tab grows a latency sparkline | story | medium | implemented | 1.28.0 |
 
 ### Epics
 
