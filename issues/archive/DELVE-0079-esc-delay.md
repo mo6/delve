@@ -1,23 +1,23 @@
 ---
 id: DELVE-0079
 title: Esc takes a full second to close a panel, because ncurses' default ESCDELAY is untouched
-status: in-progress
+status: implemented
 area: [ui]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.29.1
 version_span:
 created: 2026-07-31
 updated: 2026-07-31
 accepted_by: George Moses
 accepted_at: 2026-07-31
-commits: []
+commits: [6d0a194]
 related: []
 supersedes: []
 docs: []
-changelog:
+changelog: "1.29.1"
 reason:
 ---
 
