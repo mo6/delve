@@ -223,6 +223,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0080](archive/DELVE-0080-toast-character-budget.md) | Instruct the ambient toast model with an explicit character budget, so the sentence-boundary cap rarely fires | bug | low | implemented | 1.29.2 |
 | [DELVE-0081](archive/DELVE-0081-drop-from-pack.md) | Drop an item straight from Info/Pack instead of a standalone drop menu | feature | medium | implemented | 1.31.0 |
 | [DELVE-0082](archive/DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | implemented | 1.32.0 |
+| [DELVE-0083](DELVE-0083-doomed-nudge-loading-spinner.md) | The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge | bug | low | proposed | - |
 
 ### Epics
 
@@ -307,5 +308,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0083**.
+Next free id: **DELVE-0084**.
 <!-- issues:index:end -->
