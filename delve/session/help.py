@@ -27,7 +27,7 @@ _PAGER_CONTEXTS = frozenset({
 # `panel_command`), and every one `?` opens help from (checked right after Esc).
 _DISMISSIBLE = frozenset({
     "lesson", "explanation", "question_mcq", "question_assertion", "question_freetext",
-    "scroll", "info", "drop_menu", "drop_amount", "pickup_menu", "pickup_amount",
+    "scroll", "info", "drop_amount", "pickup_menu", "pickup_amount",
     "repelled",
 })
 _HELP_REACHABLE = _DISMISSIBLE | {"walking"}
@@ -49,7 +49,6 @@ CATALOGUE: tuple[CommandEntry, ...] = (
     CommandEntry(">", "help.descend", frozenset({"walking"})),
     CommandEntry("<", "help.ascend", frozenset({"walking"})),
     CommandEntry(",", "help.pickup", frozenset({"walking"})),
-    CommandEntry("d", "help.drop", frozenset({"walking"})),
     CommandEntry("i", "help.inventory", frozenset({"walking"})),
     CommandEntry("Space", "help.wait", frozenset({"walking"})),
     CommandEntry("q", "help.quit", frozenset({"walking"})),
@@ -71,13 +70,17 @@ CATALOGUE: tuple[CommandEntry, ...] = (
     CommandEntry("Tab / →←", "help.tab_cycle", frozenset({"info", "help"})),
     CommandEntry("[ ]", "help.subtab_cycle", frozenset({"info"})),
     CommandEntry("↑↓", "help.focus_row", frozenset({"info"})),
+    # Info/Pack's own row list (DELVE-0081): drops the focused row, straight away or via the
+    # amount field below for a multi-count pile. Listed under "info" like subtab_cycle/focus_row
+    # above, a no-op off the Pack tab or on an empty one, the same coarseness those already have.
+    CommandEntry("d", "help.drop", frozenset({"info"})),
     # The drop/pickup amount field.
     CommandEntry("0-9", "help.amount_digit", frozenset({"drop_amount", "pickup_amount"})),
     CommandEntry("Backspace", "help.amount_backspace",
                 frozenset({"drop_amount", "pickup_amount"})),
     CommandEntry("Enter", "help.amount_confirm", frozenset({"drop_amount", "pickup_amount"})),
-    # The drop/pickup menu.
-    CommandEntry("1-9", "help.menu_choose", frozenset({"drop_menu", "pickup_menu"})),
+    # The pickup menu (several kinds on one tile).
+    CommandEntry("1-9", "help.menu_choose", frozenset({"pickup_menu"})),
 )
 
 

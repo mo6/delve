@@ -41,7 +41,7 @@ from delve.session.commands import (
     TabCycle,
 )
 from delve.session.launch import load_tutorial
-from delve.session.run import _LIT_TORCH_ID, new_game, new_run
+from delve.session.run import new_game, new_run
 from delve.session.snapshot import apply_dict, to_dict
 from delve.session.views import AmountView, InfoTab, InfoView, MenuView, TextBlock
 from delve.ui import keys
@@ -62,6 +62,17 @@ def _free_step(run):
 
 def _opposite(d: Direction) -> Direction:
     return next(o for o in Direction if o.delta.x == -d.delta.x and o.delta.y == -d.delta.y)
+
+
+def _focus_pack_row(run, name):
+    """Open (or reopen) Info/Pack and move the row focus to the entry containing `name`
+    (DELVE-0081: dropping now acts on whichever row is focused there), returning the frame at
+    that focus."""
+    frame = run.apply(Inventory())
+    idx = next(i for i, label in enumerate(frame.overlay.pack_rows) if name in label)
+    while frame.overlay.pack_selected != idx:
+        frame = run.apply(Select(1))
+    return frame
 
 
 # -- engine item model ---------------------------------------------------------------------------
@@ -127,8 +138,8 @@ def test_drop_some_coins_then_walk_back_over_them():
     run.player.gold = 100
     pos = run.player.pos
 
-    assert isinstance(run.apply(Drop()).overlay, MenuView)   # the drop menu
-    field = run.apply(Answer(0))                             # coins: >1, so an amount field opens
+    _focus_pack_row(run, run._coins(100))                    # DELVE-0081: the Pack tab picks it
+    field = run.apply(Drop())                                # coins: >1, so an amount field opens
     assert isinstance(field.overlay, AmountView)
     run.apply(Digit(3))
     assert run.apply(Digit(0)).overlay.typed == "30"         # typed 3 then 0
@@ -136,6 +147,7 @@ def test_drop_some_coins_then_walk_back_over_them():
 
     assert run.player.gold == 70
     assert run.items[pos] == [Stack(MONEY, 30)]
+    run.apply(Dismiss())                                      # back to walking
 
     d, _ = _free_step(run)
     run.apply(Move(d))                                       # step off; coins stay put
@@ -163,77 +175,80 @@ def test_pickup_inventory_and_drop_one():
     assert isinstance(inv.overlay, InfoView)
     assert inv.overlay.active == 0 and inv.overlay.tabs[0].key == "pack"
     assert "coconut half (2)" in " ".join(inv.overlay.pack_rows)
-    run.apply(Dismiss())
 
-    run.apply(Drop())
-    assert isinstance(run.apply(Answer(0)).overlay, AmountView)   # 2 held -> an amount field
+    _focus_pack_row(run, "coconut half")
+    assert isinstance(run.apply(Drop()).overlay, AmountView)   # 2 held -> an amount field
     run.apply(Digit(1))
     run.apply(Confirm())
     assert run.player.inventory == [Stack(COCONUT, 1)]
     assert run.items[run.player.pos] == [Stack(COCONUT, 1)]
 
 
-def test_drop_with_nothing_to_drop_says_so():
-    # A fresh run starts with a lit torch, itself droppable (a playtesting fix), so "nothing to
-    # drop" now requires it burned out too, not just an empty pack and no gold.
+def test_drop_does_nothing_off_the_pack_tab_or_on_an_empty_one():
+    # DELVE-0081: `d` only ever does anything on Info/Pack with something to focus; elsewhere
+    # (walking, or Pack with nothing carried) it is silently a no-op, no menu and no message.
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.player.torch_charge = 0
-    frame = run.apply(Drop())
+    frame = run.apply(Drop())                  # walking: no panel open at all
     assert frame.overlay is None
-    assert "nothing" in frame.messages[-1].lower()
+
+    frame = run.apply(Inventory())              # Pack tab, but nothing carried
+    assert frame.overlay.pack_rows == []
+    frame = run.apply(Drop())
+    assert isinstance(frame.overlay, InfoView) and frame.overlay.pack_rows == []
 
 
-def test_drop_with_only_one_thing_to_drop_skips_the_menu_and_drops_it_at_once():
-    # DELVE-0072: mirrors `_pickup`'s own single-kind shortcut. A lone single-unit item is the
-    # only droppable thing (torch burned out, no gold), so Drop should act immediately, no menu.
+def test_drop_with_only_one_thing_to_drop_drops_it_at_once():
+    # DELVE-0072/0081: a lone single-unit item (torch burned out, no gold) drops the moment `d`
+    # is pressed on the Pack tab (its only, already-focused row), no amount field.
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.player.torch_charge = 0
     run.player.inventory = [Stack(COCONUT, 1)]
+    run.apply(Inventory())
     frame = run.apply(Drop())
-    assert frame.overlay is None
+    assert isinstance(frame.overlay, InfoView)   # back on Pack, not closed outright
     assert run.player.inventory == []
     assert run.items[run.player.pos] == [Stack(COCONUT, 1)]
 
 
 def test_drop_with_only_a_multi_count_pile_still_asks_how_many():
     # Same shortcut, but the lone droppable thing is a pile of more than one, so the amount field
-    # still opens (mirroring pickup asking "how many" for a single multi-count kind), skipping
-    # straight past the drop menu rather than skipping the amount question too.
+    # still opens (mirroring pickup asking "how many" for a single multi-count kind).
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.player.torch_charge = 0
     run.player.gold = 50
+    run.apply(Inventory())
     frame = run.apply(Drop())
     assert isinstance(frame.overlay, AmountView)
 
 
-def test_the_lit_torch_appears_last_in_the_drop_menu_and_can_be_dropped():
+def test_the_lit_torch_is_first_on_the_pack_tab_and_can_be_dropped():
     # A playtesting request: the currently-burning torch is never a `Stack` (DELVE-0062), so
-    # unlike every other carried thing it never appeared in the drop menu, with no way to reach
-    # the unlit ambient scene deliberately. Appended last (not first) so it never shifts an
-    # existing item's menu number, since a lit torch is present from turn one of most real runs.
+    # unlike every other carried thing it never appeared in the pack at all, with no way to reach
+    # the unlit ambient scene deliberately. It heads `_pack_entries`/the Pack tab's own row list
+    # (DELVE-0069/0081), so it is already the focused row the moment the panel opens.
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.items[run.player.pos] = [Stack(COCONUT, 1)]
     run.apply(Pickup())
     assert run.player.torch_charge > 0 and run.has_light
 
-    droppables = run._droppable_list()
-    assert droppables[-1][1] == run.strings("item.torch_lit_menu", n=run.player.torch_charge)
-    frame = run.apply(Drop())
-    assert [item.text for item in frame.overlay.items][-1] == \
-        run.strings("item.torch_lit_menu", n=run.player.torch_charge)
+    frame = run.apply(Inventory())
+    torch_label = run.strings("item.torch_lit_menu", n=run.player.torch_charge)
+    assert frame.overlay.pack_rows[0] == torch_label
+    assert frame.overlay.pack_selected == 0
 
-    frame = run.apply(Answer(len(droppables) - 1))     # the last menu entry: the lit torch
+    frame = run.apply(Drop())                  # row 0 is already focused: the lit torch
     assert run.player.torch_charge == 0
     assert not run.has_light
     assert run.items[run.player.pos] == [Stack(TORCH, 1)]
     assert any("torch" in m.lower() for m in frame.messages)
 
 
-def test_the_drop_menus_torch_label_matches_every_other_rows_lowercase_unpunctuated_style():
-    # DELVE-0071: the drop menu's other rows are bare lowercase noun phrases with no leading
+def test_the_pack_tabs_torch_label_matches_every_other_rows_lowercase_unpunctuated_style():
+    # DELVE-0071: the Pack tab's other rows are bare lowercase noun phrases with no leading
     # article and no trailing period, so the lit-torch entry gets its own wording styled the same.
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
-    label = run._droppable_list()[-1][1]
+    label = run._pack_droppable(0)[1]
     assert label[0].islower()
     assert not label.endswith(".")
 
@@ -267,18 +282,14 @@ def test_the_tutorial_floor_never_offers_the_lit_torch_to_drop():
     # drop it there would claim an effect (darkening the scene) that doesn't actually happen.
     run = _pilot_game(skip_tutorial=False, pet_species="none")
     assert not run.cur.scored
-    assert all(_LIT_TORCH_ID != def_id for def_id, _, _, _ in run._droppable_list())
+    torch_label = run.strings("item.torch_lit_menu", n=run.player.torch_charge)
+    assert torch_label not in run._pack_rows()
 
 
 def _inv_block(run, name):
     # DELVE-0075: the Pack tab's list and the focused row's own description show together, so
     # selecting the matching row is enough; no separate confirm step to reach its detail body.
-    inv = run.apply(Inventory())
-    assert isinstance(inv.overlay, InfoView)
-    idx = next(i for i, label in enumerate(inv.overlay.pack_rows) if name in label)
-    while inv.overlay.pack_selected != idx:
-        inv = run.apply(Select(1))
-    return inv.overlay.body[0]
+    return _focus_pack_row(run, name).overlay.body[0]
 
 
 def test_inventory_reflows_a_wrapped_look_into_a_paragraph():
@@ -406,7 +417,9 @@ def test_snapshot_round_trips_gold_and_floor_money():
 
 def test_map_keys_pick_up_drop_inventory():
     assert keys.walk_command(ord(",")) == Pickup()
-    assert keys.walk_command(ord("d")) == Drop()
+    # DELVE-0081: 'd' is no longer a walking key at all; it only drops from Info/Pack's own row
+    # list now (test_help_catalogue.py's test_d_only_drops_from_the_pack_tabs_row_list).
+    assert keys.walk_command(ord("d")) is None
     assert keys.walk_command(ord("i")) == Inventory()
 
 
@@ -773,8 +786,8 @@ def test_tab_and_arrows_route_to_the_focused_row():
 
 def test_scoring_hint_carries_the_row_focus_chord_only_on_scoring():
     run = _pilot_game(pet_species="none")
-    run.apply(Inventory())                                 # Pack
-    assert run.frame().hint == run.strings("hint.inventory")
+    run.apply(Inventory())                                 # Pack: carrying the starting torch,
+    assert run.frame().hint == run.strings("hint.inventory_pack")   # so Drop: d is named (0081)
     frame = run.apply(TabCycle(1))                          # Scoring
     assert frame.hint == run.strings("hint.inventory_sub")
     frame = run.apply(TabCycle(1))                          # Grader: no sub-tabs

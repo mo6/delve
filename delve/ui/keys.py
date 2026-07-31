@@ -53,7 +53,6 @@ _WALK: dict[int, Command] = {
     ord(">"): Descend(),
     ord("<"): Ascend(),
     ord(","): Pickup(),
-    ord("d"): Drop(),
     ord("i"): Inventory(),     # the message log lives inside here now, as the Messages tab
     ord(" "): Wait(),          # stand still a turn; the pet moves. Space pages inside an overlay.
     ord("q"): Quit(),
@@ -89,6 +88,10 @@ def panel_command(ch: int, overlay) -> Command | None:
                 return Select(-1)
             if ch == curses.KEY_DOWN:
                 return Select(1)
+            # DELVE-0081: `d` only exists here now, dropping the focused row, rather than as a
+            # standalone walking key opening its own menu to pick the same kind a second time.
+            if ch == ord("d"):
+                return Drop()
         else:
             # Up/down move keyboard focus between the primary and sub-tab rows (DELVE-0056), always
             # a FocusRow regardless of whether the active tab has any sub-tab row to focus (rule 2:

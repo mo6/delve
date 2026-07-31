@@ -92,7 +92,8 @@ class Pickup:
 
 @dataclass(frozen=True)
 class Drop:
-    pass   # open the drop menu: choose a kind, then an amount, and put it on your tile
+    pass   # drop the Info/Pack tab's focused row (DELVE-0081): straight away, or after an amount
+           # prompt for a multi-count pile; a no-op anywhere else
 
 
 @dataclass(frozen=True)

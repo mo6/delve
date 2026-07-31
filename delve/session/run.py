@@ -162,9 +162,9 @@ _INFO_TABS = (("pack", "item.tab_pack"), ("scoring", "item.tab_scoring"),
               ("grader", "item.tab_grader"), ("status", "item.tab_status"),
               ("messages", "item.tab_messages"))
 
-# A sentinel `def_id` for the drop menu only, never a real `ItemDef.id`: the currently-burning
+# A sentinel `def_id` for a Pack-tab drop only, never a real `ItemDef.id`: the currently-burning
 # torch is never a `Stack` (DELVE-0062, a steps-remaining counter, not a spare count), so it can't
-# share `TORCH.id` with an ordinary carried torch in `_droppable_list` without the two colliding on
+# share `TORCH.id` with an ordinary carried torch in `_pack_droppable` without the two colliding on
 # drop. Dropping it is its own path (`_do_drop_lit_torch`), not `_do_drop`'s generic one.
 _LIT_TORCH_ID = "torch:lit"
 
@@ -501,7 +501,7 @@ class RunState:
         self._greeted: set[str] = set()
         self.active: Gate | None = None
         self._overlay = None          # a TextView | MenuView | PromptView | AmountView, or None
-        # kinds: lesson|question|explanation|repelled|scroll|info|drop_menu|drop_amount
+        # kinds: lesson|question|explanation|repelled|scroll|info|drop_amount
         self._overlay_kind: str | None = None
         # The `i` panel's active primary tab, remembered only while the panel stays open
         # (`_tab_cycle` mutates this); `_inventory` resets it to Pack (index 0) on every fresh
@@ -530,11 +530,11 @@ class RunState:
         self._help_tab: int = 0
         self._prior_overlay = None
         self._prior_overlay_kind: str | None = None
-        # The drop flow's transient state: the droppable kinds shown in the menu, the kind pending
-        # in the amount field, and the digits typed into it so far. All cleared when it closes.
-        # (def-id, label, available, charge) - charge is None except for a torch of known charge
-        # (DELVE-0067), threaded through so a menu choice picks the exact floor/pack stack it named.
-        self._droppables: list[tuple[str, str, int, int | None]] = []   # to drop
+        # The pickup menu's transient state, and the amount field shared by pickup and a Pack-tab
+        # drop (DELVE-0081): the kind pending in the amount field, and the digits typed into it so
+        # far, all cleared when either closes. (def-id, label, available, charge) - charge is None
+        # except for a torch of known charge (DELVE-0067), threaded through so a menu/row choice
+        # picks the exact floor/pack stack it named.
         self._pickables: list[tuple[str, str, int, int | None]] = []    # to pick up
         self._pending: tuple[str, str, int, int | None] | None = None    # kind, label, max, charge
         self._amount_buf: str = ""                           # digits typed into the amount field
@@ -840,9 +840,6 @@ class RunState:
             self.messages.append("")
 
     def _answer(self, choice: int) -> None:
-        if self._overlay_kind == "drop_menu":
-            self._drop_select(choice)
-            return
         if self._overlay_kind == "pickup_menu":
             self._pickup_select(choice)
             return
@@ -1044,8 +1041,12 @@ class RunState:
         if self._overlay_kind == "help":
             self._close_help()
             return
-        if self._overlay_kind in ("info", "drop_menu", "drop_amount",
-                                  "pickup_menu", "pickup_amount"):
+        if self._overlay_kind == "drop_amount":
+            # DELVE-0081: the amount field is only ever reached from Info/Pack now, so Esc backs
+            # out to Pack (updated if anything changed), not out of the panel entirely.
+            self._close_pack_drop()
+            return
+        if self._overlay_kind in ("info", "pickup_menu", "pickup_amount"):
             # The Pack tab has no separate detail mode to back out of any more (DELVE-0075): its
             # list and the focused row's description show together at all times, so Esc always
             # just closes the panel here, same as every other tab.
@@ -1344,26 +1345,17 @@ class RunState:
         self._overlay = self._info_overlay()
 
     def _drop(self) -> None:
-        """Open the drop menu, unless there is nothing to drop or only one thing to choose from
-        (mirroring `_pickup`'s own shortcut): a single droppable entry goes straight to
-        `_drop_select(0)`, which drops it immediately if it's a lone unit, or still asks how many
-        if it's a multi-count pile (e.g. the only droppable thing is several coins)."""
-        if self.active or self._overlay is not None:
+        """Drop the Info/Pack tab's currently focused row (DELVE-0081, replacing the old
+        standalone drop menu that made the learner pick the same kind a second time): a lone unit
+        (including the currently-burning torch) drops at once; a multi-count pile (coins, spare
+        torches) still asks how many first, the same amount field the old flow already had. A
+        no-op off the Pack tab, or with nothing carried to focus a row on."""
+        if self._overlay_kind != "info" or _INFO_TABS[self._info_tab][0] != "pack":
             return
-        self._droppables = self._droppable_list()
-        if not self._droppables:
-            self.messages.append(self.strings("item.nothing"))
+        entries = self._pack_entries()
+        if not entries:
             return
-        if len(self._droppables) == 1:
-            self._drop_select(0)
-            return
-        self._overlay = self._drop_menu_overlay()
-        self._overlay_kind = "drop_menu"
-
-    def _drop_select(self, choice: int) -> None:
-        if not 0 <= choice < len(self._droppables):
-            return
-        def_id, label, available, charge = self._droppables[choice]
+        def_id, label, available, charge = self._pack_droppable(self._pack_row)
         if available <= 1:                       # a single unit: no amount to type, drop it
             self._do_drop(def_id, 1, charge)
             return
@@ -1400,7 +1392,7 @@ class RunState:
     def _drop_confirm(self) -> None:
         amount = int(self._amount_buf) if self._amount_buf else 0
         if self._pending is None or amount <= 0:      # nothing typed: treat Enter as a cancel
-            self._close_item()
+            self._close_pack_drop()
             return
         self._do_drop(self._pending[0], amount, self._pending[3])
 
@@ -1408,7 +1400,9 @@ class RunState:
         """Put `count` of a kind onto the player's tile, from gold (money) or the pack (a carriable
         stack). Refused, with a message, if a bulky item would have to share the tile. `charge`
         (DELVE-0067) picks which pack stack to drop when the pack holds more than one
-        differently-charged torch spare; every other kind passes its own `charge`, always `None`."""
+        differently-charged torch spare; every other kind passes its own `charge`, always `None`.
+        Only ever reached from the Info/Pack tab now (DELVE-0081), so every exit rebuilds Pack
+        (`_close_pack_drop`) rather than closing the panel outright."""
         if def_id == _LIT_TORCH_ID:
             self._do_drop_lit_torch()
             return
@@ -1420,15 +1414,15 @@ class RunState:
             stack = next((s for s in self.player.inventory if s.defn.id == def_id
                          and (charge is ANY_CHARGE or s.charge == charge)), None)
             if stack is None:
-                self._close_item()
+                self._close_pack_drop()
                 return
             defn, count, charge = stack.defn, min(count, stack.count), stack.charge
         if count <= 0:
-            self._close_item()
+            self._close_pack_drop()
             return
         if not can_place(pile, defn):
             self.messages.append(self.strings("item.no_room"))
-            self._close_item()
+            self._close_pack_drop()
             return
         if def_id == MONEY.id:
             self.player.gold -= count
@@ -1438,7 +1432,7 @@ class RunState:
         self.turn += 1
         self.messages.append(self.strings("item.drop", what=self._item_phrase(defn, count)))
         self._pet_step()
-        self._close_item()
+        self._close_pack_drop()
 
     def _do_drop_lit_torch(self) -> None:
         """Drop the currently-burning torch itself (a playtesting request, to reach the unlit
@@ -1453,7 +1447,7 @@ class RunState:
         pile = self.items.get(pos, [])
         if not can_place(pile, TORCH):
             self.messages.append(self.strings("item.no_room"))
-            self._close_item()
+            self._close_pack_drop()
             return
         # Normalised to `None` at exactly full duration, so a torch dropped the instant it is lit
         # merges with an untouched fresh one on the same tile instead of rendering as a spuriously
@@ -1466,15 +1460,26 @@ class RunState:
         self.messages.append(self.strings("item.drop", what=self._torch_noun(1)))
         self._observe()
         self._pet_step()
-        self._close_item()
+        self._close_pack_drop()
 
     def _close_item(self) -> None:
         self._overlay = None
         self._overlay_kind = None
-        self._droppables = []
         self._pickables = []
         self._pending = None
         self._amount_buf = ""
+
+    def _close_pack_drop(self) -> None:
+        """Where every Pack-tab drop lands (DELVE-0081), whether it dropped something, was
+        cancelled, or was refused: back on Info/Pack rather than closed outright, since the whole
+        flow now starts there. `_pack_row` is clamped to the rebuilt list, which may have lost a
+        row (the dropped kind's only stack) or shrunk a pile without losing the row entirely."""
+        self._pending = None
+        self._amount_buf = ""
+        entries = self._pack_entries()
+        self._pack_row = min(self._pack_row, max(0, len(entries) - 1))
+        self._overlay = self._info_overlay()
+        self._overlay_kind = "info"
 
     def _set_pile(self, pos: Point, pile: list[Stack]) -> None:
         if pile:
@@ -1528,19 +1533,19 @@ class RunState:
         words = self.strings("item.numbers")
         return words[n] if 0 <= n < len(words) else str(n)
 
-    def _droppable_list(self) -> list[tuple[str, str, int, int | None]]:
-        out = [(s.defn.id, self._label(s.defn.id, s.defn.name, s.count, s.charge), s.count,
-               s.charge) for s in self.player.inventory]
-        if self.player.gold > 0:
-            out.append((MONEY.id, self._coins(self.player.gold), self.player.gold, None))
-        # The currently-burning torch last (a playtesting request, to be able to reach the unlit
-        # ambient scene deliberately rather than only by waiting it out): appended, not prepended,
-        # since a lit torch is present from turn one of almost every real run, and inserting it
-        # ahead of gold/inventory would silently shift every other entry's menu number.
+    def _pack_droppable(self, idx: int) -> tuple[str, str, int, int | None]:
+        """The (def_id, label, available, charge) a Pack-tab row drops (DELVE-0081), in exactly
+        `_pack_entries`'s own order (lit torch, gold, inventory stacks), so a row's focus and its
+        drop target always name the same carried thing."""
+        out: list[tuple[str, str, int, int | None]] = []
         if self.cur.scored and self.player.torch_charge > 0:
             out.append((_LIT_TORCH_ID,
                        self.strings("item.torch_lit_menu", n=self.player.torch_charge), 1, None))
-        return out
+        if self.player.gold > 0:
+            out.append((MONEY.id, self._coins(self.player.gold), self.player.gold, None))
+        out += [(s.defn.id, self._label(s.defn.id, s.defn.name, s.count, s.charge), s.count,
+                s.charge) for s in self.player.inventory]
+        return out[idx]
 
     def _title_block(self, label: str, look: str) -> TextBlock:
         """One item's block: a bold title, then its description on the next line (a '\\n' hard
@@ -1928,10 +1933,6 @@ class RunState:
                         more_label=self.strings("ui.more"),
                         end_label=self.strings("ui.end"),
                         page_fmt=self.strings("ui.page_fmt"))
-
-    def _drop_menu_overlay(self) -> MenuView:
-        items = [MenuItem(str(i + 1), label) for i, (_, label, _, _) in enumerate(self._droppables)]
-        return MenuView(prompt=self.strings("item.drop_prompt"), items=items)
 
     def _pickup_menu_overlay(self) -> MenuView:
         items = [MenuItem(str(i + 1), label) for i, (_, label, _, _) in enumerate(self._pickables)]
@@ -2492,11 +2493,14 @@ class RunState:
         if self._overlay_kind == "info":
             if _INFO_TABS[self._info_tab][0] == "scoring":
                 return self.strings("hint.inventory_sub")
+            # DELVE-0081: `d` only ever does anything on the Pack tab, and only once there is a
+            # row to drop, so it's only named here in that one case; every other tab (and an empty
+            # Pack) keeps the plain hint with no key that would do nothing if pressed.
+            if _INFO_TABS[self._info_tab][0] == "pack" and self._pack_entries():
+                return self.strings("hint.inventory_pack")
             return self.strings("hint.inventory")
         if self._overlay_kind == "help":
             return self.strings("hint.help")
-        if self._overlay_kind == "drop_menu":
-            return self.strings("hint.drop_menu")
         if self._overlay_kind == "drop_amount":
             return self.strings("hint.drop_amount")
         # The tile underfoot comes first: a keeper often stands beside the stairs (the last one
