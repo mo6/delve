@@ -278,6 +278,13 @@ class Frame:
     # rather than only once the learner happens to press something (the same non-blocking shape
     # `GradingView`'s poll already uses, but only while there is actually something to wait for).
     toast_pending: bool = False
+    # A short, localised loading line while a toast call is actually in flight, or None when there
+    # is nothing to show one for (DELVE-0082): the narrower "a background call is running right
+    # now" signal, unlike `toast_pending` above (which also covers the idle-nudge timer's own
+    # armed-but-not-yet-queued wait, purely for `ui/app.py`'s poll cadence). `ui` draws a small
+    # spinner window with this line in place of `toast` while it is set; the two are never both
+    # non-None at once (`RunState.frame()` only sets this when `toast` is still None).
+    toast_loading: str | None = None
     # The contextual hint line names the keys that work right now (PLAN.md section 7). It is
     # session state, not decoration, so the core supplies it rather than the UI guessing.
     hint: str = ""

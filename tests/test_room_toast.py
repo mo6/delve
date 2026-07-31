@@ -5,12 +5,14 @@ panel, and ageing out on its own. Replaces DELVE-0028/0057's single once-per-run
 passage, which routinely landed on page 2 behind a `--More--` a learner had no reason to press.
 """
 
+import threading
+
 from test_dungeon import _approach, _pass_room, _path, _walk
 
 from delve.assess.grader import LLMGrader
 from delve.assess.llm import ChatMetrics, ChatReply, LLMUnavailable
 from delve.session import backstory
-from delve.session.commands import Talk
+from delve.session.commands import Inventory, Talk
 from delve.session.grading import ThreadedGrader
 from delve.session.run import _TOAST_TTL, new_run
 from delve.session.snapshot import apply_dict, to_dict
@@ -170,6 +172,74 @@ def test_toast_appears_once_the_call_resolves():
     assert frame.toast is not None
     assert "Dust and quiet." in frame.toast.body[0].text
     assert frame.overlay is None                  # still nothing blocking
+
+
+# -- the loading indicator while a call is still running (DELVE-0082) ----------------------------
+
+
+class _BlockingClient:
+    """A client whose `chat` blocks until the test releases it (`release`), so a test can observe
+    `Frame.toast_loading` deterministically while a real call is still in flight, rather than
+    racing the daemon thread the way `FakeClient`'s near-instant reply would."""
+
+    def __init__(self, reply: str):
+        self.reply = reply
+        self._gate = threading.Event()
+
+    def release(self) -> None:
+        self._gate.set()
+
+    def chat(self, prompt: str, *, json_mode: bool = True, temperature: float = 0,
+             model: str | None = None) -> ChatReply:
+        self._gate.wait(timeout=2)
+        return ChatReply(text=self.reply, metrics=_NO_METRICS)
+
+
+def test_toast_loading_is_set_while_the_call_is_still_running():
+    client = _BlockingClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    frame = run.frame()
+    assert frame.toast is None
+    assert frame.toast_loading == run.strings("toast.loading")
+    client.release()
+    _settle(run)
+    frame = run.frame()
+    assert frame.toast_loading is None
+    assert frame.toast is not None
+
+
+def test_toast_and_toast_loading_are_never_both_set():
+    client = _BlockingClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    frame = run.frame()
+    assert frame.toast is None or frame.toast_loading is None
+    client.release()
+    _settle(run)
+    frame = run.frame()
+    assert frame.toast is None or frame.toast_loading is None
+
+
+def test_toast_loading_is_none_while_a_panel_is_open():
+    client = _BlockingClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    run.apply(Inventory())
+    frame = run.frame()
+    assert frame.toast_loading is None
+    client.release()
+    _settle(run)
+
+
+def test_toast_loading_is_none_while_the_idle_nudge_is_merely_waiting():
+    """The nudge's own "waiting" state is an armed timer, not yet a submitted call, so nothing is
+    actually generating yet; only once it queues (`RunState._poll_nudge_timer`) does a real call
+    exist for `toast_loading` to name."""
+    client = FakeClient(reply="Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    _settle(run)
+    run.frame()                       # consumes the starting room's own toast, arms the nudge
+    assert run._nudge_state == "waiting"
+    frame = run.frame()
+    assert frame.toast_loading is None
 
 
 def _settle_nudge(run) -> None:

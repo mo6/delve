@@ -2433,6 +2433,13 @@ class RunState:
             toast=self._toast,
             toast_pending=(self._room_backstory.pending()
                           or self._nudge_state in ("waiting", "queued")),
+            # DELVE-0082: only while a call is genuinely running (queued, in flight, or resolved
+            # but not yet delivered) and there is no fresher toast or panel already showing; the
+            # idle-nudge timer's own "waiting" (armed, not yet queued) state names nothing yet.
+            toast_loading=(self.strings("toast.loading")
+                          if self._overlay_kind is None and self._toast is None
+                             and self._room_backstory.pending()
+                          else None),
         )
 
     def _visible_message(self) -> list[str]:

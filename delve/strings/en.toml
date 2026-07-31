@@ -299,6 +299,11 @@ pet_key_none = "n"
 pet_name_cat = "What is your cat's name?"
 pet_name_dog = "What is your dog's name?"
 
+# The ambient toast's own loading line (DELVE-0082): shown in a small spinner window while a
+# room's background passage is still generating, in place of the toast itself.
+[toast]
+loading = "You hear a distant muttering, growing clearer..."
+
 [format]
 currency     = "$"
 currency_sep = ""
