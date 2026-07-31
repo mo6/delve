@@ -82,6 +82,28 @@ _LIGHT_OFF = (
     "their way through are visible, everything beyond that is impenetrable black."
 )
 
+# DELVE-0080: an explicit numeric character budget, on top of the existing "very short (N
+# sentence)" framing. A play-feedback screenshot showed a passage cut off mid-clause by
+# `RunState._cap_toast_text`'s word-boundary ellipsis fallback (`_TOAST_TEXT_CAP` in session/run.py,
+# 480 chars), which only fires when even the first sentence overruns the cap; DELVE-0070 already
+# found "2-3 sentences" alone isn't reliably obeyed, and a small model given real material to
+# describe (DELVE-0064) tends to run long. A concrete character count is a harder target for the
+# model to hold to than a sentence count, though still never a guarantee (no prompt can force
+# compliance); each budget sits comfortably under its own reply's practical ceiling, so a reply
+# that overshoots its instructed budget a little usually still lands under the hard cap and is
+# shown whole. `_PASSAGE_CHAR_BUDGET` stays below `_TOAST_TEXT_CAP` (480) for that margin;
+# `_NUDGE_CHAR_BUDGET` is smaller again, matching the nudge's own shorter 1-2 sentence ask.
+_PASSAGE_CHAR_BUDGET = 400
+_NUDGE_CHAR_BUDGET = 160
+_PASSAGE_BUDGET_SENTENCE = (
+    f"Keep your entire reply under {_PASSAGE_CHAR_BUDGET} characters, including spaces and "
+    "punctuation. "
+)
+_NUDGE_BUDGET_SENTENCE = (
+    f"Keep your entire reply under {_NUDGE_CHAR_BUDGET} characters, including spaces and "
+    "punctuation. "
+)
+
 # DELVE-0064: the atmosphere framing (no sunlight, dlvl-scaled cold/damp, somber tone,
 # daypart/weekday nod) used to open the whole prompt, which primed every reply to lead with room
 # description; identical room to room, it stopped adding anything past a learner's first few
@@ -94,7 +116,8 @@ _LIGHT_OFF = (
 # comma-joined noun phrase, so the model has each object's own authored description to draw on.
 PROMPT = (
     "You are writing a very short (2-3 sentence) scene-setting passage for a text-based dungeon "
-    "training game. The learner is exploring a training pack called {pack!r}, currently on "
+    "training game. " + _PASSAGE_BUDGET_SENTENCE +
+    "The learner is exploring a training pack called {pack!r}, currently on "
     "chapter {dlvl} ({chapter_title}).{lesson_clause}{keeper_clause}\n\n"
     "Focus mainly on what is newly in front of the learner in this room:\n\n"
     "{objects_clause}\n\n"
@@ -163,7 +186,8 @@ def build_prompt(*, pack: str, dlvl: int, chapter_title: str, language: str, kee
 
 NUDGE_PROMPT = (
     "You are writing a very short (1-2 sentence) in-character line for a text-based dungeon "
-    "training game. {setting} The learner is exploring a training pack called {pack!r}, currently "
+    "training game. " + _NUDGE_BUDGET_SENTENCE +
+    "{setting} The learner is exploring a training pack called {pack!r}, currently "
     "on chapter {dlvl} ({chapter_title}), and has been standing still since arriving."
     "{keeper_clause} Write a brief, encouraging line, in character, that tells the learner to use "
     "the arrow keys to move. Your line MUST explicitly name 'the arrow keys' (or the equivalent "

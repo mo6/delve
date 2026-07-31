@@ -647,6 +647,26 @@ def test_build_nudge_prompt_also_bans_sunlight():
     assert "torchlight" in prompt.lower()
 
 
+# -- an explicit character budget, on top of "very short" (DELVE-0080) ----------------------------
+
+
+def test_build_prompt_states_an_explicit_character_budget():
+    prompt = backstory.build_prompt(pack="p", dlvl=1, chapter_title="c", language="English")
+    assert f"under {backstory._PASSAGE_CHAR_BUDGET} characters" in prompt
+
+
+def test_build_nudge_prompt_states_its_own_smaller_character_budget():
+    prompt = backstory.build_nudge_prompt(pack="p", dlvl=1, chapter_title="c", language="English")
+    assert f"under {backstory._NUDGE_CHAR_BUDGET} characters" in prompt
+    assert backstory._NUDGE_CHAR_BUDGET < backstory._PASSAGE_CHAR_BUDGET
+
+
+def test_the_passage_budget_leaves_margin_under_the_hard_cap():
+    from delve.session.run import _TOAST_TEXT_CAP
+
+    assert backstory._PASSAGE_CHAR_BUDGET < _TOAST_TEXT_CAP
+
+
 def test_room_prompt_includes_the_lesson_topic_for_a_gated_room():
     client = FakeClient(reply="text")
     run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))

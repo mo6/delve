@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.29.2] — 2026-07-31
+
+- **The ambient toast prompt now states an explicit character budget, so a passage is cut off far less often** (DELVE-0080, bug, session): `backstory.PROMPT`/`NUDGE_PROMPT` only asked the model for "a very short (2-3 sentence)"/"1-2 sentence" reply, which DELVE-0070 already found the model doesn't reliably hold to; a play-feedback screenshot showed a passage cut off mid-clause by `RunState._cap_toast_text`'s word-boundary ellipsis fallback (`_TOAST_TEXT_CAP`, 480 characters), which only fires when even the first sentence overruns the cap. Both prompts now also state a concrete character count (400 for the room passage, 160 for the idle nudge, both comfortably under the 480-character hard cap for margin); models generally hold to a numeric budget far better than a sentence count. The existing cap-and-trim backstop is unchanged, since no prompt instruction can be a guarantee.
+
 ## [1.29.1] — 2026-07-31
 
 - **Esc now closes a panel almost instantly instead of taking a full second** (DELVE-0079, bug, ui): every panel (Info, Help, a lesson, a menu) closes on a lone `Esc` keypress, but stock ncurses can't tell that apart from the first byte of an escape sequence (arrow/function keys also start with `\x1b`), so it waits `ESCDELAY` milliseconds, 1000 by default, to see if more bytes follow before delivering a standalone Esc; `delve/ui/app.py:_run` never touched that setting, so every Esc felt like the app had hung. `_set_esc_delay` now calls `curses.set_escdelay(25)` once at startup (guarded against a curses build without the extension, a no-op fallback to the platform default), short enough to feel instant and still comfortably above a real terminal's own escape-sequence byte gap.
