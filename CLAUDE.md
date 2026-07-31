@@ -161,9 +161,13 @@ commit with a descriptive message. Leave unrelated untracked files out of the co
 branch directly. It advances only via an explicit, maintainer-triggered release merge from
 `develop` (never on the assistant's own initiative, the same "never infer, always ask" rule the
 peer-review gate above already follows): `git checkout main && git merge --no-ff develop`, then
-`git tag v<version>` (the version just bumped on `develop`, e.g. `v1.28.0`) so `main`'s history is
-a clean, checkable list of tagged release points. Nothing else ever commits to `main`; there is no
-such thing as "incidental maintenance on `main`" any more; even a typo fix goes through `develop`.
+`git tag -a v<version> -m "v<version>"` (the version just bumped on `develop`, e.g. `v1.28.0`) so
+`main`'s history is a clean, checkable list of tagged release points. **The tag is annotated
+(`-a`), not lightweight**, specifically so `git push --follow-tags` (pushes a branch together with
+every annotated tag that's now reachable from it, unlike bare `--tags`, which pushes every tag in
+the repo regardless of branch) picks it up in one step: `git push origin main --follow-tags`.
+Nothing else ever commits to `main`; there is no such thing as "incidental maintenance on `main`"
+any more; even a typo fix goes through `develop`.
 
 **Work on an issue happens on its own branch, cut from `develop` and merged back into `develop`,
 named after the issue.** Before writing code against a `DELVE-NNNN` file, create and switch to a
@@ -179,9 +183,11 @@ squash or rebase), then delete the branch (`git branch -d <branch>`). **Anything
 itself `DELVE-NNNN` issue work** — the one standing exception already named above (typo fixes in
 an issue file, regenerating the index), or incidental repo maintenance — stays directly on
 `develop`, no branch. `develop` can therefore sit several versions ahead of whatever `main` last
-released; that gap is expected, not a problem to close eagerly. There is no remote yet, so this is
-still a local-only workflow: no PRs, no pushes; both the issue-branch merges into `develop` and the
-periodic release merges into `main` happen on this machine.
+released; that gap is expected, not a problem to close eagerly. Both branches merge and commit
+locally first, exactly as above; a push to `origin` (`git push origin develop`, and
+`git push origin main --follow-tags` on a release) is its own separate, explicit step, never
+folded into a merge — still no PRs, since this is a solo project, but pushing is no longer
+optional once a remote exists, or the two clones drift.
 
 ---
 
@@ -599,10 +605,10 @@ that's what the slice shows.
   from.
 - The repo root is `delve/`, and the Python package will also be `delve/`. That nesting is
   normal; don't "fix" it.
-- No remote yet. Every design decision above has a commit explaining why. `main` is releases only;
-  day-to-day work (issue branches and everything else) happens on and lands back on `develop` — see
-  the branching section above. `main` advances only via an explicit, tagged release merge from
-  `develop`.
+- Remote: `origin` (GitHub, `mo6/delve`). Every design decision above has a commit explaining why.
+  `main` is releases only; day-to-day work (issue branches and everything else) happens on and
+  lands back on `develop`, see the branching section above. `main` advances only via an explicit,
+  tagged release merge from `develop`, and a push to `origin` is its own separate step after that.
 
 ### The two run scripts
 
