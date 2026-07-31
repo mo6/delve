@@ -302,3 +302,15 @@ class RoomBackstoryRunner:
         toast that finishes resolving while the learner is standing still used to only appear once
         they next pressed a key, since nothing rebuilt the `Frame` until then)."""
         return self._current is not None or bool(self._queue) or bool(self._ready)
+
+    def pending_other_than(self, room_id: str | None) -> bool:
+        """Whether anything queued, in flight, or resolved-undelivered belongs to a call other than
+        `room_id` (DELVE-0083): lets a caller ask "is something *else* still coming" apart from one
+        specific call it already knows will never be worth showing (the idle nudge once the
+        learner has moved on, `RunState`'s own drop rule in `_poll_toast`), so a loading indicator
+        can keep naming that other, still-deliverable call instead of going dark."""
+        if self._current is not None and self._current != room_id:
+            return True
+        if any(rid != room_id for rid, _, _ in self._queue):
+            return True
+        return any(rid != room_id for rid, _, _ in self._ready)
