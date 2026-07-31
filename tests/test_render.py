@@ -559,11 +559,12 @@ def test_pack_view_draws_the_list_and_the_selected_rows_description_side_by_side
     assert "A hand torch." in text                          # the focused row's description
 
 
-def test_pack_views_focused_list_row_is_highlighted_not_the_description():
-    # DELVE-0076: reverses DELVE-0075's original placement. "gadget" appears both as the list's
-    # own row label and as the description's bold title, so they land on the same drawn row (the
-    # list column, then the description column beside it), letting one row settle which
-    # occurrence is highlighted.
+def test_pack_views_focused_list_row_is_highlighted_and_the_description_title_is_styled():
+    # DELVE-0076 reversed DELVE-0075's original placement so the list row, not the description,
+    # carries the reverse-video highlight; DELVE-0078 restored the description title's own bold
+    # styling, which had been silently flattened to plain text. "gadget" appears both as the
+    # list's own row label and as the description's bold title, so they land on the same drawn row
+    # (the list column, then the description column beside it), letting one row check both.
     scr = CursesEmu(30, 100)
     body = [TextBlock("para", "gadget\nAn urgent memo.", spans=(("gadget", True),
                                                                 ("\nAn urgent memo.", False)))]
@@ -574,7 +575,10 @@ def test_pack_views_focused_list_row_is_highlighted_not_the_description():
     list_col = scr.row(row).index("gadget")
     desc_col = scr.row(row).rindex("gadget")
     assert scr.attr_row(row)[list_col] != curses.A_NORMAL     # the list row is highlighted
-    assert scr.attr_row(row)[desc_col] == curses.A_NORMAL     # the description stays plain
+    assert scr.attr_row(row)[desc_col] != curses.A_NORMAL     # the description title is styled too
+    body_row = next(r for r in range(30) if "An urgent memo." in scr.row(r))
+    body_col = scr.row(body_row).index("An urgent memo.")
+    assert scr.attr_row(body_row)[body_col] == curses.A_NORMAL   # the description body stays plain
 
 
 def test_pack_view_scrolls_the_list_to_keep_a_far_focused_row_in_view():
@@ -593,3 +597,42 @@ def test_pack_scroll_offset_keeps_selection_in_view_and_never_overscrolls():
     assert windows._pack_scroll_offset(9, 20, 5) == 5         # bottom-pinned once past the window
     assert windows._pack_scroll_offset(0, 20, 5) == 0         # back at the top: no scroll
     assert windows._pack_scroll_offset(19, 20, 5) == 15       # never scrolls past the list's end
+
+
+# -- 'kv' blocks: label/value colouring (DELVE-0078) ----------------------------------------------
+
+
+def test_kv_spans_colours_the_label_up_to_the_first_colon_space():
+    spans = windows._kv_spans("Model: qwen2.5:3b @ localhost:11434")
+    assert spans[0] == ("Model:", windows.LABEL_COLOUR)
+    assert spans[1] == (" qwen2.5:3b @ localhost:11434", False)
+
+
+def test_kv_spans_only_splits_on_the_first_colon_space_even_with_more_in_the_value():
+    # Neither "qwen2.5:3b" nor "localhost:11434" has a space right after its colon, so only the
+    # label's own "Model: " counts as the separator.
+    spans = windows._kv_spans("Status: warm, last grade 520 ms")
+    assert spans[0][1] is windows.LABEL_COLOUR
+    assert "warm" in spans[1][0] and spans[1][1] is False
+
+
+def test_kv_spans_leaves_a_colonless_line_unstyled():
+    assert windows._kv_spans("no colon here") == (("no colon here", False),)
+
+
+def test_kv_spans_handles_multiple_newline_joined_lines():
+    spans = windows._kv_spans("Model: x\nStatus: y")
+    labels = [t for t, c in spans if c is windows.LABEL_COLOUR]
+    assert labels == ["Model:", "\nStatus:"]
+
+
+def test_a_kv_block_renders_its_label_in_colour_and_its_value_plain():
+    scr = CursesEmu(30, 100)
+    body = [TextBlock("kv", "Model: qwen2.5:3b")]
+    view = InfoView(tabs=_tabs(), active=0, body=body)
+    windows.draw(scr, view, map_cols=100, page=1)
+    row = next(r for r in range(30) if "Model:" in scr.row(r))
+    label_col = scr.row(row).index("Model:")
+    value_col = scr.row(row).index("qwen2.5:3b")
+    assert scr.attr_row(row)[label_col] == attrs.attr_for(windows.LABEL_COLOUR)
+    assert scr.attr_row(row)[value_col] == curses.A_NORMAL

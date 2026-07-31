@@ -189,13 +189,38 @@ def _wrap_spans(spans, width: int) -> list[list]:
     return lines or [[]]
 
 
+LABEL_COLOUR = Colour.BRIGHT_CYAN  # a 'kv' block's label half (DELVE-0078)
+
+
+def _kv_spans(text: str) -> tuple:
+    """Split each of a `kind="kv"` block's `"\\n"`-joined lines at its first `": "`, colouring the
+    label half (including the colon) `LABEL_COLOUR` and leaving the value half plain. A line with
+    no `": "` (should not happen for a genuine label/value row, but never crashes) passes through
+    unstyled. Only the *first* `": "` counts, so a value containing its own colon (a host:port, a
+    model tag like `qwen2.5:3b`) never gets mistaken for a second label."""
+    spans = []
+    for i, line in enumerate(text.split("\n")):
+        prefix = "\n" if i else ""
+        cut = line.find(": ")
+        if cut == -1:
+            spans.append((prefix + line, False))
+            continue
+        spans.append((prefix + line[: cut + 1], LABEL_COLOUR))
+        spans.append((line[cut + 1 :], False))
+    return tuple(spans)
+
+
 def _wrap_block_lines(block, width: int) -> list[list]:
     """A block's body as lines of segments. A code block is verbatim: split on its own newlines and
     never reflowed, because its whitespace is meaningful (carets pointing under a URL, columns of a
-    passphrase comparison) and textwrap would collapse it. Styled (spans) blocks word-wrap with
-    their weights; a plain block keeps the exact textwrap behaviour the mock-ups were built on."""
+    passphrase comparison) and textwrap would collapse it. A 'kv' block (DELVE-0078) colon-splits
+    and colours its label before wrapping, overriding whatever plain `spans` `session` set (colour
+    is a `ui` decision, rule 2). Styled (spans) blocks word-wrap with their weights; a plain block
+    keeps the exact textwrap behaviour the mock-ups were built on."""
     if block.kind == "code":
         return [[(line[:width], False)] for line in block.text.split("\n")]
+    if block.kind == "kv":
+        return _wrap_spans(_kv_spans(block.text), width)
     if block.spans:
         return _wrap_spans(block.spans, width)
     return [[(line, False)] for line in _wrap(block.text, width)]
@@ -479,7 +504,7 @@ def _fill_status_size(stdscr, view: InfoView | HelpView) -> InfoView | HelpView:
     lines = block.text.split("\n")
     lines[-1] = f"{lines[-1]} {rows}x{cols}"
     spans = tuple((("\n" if i else "") + line, False) for i, line in enumerate(lines))
-    filled = TextBlock("plain", "\n".join(lines), spans=spans)
+    filled = TextBlock(block.kind, "\n".join(lines), spans=spans)
     return replace(view, body=[filled, *view.body[1:]])
 
 
@@ -524,8 +549,10 @@ def _draw_pack_columns(stdscr, view: InfoView, r: int, col: int, bottom: int) ->
     both visible with no confirm/back step. The focused row's name is marked by highlighting it in
     the list (a full-width reverse-video block, the same `bar_attr` treatment used elsewhere for a
     filled highlight, DELVE-0076 moving it off the description, DELVE-0075's original spot); the
-    description column itself stays plain text. The list scrolls (`_pack_scroll_offset`) once the
-    carried-kind count outgrows its own visible rows."""
+    description column draws its lines through `_put_line`, the same styled-segment path every
+    other panel uses (DELVE-0078 fixed this column silently flattening its segments to plain text,
+    which had been discarding `_title_block`'s own bold title styling). The list scrolls
+    (`_pack_scroll_offset`) once the carried-kind count outgrows its own visible rows."""
     visible = max(0, bottom - r)
     offset = _pack_scroll_offset(view.pack_selected, len(view.pack_rows), visible)
     sep_col = col + PACK_LIST_W + 1
@@ -539,11 +566,10 @@ def _draw_pack_columns(stdscr, view: InfoView, r: int, col: int, bottom: int) ->
     desc_col = sep_col + 2
     dr = r
     for block in _blocks(view.body, PACK_DESC_W):
-        for _quote, segs in block:
+        for quote, segs in block:
             if dr >= bottom:
                 break
-            text = "".join(t for t, _ in segs)
-            _put(stdscr, dr, desc_col, text[:PACK_DESC_W])
+            _put_line(stdscr, dr, desc_col, quote, segs)
             dr += 1
 
 

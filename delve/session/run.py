@@ -1649,7 +1649,8 @@ class RunState:
         the same way `max_latency_ms` already did (tracked since DELVE-0053 but never actually
         shown until now). `Latency` (DELVE-0077) appends a block-glyph sparkline of the run's most
         recent calls, omitted below two recorded calls since a lone glyph has no shape to show.
-        Condensed into one block via `_condensed` (DELVE-0059)."""
+        Every row is `Label: value` (DELVE-0078), condensed into one `kind="kv"` block via
+        `_condensed(kv=True)` (DELVE-0059/DELVE-0078) so `ui` colours each label."""
         grader = self._grader_info()
         if grader is None:
             return [TextBlock("plain", self.strings("item.grader_offline"))]
@@ -1674,15 +1675,16 @@ class RunState:
         spark = metrics.latency_sparkline if metrics else None
         if spark is not None:
             lines.append(self.strings("item.grader_latency", spark=spark))
-        return self._condensed(lines)
+        return self._condensed(lines, kv=True)
 
     def _status_body(self) -> list[TextBlock]:
         """The Status tab's body (DELVE-0044, INFOSCREEN.md §9): plain key/value rows of app and
         run diagnostics that already exist elsewhere, no new plumbing. The grader row is omitted,
         not shown blank, when no model is configured.
 
-        Every row, including the terminal-size one, condenses into a single block via
-        `_condensed` (DELVE-0059): a playtesting fix closed the tab's last remaining gap. The
+        Every row, including the terminal-size one, condenses into a single `kind="kv"` block via
+        `_condensed(kv=True)` (DELVE-0059/DELVE-0078): a playtesting fix closed the tab's last
+        remaining gap, and each row reads `Label: value` so `ui` can colour the label. The
         size row's live "RxC" value is still filled in at paint time by `ui`
         (`windows._fill_status_size`), since `session` has never read `stdscr` (rule 2); it used
         to be a structurally separate `kind="size"` block swapped wholesale, the only way to
@@ -1690,7 +1692,8 @@ class RunState:
         *last line* of this tab's sole body block instead: a private position-based contract
         between the two functions (this method always appends the size row last, and always
         returns exactly one block, since `lines` is never empty), not a block-level `kind` match
-        any more. The size row's own text still carries only its localised label here."""
+        any more. The size row's own text still carries only its localised `"Terminal:"` label
+        here, colon included, so the spliced value lands after it like every other row."""
         lines = [
             self.strings("item.status_version", version=delve.__version__),
             self.strings("item.status_pack", pack=self.pack.title if self.pack else ""),
@@ -1701,7 +1704,7 @@ class RunState:
             model, host = grader
             lines.append(self.strings("item.status_grader", model=model, host=host))
         lines.append(self.strings("item.status_size"))
-        return self._condensed(lines)
+        return self._condensed(lines, kv=True)
 
     def _info_overlay(self) -> InfoView:
         """The `i` panel: a tab strip, Scoring's own sub-tab strip, and the active (tab, sub-tab)
@@ -1785,7 +1788,7 @@ class RunState:
             return f"question_{self.active.current_question().kind}"
         return self._overlay_kind or "walking"
 
-    def _condensed(self, lines: list[str]) -> list[TextBlock]:
+    def _condensed(self, lines: list[str], kv: bool = False) -> list[TextBlock]:
         """Fold a dense list of one-line facts into a single `TextBlock`, each line joined by a
         literal `"\\n"` in its `spans` (DELVE-0059, generalised past its original Keys tab):
         `ui/windows.py`'s pager inserts a blank row between distinct top-level blocks (right for
@@ -1794,11 +1797,16 @@ class RunState:
         wasted rows, while each still word-wraps on its own if it runs long (`_wrap_spans` treats
         each `"\\n"`-separated segment independently, so pagination still only ever breaks between
         whole entries, never mid-one). An empty `lines` returns `[]`; the caller supplies its own
-        fallback line for that case, since the wording differs per tab."""
+        fallback line for that case, since the wording differs per tab.
+
+        `kv` (DELVE-0078) tags the block `kind="kv"` instead of `"plain"` when every line is
+        genuinely a `"Label: value"` pair (Keys, Objectives, Grader, Status); `ui` then colon-splits
+        each line and colours the label. Left False for a block like Scoring > Rooms's glyph
+        legend, which has no label/value shape."""
         if not lines:
             return []
         spans = tuple((("\n" if i else "") + line, False) for i, line in enumerate(lines))
-        return [TextBlock("plain", "\n".join(lines), spans=spans)]
+        return [TextBlock("kv" if kv else "plain", "\n".join(lines), spans=spans)]
 
     def _keys_body(self) -> list[TextBlock]:
         """The Keys tab: every catalogue row active in the current help context, each a plain key
@@ -1809,7 +1817,7 @@ class RunState:
         entries = help_catalogue.entries_for(self._help_context())
         if not entries:
             return [TextBlock("plain", self.strings("help.no_keys"))]
-        return self._condensed([f"{e.key}: {self.strings(e.string_id)}" for e in entries])
+        return self._condensed([f"{e.key}: {self.strings(e.string_id)}" for e in entries], kv=True)
 
     def _objectives_facts(self) -> list[TextBlock]:
         """The Objectives tab's static half (DELVE-0028): pack title, chapter position and title,
@@ -1828,7 +1836,7 @@ class RunState:
         if gate is not None:
             lines.append(self.strings("help.obj_keeper", name=gate.keeper.name,
                                       pct=round(gate.content.pass_mark * 100)))
-        return self._condensed(lines)
+        return self._condensed(lines, kv=True)
 
     def _help_overlay(self) -> HelpView:
         """The `?` panel: a two-tab strip (Keys, Objectives) over whichever tab is active,
