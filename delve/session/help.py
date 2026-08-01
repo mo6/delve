@@ -66,6 +66,7 @@ CATALOGUE: tuple[CommandEntry, ...] = (
     CommandEntry("←→ / Enter", "help.answer_two", frozenset({"question_assertion"})),
     CommandEntry("Enter", "help.answer_text", frozenset({"question_freetext"})),
     CommandEntry("@", "help.consult", frozenset({"question_mcq", "question_assertion"})),
+    CommandEntry("$", "help.eliminate", frozenset({"question_mcq"})),
     # The `i`/`?` panel's own tab strip (DELVE-0040/0041/0055/0056).
     CommandEntry("Tab / →←", "help.tab_cycle", frozenset({"info", "help"})),
     CommandEntry("[ ]", "help.subtab_cycle", frozenset({"info"})),
