@@ -7,12 +7,13 @@ vs pet, availability, determinism) are all driven headlessly as Commands against
 
 from dataclasses import replace
 
+from test_freetext import _freetext_run, _walk_beside_keeper
 from test_stakes import _approach, _correct, _sit
 
 from delve.content.pilot import PHISHING_ROOM
 from delve.session.commands import Answer, BuyRemoval, Confirm, Consult, Dismiss, Talk
 from delve.session.run import new_run
-from delve.session.views import MenuView, PromptView
+from delve.session.views import FreeTextView, MenuView, PromptView
 from delve.ui import keys
 
 
@@ -220,6 +221,20 @@ def test_lifeline_absent_on_unscored_tutorial_floor():
     run = _exam_run(reward=100, gold=200)
     run.cur.scored = False
     _open_mcq(run)
+    assert run._removal_price(run.active) is None
+    gold = run.player.gold
+    frame = run.apply(BuyRemoval())
+    assert run.player.gold == gold
+    assert "nothing here to buy" in frame.messages[-1]
+
+
+def test_lifeline_absent_on_freetext_question():
+    # A free-text question has no options to eliminate; the pet's hint gets the same shrug.
+    run = _freetext_run()
+    _walk_beside_keeper(run)
+    run.apply(Talk())
+    frame = run.apply(Confirm(True))
+    assert isinstance(frame.overlay, FreeTextView)
     assert run._removal_price(run.active) is None
     gold = run.player.gold
     frame = run.apply(BuyRemoval())
