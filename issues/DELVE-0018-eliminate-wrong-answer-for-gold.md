@@ -1,7 +1,7 @@
 ---
 id: DELVE-0018
 title: Eliminate a wrong answer for gold, priced against the room reward
-status: proposed
+status: in-progress
 area: [assess, session, ui]
 type: story
 epic: DELVE-0017
@@ -10,7 +10,9 @@ milestone:
 version:
 version_span:
 created: 2026-07-25
-updated: 2026-07-26
+updated: 2026-08-01
+accepted_by: George Moses
+accepted_at: 2026-08-01
 commits: []
 related: [DELVE-0011, DELVE-0010]
 supersedes: []

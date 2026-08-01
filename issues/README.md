@@ -158,7 +158,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0015](archive/DELVE-0015-random-reward-tile.md) | Reward coins land on a random room tile, not the far corner | story | - | implemented | 1.9.2 |
 | [DELVE-0016](archive/DELVE-0016-dog-fetches-every-item.md) | The dog fetches every item, one at a time, and delivers it to the learner | story | - | implemented | 1.10.0 |
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | epic | high | proposed | - |
-| [DELVE-0018](DELVE-0018-eliminate-wrong-answer-for-gold.md) | Eliminate a wrong answer for gold, priced against the room reward | story | high | proposed | - |
+| [DELVE-0018](DELVE-0018-eliminate-wrong-answer-for-gold.md) | Eliminate a wrong answer for gold, priced against the room reward | story | high | in-progress | - |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | epic | high | proposed | - |
 | [DELVE-0020](DELVE-0020-declare-and-substitute-variables.md) | Declare and substitute translatable pack variables | story | medium | proposed | - |
 | [DELVE-0021](DELVE-0021-validate-variables-available.md) | Validate that every referenced pack variable is available | story | medium | proposed | - |
