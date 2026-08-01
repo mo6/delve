@@ -43,6 +43,15 @@ matter and move `status:` to `in-progress`, in that order, and only then start w
 it. `./tools.sh issues --check` enforces the fields are present from `in-progress` onward, the same
 way it already enforces `effort:`.
 
+**A finished branch is not yet approved to land.** The Definition of Done ([issues/AGILE.md](issues/AGILE.md))
+has the same gate at the other end: once a change is implemented, `run-tests.sh` is green, and it
+has been peer-reviewed, do not commit, merge to `main`, or archive the issue on your own initiative,
+however clean the review came back. Show the diff and the review findings to the maintainer and ask
+outright, "commit and close this out?" Only on an explicit yes do you commit, merge (`--no-ff`, no
+squash/rebase), archive the issue, and delete the branch. This applies to any agent working the
+repo, not just Claude Code. Auto-committing small intermediate steps *within* ongoing work is still
+fine; this gate is specifically the "ready to land" boundary.
+
 **Markdown paragraphs are single lines, never hard-wrapped.** This applies to every Markdown file
 this project generates or edits (`issues/`, `docs/`, `CHANGELOG.md`), and it matters most for
 issues, since those get written and re-written the most often: a hard line break part-way through
@@ -155,7 +164,10 @@ hand-rolled validation gives better file:line author errors and keeps the stdlib
 
 Commit after each significant change. **Auto-commit** — do this without being asked: once a
 substantial change is complete and verified (tests and ruff pass), stage the related files and
-commit with a descriptive message. Leave unrelated untracked files out of the commit.
+commit with a descriptive message. Leave unrelated untracked files out of the commit. This is for
+intermediate steps *within* ongoing work; it does not override the "finished branch" landing gate
+above; that boundary still needs the maintainer's explicit go-ahead before the commit that closes
+the branch out.
 
 **`main` is releases only; all development happens on `develop`.** `main` never receives an issue
 branch directly. It advances only via an explicit, maintainer-triggered release merge from
