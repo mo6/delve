@@ -12,8 +12,9 @@ from delve.engine.world import Direction
 
 __all__ = [
     "Direction", "Move", "Talk", "Answer", "AnswerText", "Type", "GradeReady", "Confirm",
-    "Consult", "Rest", "Wait", "Descend", "Ascend", "Dismiss", "Pickup", "Drop", "Inventory",
-    "TabCycle", "SubTabCycle", "FocusRow", "Digit", "Backspace", "Quit", "Help", "Command",
+    "Consult", "BuyRemoval", "Rest", "Wait", "Descend", "Ascend", "Dismiss", "Pickup", "Drop",
+    "Inventory", "TabCycle", "SubTabCycle", "FocusRow", "Digit", "Backspace", "Quit", "Help",
+    "Command",
 ]
 
 
@@ -58,6 +59,11 @@ class Confirm:
 @dataclass(frozen=True)
 class Consult:
     pass   # ask the pet for a hint on the current question; costs that question's score
+
+
+@dataclass(frozen=True)
+class BuyRemoval:
+    pass   # spend gold to eliminate one wrong MCQ option; keeps the score (DELVE-0018)
 
 
 @dataclass(frozen=True)
@@ -145,7 +151,7 @@ class Help:
 
 
 Command = (
-    Move | Talk | Answer | AnswerText | Type | GradeReady | Confirm | Consult | Rest | Wait
-    | Descend | Ascend | Dismiss | Pickup | Drop | Inventory | TabCycle | SubTabCycle | FocusRow
-    | Select | Digit | Backspace | Quit | Help
+    Move | Talk | Answer | AnswerText | Type | GradeReady | Confirm | Consult | BuyRemoval
+    | Rest | Wait | Descend | Ascend | Dismiss | Pickup | Drop | Inventory | TabCycle
+    | SubTabCycle | FocusRow | Select | Digit | Backspace | Quit | Help
 )

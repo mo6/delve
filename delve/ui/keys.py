@@ -18,6 +18,7 @@ from delve.session.commands import (
     Answer,
     Ascend,
     Backspace,
+    BuyRemoval,
     Command,
     Confirm,
     Consult,
@@ -127,6 +128,8 @@ def panel_command(ch: int, overlay) -> Command | None:
         return None
     if ch == ord("@") and isinstance(overlay, (MenuView, PromptView)):
         return Consult()   # ask the pet about this question; costs its score (moved off ? at 0028)
+    if ch == ord("$") and isinstance(overlay, MenuView):
+        return BuyRemoval()   # spend gold to eliminate a wrong option (DELVE-0018)
     if isinstance(overlay, MenuView):
         # An MCQ list takes arrow focus + Enter as well as its direct number keys (the item menus
         # for drop/pickup ignore the focus, being answered purely by number).
@@ -137,7 +140,7 @@ def panel_command(ch: int, overlay) -> Command | None:
         if ch in (ord("\n"), ord("\r"), curses.KEY_ENTER):
             return Confirm(True)
         idx = ch - ord("1")            # options and drop items are numbered 1..n (OBJECTS.md)
-        if 0 <= idx < len(overlay.items):
+        if 0 <= idx < len(overlay.items) and not overlay.items[idx].eliminated:
             return Answer(idx)
     elif isinstance(overlay, PromptView):
         # The assertion's two buttons: arrows move the focus, Enter answers the focused one. Only

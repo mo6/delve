@@ -171,17 +171,19 @@ class TextView:
 class MenuItem:
     key: str
     text: str
-    struck: bool = False   # the pet ruled this one out; still selectable, shown crossed off
+    struck: bool = False      # the pet ruled this one out; still selectable, shown dimmed
+    eliminated: bool = False  # paid gold removal (DELVE-0018); not selectable, shown dimmed
 
 
 @dataclass
 class MenuView:
     """A multiple-choice question, drawn as a numbered list. Items are already shuffled and carry no
     hint of which is correct; the explanation only arrives after an answer. A `struck` item is one
-    the pet ruled out on consultation, never the correct answer revealed. `selected` is the option
-    the keyboard focus sits on (moved with the arrows, confirmed with Enter, or bypassed by pressing
-    its number), owned by the session so `ui` only paints it (rule 2); -1 means no focus (an item
-    menu answered purely by number, like drop/pickup)."""
+    the pet ruled out on consultation (still selectable); an `eliminated` item was removed for gold
+    and cannot be answered (DELVE-0018). `selected` is the option the keyboard focus sits on (moved
+    with the arrows, confirmed with Enter, or bypassed by pressing its number), owned by the session
+    so `ui` only paints it (rule 2); -1 means no focus (an item menu answered purely by number, like
+    drop/pickup)."""
 
     prompt: str
     items: list[MenuItem]
@@ -195,12 +197,14 @@ class PromptView:
     `selected` is the button the keyboard focus sits on (moved with the arrows, confirmed with
     Enter, or bypassed by pressing a label's key directly), owned by the session so `ui` only paints
     it (rule 2). `struck` parallels `choices`: a True there is a label the pet ruled out.
+    `eliminated` is the paid-removal twin (unused on assertions, which never offer a buy).
     `connector` is the localised word between the labels ('or'/'of'), kept for any caption."""
 
     text: str
     choices: list[str]
     footer: str = ""
     struck: tuple[bool, ...] = ()
+    eliminated: tuple[bool, ...] = ()
     connector: str = "or"
     selected: int = 0
 

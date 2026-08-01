@@ -51,7 +51,7 @@ from delve.engine.items import (
 from delve.engine.rng import Rng
 from delve.engine.world import Chapter, Direction, Point, TileKind
 from delve.gate import Gate, GateState, install_chapter_gates, install_gates
-from delve.progress.scrolls import render_scroll
+from delve.progress.scrolls import format_money, render_scroll
 from delve.session import backstory, flavour
 from delve.session import help as help_catalogue
 from delve.session.commands import (
@@ -59,6 +59,7 @@ from delve.session.commands import (
     AnswerText,
     Ascend,
     Backspace,
+    BuyRemoval,
     Confirm,
     Consult,
     Descend,
@@ -671,6 +672,8 @@ class RunState:
                 self._confirm()
             case Consult():
                 self._consult()
+            case BuyRemoval():
+                self._buy_removal()
             case Rest():
                 self._rest()
             case Wait():
@@ -849,6 +852,8 @@ class RunState:
         options = gate.display_options()
         if not 0 <= choice < len(options):
             return
+        if choice in gate.eliminated:
+            return   # a paid removal took this option; digits and focus skip it (DELVE-0018)
         q = gate.current_question()
         # MCQ options are numbered 1..n (not lettered), so the keys never clash with the map's
         # d/,/i and are faster to hit (OBJECTS.md); an assertion echoes its chosen label.
@@ -863,7 +868,7 @@ class RunState:
         """Show the current question and reset the free-text buffer, so a fresh field is empty (the
         one place a new answer starts). Shared by the lesson->exam and explanation->next steps."""
         self._answer_buf = ""
-        self._selected_option = 0
+        self._selected_option = self._first_standing(gate)
         self._overlay = self._question_overlay(gate)
         self._overlay_kind = "question"
 
@@ -871,9 +876,10 @@ class RunState:
         """Move the option focus (the arrows) on an assertion's buttons or an MCQ's list, or, while
         the Pack tab's compact list is showing (DELVE-0069), the focused carried-kind row: the same
         command, dispatched on which one is actually open, since both are "move a list focus by
-        +1/-1, Enter/space confirms it" in the same shape. Wraps either way. The number/label keys
-        still answer a question directly, so this is an alternative way in there, not the only one;
-        free text has no focus to move."""
+        +1/-1, Enter/space confirms it" in the same shape. Wraps either way, skipping options a
+        paid removal eliminated (DELVE-0018). The number/label keys still answer a question
+        directly, so this is an alternative way in there, not the only one; free text has no focus
+        to move."""
         if self._overlay_kind == "info":
             self._pack_select(delta)
             return
@@ -882,7 +888,15 @@ class RunState:
         if self.active.current_question().kind == "freetext":
             return
         n = len(self.active.display_options())
-        self._selected_option = (self._selected_option + delta) % n
+        if n == 0:
+            return
+        # Walk past eliminated options; if somehow every option is gone, stay put.
+        cur = self._selected_option
+        for _ in range(n):
+            cur = (cur + delta) % n
+            if cur not in self.active.eliminated:
+                self._selected_option = cur
+                break
         self._overlay = self._question_overlay(self.active)
 
     def _pack_select(self, delta: int) -> None:
@@ -976,11 +990,71 @@ class RunState:
         # consult always costs the question (OBJECTS.md section 8).
         free = self.pet.species == "cat" and not gate.free_consult_used
         q = gate.current_question()
-        display = gate.consult(self.pet.hint_for(q), free=free)
-        self._overlay = self._question_overlay(gate, struck=display)
+        gate.consult(self.pet.hint_for(q), free=free)
+        self._overlay = self._question_overlay(gate)
         self._overlay_kind = "question"
         self.messages.append(self.strings("msg.pet_free" if free else "msg.pet_strike",
                                           name=self.pet.name))
+
+    def _reward_basis(self, gate: Gate) -> int:
+        """The room's unscaled reward basis `R`: the room's own `reward`, or the pack default when
+        the room sets none. An unscored floor (the tutorial) never inherits the pack default
+        (same rule as `_pay_reward`). Used for the paid-removal price (DELVE-0018); the paid
+        reward itself still scales by sitting score after a pass."""
+        reward = gate.content.reward
+        if reward is None:
+            reward = self.pack.reward if (self.cur.scored and self.pack is not None) else 0
+        return reward
+
+    def _removal_price(self, gate: Gate) -> int | None:
+        """Gold cost to eliminate one wrong option now, or None when the lifeline is unavailable:
+        unscored floor, free-text/assertion, fewer than three options still standing, or a zero
+        reward basis. Price is `round(R / (n - 1))` with `n` still standing (DELVE-0018)."""
+        if not self.cur.scored or self._overlay_kind != "question":
+            return None
+        if gate.current_question().kind != "mcq":
+            return None
+        reward = self._reward_basis(gate)
+        if reward <= 0:
+            return None
+        standing = gate.standing_count()
+        if standing < 3:
+            return None
+        return round(reward / (standing - 1))
+
+    def _first_standing(self, gate: Gate) -> int:
+        """The lowest display index that is still selectable (not eliminated)."""
+        for i in range(len(gate.display_options())):
+            if i not in gate.eliminated:
+                return i
+        return 0
+
+    def _buy_removal(self) -> None:
+        """Spend gold to eliminate one wrong MCQ option. The coin is the price; the question keeps
+        counting toward the score (unlike a pet consult). Immediate on the keypress; the hint line
+        shows the price beforehand (DELVE-0018)."""
+        if not self.active or self._overlay_kind != "question":
+            self.messages.append(self.strings("msg.buy_nothing"))
+            return
+        gate = self.active
+        price = self._removal_price(gate)
+        if price is None:
+            self.messages.append(self.strings("msg.buy_nothing"))
+            return
+        if self.player.gold < price:
+            self.messages.append(self.strings("msg.buy_poor", coins=self._coins(price)))
+            return
+        original = gate.next_wrong_to_eliminate()
+        if original is None:
+            self.messages.append(self.strings("msg.buy_nothing"))
+            return
+        self.player.gold -= price
+        gate.eliminate(original)
+        if self._selected_option in gate.eliminated:
+            self._selected_option = self._first_standing(gate)
+        self._overlay = self._question_overlay(gate)
+        self._overlay_kind = "question"
+        self.messages.append(self.strings("msg.buy_remove", coins=self._coins(price)))
 
     def _rest(self) -> None:
         if self.active or self._overlay is not None:
@@ -1091,9 +1165,7 @@ class RunState:
         (PLAN §9); it still pays when a room sets an explicit `reward:` (DELVE-0031)."""
         if gate.rewarded:
             return
-        reward = gate.content.reward
-        if reward is None:
-            reward = self.pack.reward if (self.cur.scored and self.pack is not None) else 0
+        reward = self._reward_basis(gate)
         coins = round(reward * gate.passed_score)
         if coins <= 0:
             return
@@ -2336,7 +2408,7 @@ class RunState:
                 for b in gate.lesson.blocks]
         return self._text(title=gate.lesson.title, body=body)
 
-    def _question_overlay(self, gate: Gate, struck: int | None = None):
+    def _question_overlay(self, gate: Gate):
         q = gate.current_question()
         options = gate.display_options()
         idx, total = gate.progress()
@@ -2344,14 +2416,17 @@ class RunState:
         # Garnish the *displayed* prompt only; grading reads the options/answer, never this string,
         # so an added emoji cannot change what is correct (session/flavour.py).
         prompt = flavour.augment(q.prompt, self.strings.flavour_emoji())
+        struck = gate.struck
+        elim = gate.eliminated
         if q.kind == "freetext":
             return FreeTextView(prompt=prompt, typed=self._answer_buf, footer=footer)
         if q.kind == "assertion":
             marks = tuple(i == struck for i in range(len(options)))
+            gone = tuple(i in elim for i in range(len(options)))
             return PromptView(text=prompt, choices=options, footer=footer, struck=marks,
-                              connector=self.strings("question.or"),
+                              eliminated=gone, connector=self.strings("question.or"),
                               selected=self._selected_option)
-        items = [MenuItem(str(i + 1), text, struck=(i == struck))
+        items = [MenuItem(str(i + 1), text, struck=(i == struck), eliminated=(i in elim))
                  for i, text in enumerate(options)]
         return MenuView(prompt=prompt, items=items, footer=footer,
                         selected=self._selected_option)
@@ -2509,6 +2584,10 @@ class RunState:
             if kind == "assertion":
                 return self.strings("hint.answer_two", k1=options[0][0].lower(),
                                     k2=options[1][0].lower())
+            price = self._removal_price(self.active)
+            if price is not None:
+                return self.strings("hint.answer_many_buy", last=len(options),
+                                    price=format_money(price, self.strings.fmt))
             return self.strings("hint.answer_many", last=len(options))
         if self._overlay_kind == "info":
             if _INFO_TABS[self._info_tab][0] == "scoring":

@@ -66,6 +66,11 @@ class Gate:
     passed_score: float = 0.0  # the score of the sitting that passed, recorded once for the scroll
     _exam: Examination | None = field(default=None, repr=False)
     _order: list[int] = field(default_factory=list, repr=False)   # display index -> option index
+    # Display indices the pet ruled out (advisory, still selectable) and ones gold eliminated
+    # (gone from the sitting). Both clear on `_shuffle` / exam teardown so a re-sit starts fresh
+    # (DELVE-0018); neither is drawn from `self.rng`.
+    _struck: int | None = field(default=None, repr=False)
+    _eliminated: set[int] = field(default_factory=set, repr=False)
     last_question: Question | None = field(default=None, repr=False)
     last_correct: bool = False
 
@@ -89,6 +94,8 @@ class Gate:
         if q.kind == "mcq":          # assertions keep the author's order; MCQ shuffles
             rng.shuffle(order)
         self._order = order
+        self._struck = None
+        self._eliminated = set()
 
     def current_question(self) -> Question:
         return self._exam.current()
@@ -106,6 +113,41 @@ class Gate:
     def assisted_here(self) -> bool:
         """True when the pet has already been consulted on the current question."""
         return self._exam is not None and self._exam.assisted_now
+
+    @property
+    def struck(self) -> int | None:
+        """Display index the pet ruled out on this question, or None."""
+        return self._struck
+
+    @property
+    def eliminated(self) -> frozenset[int]:
+        """Display indices removed by a paid gold elimination this question (DELVE-0018)."""
+        return frozenset(self._eliminated)
+
+    def standing_count(self) -> int:
+        """How many options are still selectable on the current question."""
+        return len(self._order) - len(self._eliminated)
+
+    def next_wrong_to_eliminate(self) -> int | None:
+        """The original-order index of the next wrong option that is still standing, or None when
+        every wrong one is already gone. Deterministic (first wrong in author order, skipping
+        eliminated), never drawn from the exam shuffle RNG (DELVE-0018)."""
+        q = self._exam.current()
+        for i, opt in enumerate(q.options):
+            if opt.correct:
+                continue
+            display = self._order.index(i)
+            if display not in self._eliminated:
+                return i
+        return None
+
+    def eliminate(self, original: int) -> int:
+        """Remove one wrong option from the current question by its original index. Returns the
+        display index that was eliminated. Does **not** call `Examination.assist`: paying gold
+        keeps the question's score (DELVE-0018), unlike a pet consult."""
+        display = self._order.index(original)
+        self._eliminated.add(display)
+        return display
 
     def answer(self, display_choice: int) -> bool:
         original = self._order[display_choice]
@@ -140,12 +182,15 @@ class Gate:
         """Record the pet's help on the current question and return the display index of the option
         it rules out. A paid consult stops the question counting toward the score; a `free` one
         (the cat's first per room, OBJECTS.md section 8) shows the same strike at no cost. A repeat
-        consult on the same question re-reports the strike for free either way."""
+        consult on the same question re-reports the strike for free either way. The display index
+        is stored on the gate so a later overlay rebuild (arrow focus) keeps the strike visible."""
         if self._exam.assist(free=free):
             self.hints_used += 1
             if free:
                 self.free_consult_used = True
-        return self._order.index(original)
+        display = self._order.index(original)
+        self._struck = display
+        return display
 
     def proceed(self, rng: Rng, grid: Grid) -> SittingResult:
         """Advance past an explanation: next question, or finish the sitting. A failed sitting

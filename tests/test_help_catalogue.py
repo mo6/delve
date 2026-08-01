@@ -145,10 +145,12 @@ def test_amount_field_keys_match_the_catalogue():
 
 def test_question_mcq_keys_match_the_catalogue():
     entries = {e.key for e in help_catalogue.entries_for("question_mcq")}
-    assert entries == {"1-9", "←→ / Enter", "@", "?", "Esc"}
+    assert entries == {"1-9", "←→ / Enter", "@", "$", "?", "Esc"}
     view = MenuView(prompt="", items=[MenuItem("1", "a")])
     assert keys.panel_command(ord("1"), view) == Answer(0)
     assert keys.panel_command(ord("@"), view) == Consult()
+    from delve.session.commands import BuyRemoval
+    assert keys.panel_command(ord("$"), view) == BuyRemoval()
     assert keys.panel_command(curses.KEY_UP, view) == Select(-1)
 
 
@@ -157,14 +159,16 @@ def test_question_assertion_keys_match_the_catalogue():
     assert entries == {"←→ / Enter", "@", "?", "Esc"}
     view = PromptView(text="", choices=("Yes", "No"))
     assert keys.panel_command(ord("@"), view) == Consult()
+    assert keys.panel_command(ord("$"), view) is None          # assertions never offer a buy
     assert keys.panel_command(ord("y"), view) == Answer(0)
 
 
 def test_question_freetext_has_no_consult_entry():
     # Free text is typed raw through a separate path (app.py's _freetext_command), never
-    # panel_command, so @ has no meaning there; the catalogue must not claim it does.
+    # panel_command, so @/$ have no meaning there; the catalogue must not claim they do.
     entries = {e.key for e in help_catalogue.entries_for("question_freetext")}
     assert "@" not in entries
+    assert "$" not in entries
 
 
 def test_info_and_help_tab_strip_keys_match_the_catalogue():

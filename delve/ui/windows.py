@@ -674,10 +674,13 @@ def _draw_menu(stdscr, view: MenuView, top: int, col: int) -> None:
     r += 1
     for i, item in enumerate(view.items):
         lines = _wrap(item.text, TEXT_W - 4)
-        base = curses.A_DIM if item.struck else curses.A_NORMAL   # ruled out by the pet
-        # Only the focused option's number badge is highlighted (black-on-cyan, reverse video with
-        # no colour), the same treatment the assertion buttons use; the text is never highlighted.
-        badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
+        # Pet strike and paid elimination both dim the text; elimination additionally dims the
+        # badge, so a removed option reads as gone rather than merely crossed off (DELVE-0018).
+        base = curses.A_DIM if (item.struck or item.eliminated) else curses.A_NORMAL
+        if item.eliminated:
+            badge = curses.A_DIM
+        else:
+            badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
         _put(stdscr, r, col, f" {item.key} ", badge)
         for dr, line in enumerate(lines):
             _put(stdscr, r + dr, col + 4, line, base)
@@ -753,10 +756,16 @@ def _draw_prompt(stdscr, view: PromptView, top: int, col: int) -> None:
         r += 1
     r += 1
     struck = view.struck or (False,) * len(view.choices)
+    elim = view.eliminated or (False,) * len(view.choices)
     for i, choice in enumerate(view.choices):
         lines = _wrap(choice, TEXT_W - 4)
-        base = curses.A_DIM if (i < len(struck) and struck[i]) else curses.A_NORMAL
-        badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
+        gone = i < len(elim) and elim[i]
+        ruled = i < len(struck) and struck[i]
+        base = curses.A_DIM if (ruled or gone) else curses.A_NORMAL
+        if gone:
+            badge = curses.A_DIM
+        else:
+            badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
         _put(stdscr, r, col, f" {choice[:1].lower()} ", badge)
         for dr, line in enumerate(lines):
             _put(stdscr, r + dr, col + 4, line, base)
