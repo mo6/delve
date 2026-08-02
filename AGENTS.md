@@ -50,7 +50,10 @@ however clean the review came back. Show the diff and the review findings to the
 outright, "commit and close this out?" Only on an explicit yes do you commit, merge (`--no-ff`, no
 squash/rebase), archive the issue, and delete the branch. This applies to any agent working the
 repo, not just Claude Code. Auto-committing small intermediate steps *within* ongoing work is still
-fine; this gate is specifically the "ready to land" boundary.
+fine; this gate is specifically the "ready to land" boundary. **Before asking**, write every review
+that happened into the issue's own "Peer review" section (one line per reviewer, agent and
+maintainer both, never overwritten): that section is the track record the "commit and close this
+out?" answer is based on, not a step that follows it.
 
 **Markdown paragraphs are single lines, never hard-wrapped.** This applies to every Markdown file
 this project generates or edits (`issues/`, `docs/`, `CHANGELOG.md`), and it matters most for
