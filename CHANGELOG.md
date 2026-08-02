@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.35.0] — 2026-08-02
+
+- **Info gains a Trophies tab for finished packs and their scores** (DELVE-0085, feature, session/progress/ui): while playing, `i` then Trophies shows every completed run (any pack), newest date first, as a Date/Pack/Score table with localised headers; empty when nothing is finished yet (`item.trophies_empty`). Rows are computed once at start/resume via `launch.trophy_rows` (same data as the pre-run trophy case, which is unchanged) and threaded into the run as opaque cell values, so `ui` never touches the progress store. New `trophies` screenshot scenario.
+
 ## [1.34.3] — 2026-08-02
 
 - **The Grader tab lays its two model sections side by side so the latency sparkline fits on one page** (DELVE-0087, bug, ui/session): stacking `Grading` above `Ambient toast` forced a second page once either section held a `Latency` sparkline (DELVE-0077). The tab now splits into even half-width columns (Pack's divider arithmetic, `GRADER_COL_W` = 33), folds each section's heading into its own `kv` block (no blank row before the data), wraps long `Model`/`This run` strings onto two localised lines each, and paints the column titles bright yellow bold. Offline still renders as one full-width line. New `grader` screenshot scenario.
