@@ -107,10 +107,10 @@ En daarom bestaat de volgende kamer, en daarom laat ik je erdoor."
 > het niet controleren, je hoort *achteraf* dat het slecht was, en "geen van mijn sites is
 > waardevol" negeert dat de onbelangrijke site precies is waar de aanvaller begint.
 
-### Wachtwoorden horen elke 90 dagen routinematig gewijzigd te worden.
+### Noem in een paar woorden wanneer je een wachtwoord eigenlijk moet wijzigen, als het niet op een vast schema is.
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: als daar een reden voor is, na een lek, bij een vermoeden van misbruik, bij verdenking van compromittering
+- ?reject: elke 90 dagen, op een vast schema, routinematig, elke drie maanden
 
 > Langlopend beleid, inmiddels ingetrokken door de mensen die het bedacht hebben; zowel
 > NIST als het Britse NCSC raden routinematig verlopen inmiddels af.

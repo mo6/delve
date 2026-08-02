@@ -104,10 +104,10 @@ is why the next room exists, and why I am going to let you through to it."
 > audit it, you'll learn it was bad *afterwards*, and "none of my sites are valuable"
 > ignores that the low-value site is exactly where the attacker starts.
 
-### Passwords should be changed every 90 days as a matter of routine.
+### In a few words, when should you actually change a password, if not on a fixed schedule?
 
-- [ ] True
-- [x] False
+- ?answer: when there's a reason, after a breach, when compromised, if there's a suspicion, on suspicion of compromise
+- ?reject: every 90 days, on a fixed schedule, routinely, every three months
 
 > Long-standing policy, now withdrawn by the people who originated it; NIST and the
 > UK's NCSC both advise against routine expiry.

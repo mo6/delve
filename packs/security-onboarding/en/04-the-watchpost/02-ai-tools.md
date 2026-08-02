@@ -100,10 +100,10 @@ all this room has ever been about."
 > still a credential you must rotate. And staging systems are full of copied production
 > data, which is its own room in a longer version of this dungeon.
 
-### If you paste something sensitive into an AI tool by mistake, deleting the conversation resolves it.
+### In a few words, what should you actually do if you paste something sensitive into an AI tool by mistake?
 
-- [ ] True
-- [x] False
+- ?answer: report it, treat it like any other disclosure, rotate the credential and report it, rotate it and tell someone, report it and rotate the credential
+- ?reject: delete the conversation, delete it and move on, remove the chat
 
 > Deleting the conversation removes it from *your view*. It doesn't reliably remove it
 > from logs, backups, caches, or anything downstream, and it certainly doesn't retract a

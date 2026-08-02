@@ -100,10 +100,10 @@ gegaan."
 > steeds een inloggegeven dat je moet vervangen. En testomgevingen staan vol gekopieerde productiedata, wat een
 > eigen kamer is in een langere versie van deze kerker.
 
-### Als je per ongeluk iets gevoeligs in een AI-dienst plakt, lost het verwijderen van het gesprek dat op.
+### Noem in een paar woorden wat je eigenlijk moet doen als je per ongeluk iets gevoeligs in een AI-dienst plakt.
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: het melden, behandelen als elke andere bekendmaking, de sleutel vervangen en het melden, vervangen en iemand vertellen, melden en de inloggegevens vervangen
+- ?reject: het gesprek verwijderen, verwijderen en verdergaan, de chat weghalen
 
 > Het gesprek verwijderen haalt het weg uit *je beeld*. Het haalt het niet betrouwbaar weg uit logboeken,
 > back-ups, caches of iets verderop in de keten, en het trekt zeker geen bekendmaking terug die al gebeurd is.

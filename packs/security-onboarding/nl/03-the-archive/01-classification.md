@@ -100,10 +100,10 @@ muur redt je."
 > classificatie. En de verwachtingen van de klant zijn misschien niet eens bij henzelf bekend;
 > de verplichting is hoe dan ook van jou.
 
-### Als je niet zeker weet hoe je iets moet classificeren, is de veilige standaard om het als Geheim te markeren.
+### Noem in een paar woorden wat je eigenlijk moet doen als je niet zeker weet hoe je iets moet classificeren, in plaats van het hoogste label te kiezen.
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: iemand vragen, de eigenaar van de gegevens vragen, zorgvuldig behandelen en vragen, navragen bij wie de gegevens beheert, het navragen
+- ?reject: als geheim markeren, het hoogste label gebruiken, standaard geheim maken, classificeren als geheim
 
 > Dit is te hoog inschalen in het kostuum van voorzichtigheid, en het verplaatst je
 > onzekerheid naar iedereen verderop in de keten.

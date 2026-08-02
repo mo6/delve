@@ -104,10 +104,9 @@ can be excused for not doing it."
 > than a hurried one. And relying on the scanner inverts the relationship: the scanner
 > catches what's already known, and you're the one deciding about the thing that isn't.
 
-### A file named `report.pdf` is a PDF.
+### In a few words, what's the one question that tells you whether to open an unexpected attachment, regardless of what its filename claims to be?
 
-- [ ] True
-- [x] False
+- ?answer: was I expecting this, were you expecting it, did I expect this, expecting this, was this expected
 
 > A filename is text chosen by whoever sent it, exactly like the display text of a
 > link. It can lie, and there are decades of tricks for making it lie convincingly,

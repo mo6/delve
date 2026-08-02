@@ -109,10 +109,10 @@ Hij overhandigt je helemaal niets, wat het punt is.
 > wachtwoordherstel overal, en verdient de sterkste bescherming die je kunt geven. Maar de
 > manager kan hem *bewaren*. Zijn eigen sleutel kan hij niet bewaren.
 
-### Je browser wachtwoorden laten onthouden staat gelijk aan het gebruiken van een wachtwoordmanager.
+### Noem in een paar woorden iets dat een echte wachtwoordmanager je geeft en door de browser onthouden wachtwoorden doorgaans niet.
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: synchronisatie tussen apparaten, werkt in elke browser, werkt buiten de browser, beveiligd met een hoofdzin, dekt meer dan websites, synchroniseert tussen apparaten
+- ?reject: niets, het is hetzelfde, het is identiek
 
 > Browseropslag heeft het gat grotendeels gedicht en is veel beter dan hergebruik, als de
 > keuze is tussen de browser of `Zomer2024!`, neem de browser.

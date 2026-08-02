@@ -98,12 +98,10 @@ phishing email at ten paces and still leave the thing unlocked in a Pret."
 > targets worth spending them on. The month-old unpatched browser is what actually gets
 > you, and "remind me tomorrow" is what leaves it there.
 
-### You find an unlabelled USB drive in the office car park. What's the correct action?
+### In a few words, what's the correct thing to do with an unlabelled USB drive found in the office car park?
 
-- [ ] Plug it into an isolated machine to identify the owner
-- [ ] Plug it in and check only the filenames, without opening anything
-- [x] Don't plug it in anywhere; hand it to security (`#security-help`)
-- [ ] Leave it where it is; it isn't yours
+- ?answer: hand it to security, give it to security, report it to security, don't plug it in, hand it in
+- ?reject: plug it into an isolated machine, check the filenames, leave it there, ignore it
 
 > Malicious USB devices don't need you to open a file. Some emulate a keyboard and type
 > commands the moment they're connected; there is no "just looking" that's safe, and

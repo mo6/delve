@@ -14,9 +14,18 @@ import pytest
 from delve.content.parser import load_pack
 from delve.engine import actions
 from delve.engine.world import Direction, Point, TileKind
-from delve.session.commands import Answer, AnswerText, Ascend, Confirm, Descend, Move, Talk
+from delve.session.commands import (
+    Answer,
+    AnswerText,
+    Ascend,
+    Confirm,
+    Descend,
+    GradeReady,
+    Move,
+    Talk,
+)
 from delve.session.run import new_game, new_run
-from delve.session.views import FreeTextView, MenuView, PromptView, TextView
+from delve.session.views import FreeTextView, GradingView, MenuView, PromptView, TextView
 
 PILOT = Path(__file__).resolve().parent.parent / "packs" / "security-onboarding"
 
@@ -83,8 +92,16 @@ def _pass_room(run, gate):
     frame = run.apply(Confirm(True))                     # finish reading -> examination
     while isinstance(frame.overlay, (MenuView, PromptView, FreeTextView)):
         if isinstance(frame.overlay, FreeTextView):
-            # a free-text question: submit an accepted phrase, which the keyword floor passes
+            # a free-text question: submit an accepted phrase, which the keyword floor passes at
+            # once; a threaded (LLM) grader instead shows a grading pause, settled here by polling
+            # with GradeReady until the verdict is folded in.
             run.apply(AnswerText(run.active.current_question().accept[0]))
+            frame = run.frame()
+            ticks = 0
+            while isinstance(frame.overlay, GradingView) and ticks < 32:
+                frame = run.apply(GradeReady())
+                ticks += 1
+            assert not isinstance(frame.overlay, GradingView), "grade never resolved"
         else:
             run.apply(Answer(_correct_index(run.active)))       # -> explanation
         frame = run.apply(Confirm(True))                        # -> next, or finish

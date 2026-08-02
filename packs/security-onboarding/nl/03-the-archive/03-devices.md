@@ -96,12 +96,10 @@ op tien meter afstand en laat het ding alsnog ontgrendeld liggen in een broodjes
 > die het besteden waard zijn. De maand oude ongepatchte browser is wat je werkelijk velt, en "herinner
 > me morgen" is wat hem daar laat staan.
 
-### Je vindt een ongelabelde USB-stick op het parkeerterrein van kantoor. Wat is de juiste actie?
+### Noem in een paar woorden wat de juiste actie is bij een ongelabelde USB-stick op het parkeerterrein van kantoor.
 
-- [ ] Hem in een geïsoleerde machine steken om de eigenaar te achterhalen
-- [ ] Hem erin steken en alleen de bestandsnamen bekijken, zonder iets te openen
-- [x] Hem nergens in steken, inleveren bij beveiliging (`#security-help`)
-- [ ] Hem laten liggen; hij is niet van je
+- ?answer: inleveren bij beveiliging, geven aan beveiliging, melden bij beveiliging, hem er nergens in steken, inleveren
+- ?reject: in een geïsoleerde machine steken, de bestandsnamen bekijken, laten liggen, negeren
 
 > Kwaadaardige USB-apparaten hebben je niet nodig om een bestand te openen. Sommige doen zich voor als
 > toetsenbord en typen commando's zodra ze aangesloten worden; er bestaat geen "even kijken" dat veilig

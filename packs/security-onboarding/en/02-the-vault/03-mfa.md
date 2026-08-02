@@ -99,10 +99,10 @@ pressing the bell."
 > Hardware keys are certainly *more* losable than a phone. And app codes already work
 > offline; that's their advantage over SMS, not a weakness.
 
-### SMS-based MFA is so weak it's not worth enabling.
+### In a few words, why should you still enable SMS-based MFA even though it's the weakest option?
 
-- [ ] True
-- [x] False
+- ?answer: it stops most attacks, better than nothing, it stops credential stuffing and bulk phishing, it blocks most attackers, still stops scale attacks
+- ?reject: it's worthless, don't bother, it's not worth using, it should be disabled
 
 > SMS is genuinely the weakest option; SIM swapping is real and not difficult against
 > a targeted victim. But "weakest" is not "worthless."

@@ -105,10 +105,10 @@ en aan mijn bureau kunnen ze niet staan. Laat ze het dus maar proberen."
 > En doorsturen verplaatst het besluit alleen naar iemand met minder kennis van de
 > relatie dan jij hebt.
 
-### Omdat spear phishing leunt op openbare informatie over je, is een laag online profiel de belangrijkste verdediging.
+### Omdat je de openbare informatie waarop spear phishing leunt niet ongedaan kunt maken, wat moet je in plaats daarvan verifiëren, in een paar woorden?
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: de transactie, het verzoek, verifieer het verzoek, verifieer de transactie, verifieer via een tweede kanaal
+- ?reject: je online profiel, hoeveel ze over je weten, je zichtbaarheid
 
 > Verleidelijk, maar het houdt geen stand. De informatie is de website van je werkgever,
 > je functie, de namen van je collega's, de branche waarin je werkt. Je kunt je eigen

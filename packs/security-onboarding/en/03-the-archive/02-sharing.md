@@ -97,12 +97,10 @@ not come back and do it later. You never have.
 > All still in the share. Set the expiry when you create the share; you will not come
 > back to do it.
 
-### Before sharing a spreadsheet externally, which risk is easiest to overlook?
+### Besides what's visible on screen, name one thing that can travel silently with a shared spreadsheet.
 
-- [ ] The file might be too large for the recipient's mail system
-- [x] Hidden tabs, filtered rows, comments, and revision history that travel with the file
-- [ ] The recipient might not have compatible software
-- [ ] The file might contain formulas linking to internal systems
+- ?answer: hidden tabs, hidden sheets, filtered rows, comments, revision history, tracked changes, metadata
+- ?reject: file size, formatting, font issues, compatibility
 
 > Documents carry more than what's on screen. Hidden sheets, filtered-out rows, tracked
 > changes, comments, and full revision history all travel with the file, and none of it

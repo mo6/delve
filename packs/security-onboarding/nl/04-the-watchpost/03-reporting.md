@@ -104,12 +104,10 @@ Dat is de deur."
 > door professionals. Het maakt ze alleen stil. Dit is waarom "niemand iets verwijten" geen vriendelijkheid
 > is; het is de enige versie die werkt.
 
-### Je merkt dat het account van een collega ietwat vreemde berichten verstuurt. Het is waarschijnlijk niets, en het aankaarten zou hen in verlegenheid kunnen brengen. Wat is de redenering?
+### Het account van een collega verstuurt ietwat vreemde berichten. Het is waarschijnlijk niets, en het aankaarten zou hen in verlegenheid kunnen brengen. Noem in een paar woorden wat je moet doen.
 
-- [ ] Vraag het de collega eerst rechtstreeks, zodat ze niet overvallen worden door een melding
-- [ ] Wacht af of de berichten doorgaan voordat je escaleert
-- [x] Meld het nu; een gekaapt account ziet er precies zo uit, en snelheid telt zwaarder dan het ongemak
-- [ ] Meld het alleen als je zelf één van die berichten ontvangt
+- ?answer: het melden, het nu melden, het meteen melden, direct melden bij beveiliging, het onmiddellijk melden
+- ?reject: hen eerst vragen, afwachten, niets doen, negeren
 
 > Vreemde berichten van een echt account is de handtekening van accountovername, precies het geval waarin
 > elke afzendercontrole slaagt, uit de allereerste kamer. En het is geen beschuldiging: de collega is hier het
