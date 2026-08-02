@@ -78,6 +78,23 @@ Reuses `issues.py`'s front-matter parser to print a `| Effort | ID | Type | Crea
 Title |` table, sorted low → high effort (then by creation date). Defaults to `status: proposed`
 since that's the usual "what's left to pick up" view.
 
+### `free_text_research.py` — research files for a pack's free-text questions
+
+```
+./tools.sh free_text_research security-onboarding
+./tools.sh free_text_research security-onboarding --exclude phishing
+./tools.sh free_text_research holy-grail --out docs/research/free-text/holy-grail
+```
+
+For every free-text question (`kind == "freetext"`, DELVE-0096) in a pack, in every locale it
+ships, writes one `docs/research/free-text/<pack>/<room-id>-<locale>.md`: the room's lesson prose
+as the player reads it, the question, the accept/reject reference lists, the explanation, and the
+exact prompt `LLMGrader._build_prompt` sends to the grading model (`{answer}` left as a fillable
+placeholder). Built for `security-onboarding`; `--exclude` skips room ids entirely (that pack's
+`phishing` is also the hardcoded M2 golden-slice fixture and stays checkbox-only, DELVE-0096). Feed
+the output to `docs/research/free-text/security-onboarding/candidate-answers-prompt.md`'s prompt to
+have an LLM propose candidate correct/wrong answers and flag ambiguity.
+
 ## Adding a new tool
 
 Give it a module docstring whose first line is a one-sentence summary — `./tools.sh` with no
