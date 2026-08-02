@@ -234,6 +234,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0091](DELVE-0091-suggested-pet-names.md) | Suggest a proper default name for a new companion when no env-var name is set | feature | low | proposed | - |
 | [DELVE-0092](archive/DELVE-0092-retire-screens-md-for-an-on-demand-screenshot-tool.md) | Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer | story | medium | implemented | 1.34.0 |
 | [DELVE-0093](archive/DELVE-0093-toast-spinner-redraw-cadence.md) | Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time | bug | low | implemented | 1.33.1 |
+| [DELVE-0094](DELVE-0094-resume-queues-a-doomed-ambient-toast-for-the-spawn-room.md) | Resuming a run queues an ambient toast for the pre-restore spawn room, then silently discards it | bug | medium | in-progress | - |
 
 ### Epics
 
@@ -322,5 +323,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0094**.
+Next free id: **DELVE-0095**.
 <!-- issues:index:end -->
