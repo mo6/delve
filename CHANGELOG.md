@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.34.0] — 2026-08-02
+
+- **Retire checked-in screen mock-ups for an on-demand screenshot tool** (DELVE-0092, story, ui/tools/docs): `docs/SCREENS.md` and `tools/screens.py` are gone. `./tools.sh screenshot <scenario>` drives a real `RunState` through the real `delve.ui` renderer onto a shared headless `CursesEmu` (`tools/_fakescreen.py`, also used by render tests) and prints the 100x30 frame with ANSI colour from the same `attrs.py` pair map the live game uses (`NO_COLOR` / non-tty stay plain). `./tools.sh screenshot` with no name lists scenarios. The `screens --check` step leaves `run-tests.sh`; process docs (AGENTS, AGILE, TEMPLATE, tools README) point screen impact at the new tool instead. `infoscreen_mockups.py` keeps its hand-drawn geometry helpers in `tools/_ascii_mock.py` for not-yet-built UI.
+
 ## [1.33.1] — 2026-08-02
 
 - **The toast-loading spinner steps one adjacent glyph per redraw** (DELVE-0093, bug, ui): `_TOAST_POLL_MS` (300) and `_SPINNER_MS` (120) were not multiples of each other, so idle redraws while a toast was generating sampled the braille orbit mid-cycle and the empty dot hopped non-adjacent most of the time. `_TOAST_POLL_MS` is now derived from `windows._SPINNER_MS` (120, the same cadence as `_GRADE_POLL_MS`), and a pure `_spinner_glyph` helper plus tests assert both the divisibility relationship and that consecutive poll-spaced samples are adjacent in the cell's missing-dot grid.

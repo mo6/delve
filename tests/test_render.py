@@ -6,7 +6,12 @@ this one wraps and asserts the box is well formed and the map survives beside it
 """
 
 import curses
+import sys
 from collections import deque
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from _fakescreen import CursesEmu  # noqa: E402
 
 from delve.engine.world import Direction, Point
 from delve.session.commands import Move, Talk
@@ -15,44 +20,6 @@ from delve.session.views import AmountView, Cell, InfoTab, InfoView, PromptView,
 from delve.ui import attrs, render, walls, windows
 
 _BOX = set("═║╔╗╚╝")
-
-
-class CursesEmu:
-    """A minimal stdscr that reproduces curses' addstr wrapping and its bottom-right-cell error,
-    so a write that overruns a row spills onto the next one here too."""
-
-    def __init__(self, rows: int, cols: int):
-        self.rows, self.cols = rows, cols
-        self.g = [[" "] * cols for _ in range(rows)]
-        self.a = [[0] * cols for _ in range(rows)]   # the attr each cell was last written with
-
-    def getmaxyx(self):
-        return (self.rows, self.cols)
-
-    def erase(self):
-        self.g = [[" "] * self.cols for _ in range(self.rows)]
-        self.a = [[0] * self.cols for _ in range(self.rows)]
-
-    def refresh(self):
-        pass
-
-    def addstr(self, y, x, text, attr=0):
-        cy, cx = y, x
-        for ch in text:
-            if cy >= self.rows or cy < 0:
-                raise curses.error
-            if 0 <= cx < self.cols:
-                self.g[cy][cx] = ch
-                self.a[cy][cx] = attr
-            cx += 1
-            if cx >= self.cols:      # wrap to the next row, exactly as curses does
-                cx, cy = 0, cy + 1
-
-    def row(self, r):
-        return "".join(self.g[r])
-
-    def attr_row(self, r):
-        return self.a[r]
 
 
 _CARD = {Point(0, -1): Direction.N, Point(0, 1): Direction.S,

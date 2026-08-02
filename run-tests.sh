@@ -52,7 +52,6 @@ step "ruff"                             "$ruff" check delve tests tools
 # Needs network for the Python Packaging Advisory Database; failure (including fetch failure)
 # fails this step. See docs/SECURITY.md.
 step "pip-audit"                        "$py" -m pip_audit --progress-spinner off
-step "screens"                          "$here/tools.sh" screens --check
 step "issues"                           "$here/tools.sh" issues --check
 step "validate tutorial"                "$py" -m delve validate delve/tutorial
 step "validate pilot"                   "$py" -m delve validate packs/security-onboarding

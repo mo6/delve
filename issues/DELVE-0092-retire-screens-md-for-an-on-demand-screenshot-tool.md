@@ -145,3 +145,7 @@ impact: none, the tool renders whatever locale a scenario asks for, same as `scr
   `issues/TEMPLATE.md`, `tools/README.md` (the live process docs) returns nothing, while archived
   issues under `issues/archive/` are left untouched. Covers the third story.
 - `./run-tests.sh` passes.
+
+## Peer review
+
+- **Auto (agent)**, 2026-08-02: pass. Acceptance covered: `tests/test_screenshot.py` drives `capture`/`render_scenario` for mcq/assertion/tutorial against an independent `render.draw` fixture; ANSI dim + `attrs._BASE` pair tracing + `NO_COLOR`/non-tty plain path asserted; `docs/SCREENS.md` and `tools/screens.py` removed; `run-tests.sh` has no screens step; live process docs no longer name `docs/SCREENS.md`; `infoscreen_mockups` kept via `_ascii_mock.py`. `./run-tests.sh` green. No follow-ups.

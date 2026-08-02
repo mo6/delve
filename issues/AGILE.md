@@ -103,8 +103,9 @@ An issue is ready to build when all of these hold. Check them before moving `sta
 - [ ] **Locale impact is stated**: does it touch the `en`+`nl` pack trees, the `delve/strings`
       catalogue, or a `[format]` table? A locale is complete or absent; there is no per-room
       fallback.
-- [ ] **Screen and tutorial impact is noted**: if it changes what a screen looks like, it names
-      `docs/SCREENS.md` and the `delve/tutorial/` coupling (the tutorial hard-codes the interface).
+- [ ] **Screen and tutorial impact is noted**: if it changes what a screen looks like, run
+      `./tools.sh screenshot <scenario>` for the affected scenarios, note anything notable in the
+      issue, and remember the `delve/tutorial/` coupling (the tutorial hard-codes the interface).
 - [ ] **Dependencies and related issues are linked** (`related:` / `supersedes:`).
 - [ ] It is **sized to one release**. If it is larger, it is written as an **epic** with the work
       split into child stories (see below), not left as one oversized file.
@@ -116,8 +117,8 @@ into `archive/`, and fill `commits:`.
 
 - [ ] **Every acceptance criterion is met and covered by a test** (a named pytest, driven through
       the headless harness).
-- [ ] **`./run-tests.sh` is green**: `pytest`, `ruff`, `tools/screens.py --check`,
-      `tools/issues.py --check`, and `delve validate` on the shipped packs.
+- [ ] **`./run-tests.sh` is green**: `pytest`, `ruff`, `tools/issues.py --check`,
+      and `delve validate` on the shipped packs.
 - [ ] **Both locales are updated where touched**: the `en`/`nl` trees still diff clean, strings
       exist in both `.toml` files, and formatting stays in the `[format]` table (never
       `locale.setlocale`, never `strftime('%B')`).

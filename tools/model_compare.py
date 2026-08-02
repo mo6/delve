@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Benchmark candidate Ollama models against Delve's real ambient/nudge prompts (DELVE-0047's
 "a tools/ dev helper if judged worth keeping"). Not part of the delve package and not imported by
-it, exactly like screens.py and issues.py; it opens a socket to a local Ollama, so it's a dev tool,
-never run by run-tests.sh or the game itself.
+it, exactly like screenshot.py and issues.py; it opens a socket to a local Ollama, so it's a
+dev tool, never run by run-tests.sh or the game itself.
 
     ./tools.sh model_compare                                  # default model set, JSON to stdout
     ./tools.sh model_compare gemma3:4b qwen3.5:9b qwen2.5:3b   # explicit models
