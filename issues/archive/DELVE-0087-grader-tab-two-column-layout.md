@@ -1,23 +1,23 @@
 ---
 id: DELVE-0087
 title: Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page
-status: in-progress
+status: implemented
 area: [ui, session]
 type: bug
 epic:
 effort: medium
 milestone:
-version:
+version: 1.34.3
 version_span:
 created: 2026-07-31
 updated: 2026-08-02
 accepted_by: George Moses
 accepted_at: 2026-08-02
-commits: []
+commits: [4ce5a9b, 45e75e3]
 related: [DELVE-0066, DELVE-0075, DELVE-0077, DELVE-0078]
 supersedes: []
 docs: [docs/INFOSCREEN.md]
-changelog:
+changelog: "1.34.3"
 reason:
 ---
 
@@ -118,3 +118,4 @@ fits two roughly-33-column halves.
 ## Peer review
 
 - Auto (implementing agent), 2026-08-02: `InfoView` gains `grader_left`/`grader_right`; `_grader_columns` builds one condensed `kv` block per section (heading included, so no blank between heading and data); `Model`/`This run` split onto two string keys each in en/nl; `windows._draw_grader_columns` mirrors Pack's even-split divider (`GRADER_COL_W` = 33). Offline stays a full-width `body` line. Column titles (`Grading` / `Ambient toast`) are bold bright-yellow via `_kv_spans` treating a leading colon-less line as a section heading. New `grader` screenshot scenario; session tests cover one-page with sparklines, wrap width in both locales, and offline; render test asserts side-by-side highlighted headings. `./tools.sh screenshot grader` shows both columns on one page. `./run-tests.sh` green.
+- George Moses (maintainer), 2026-08-02: peer-reviewed; implementation accepted.
