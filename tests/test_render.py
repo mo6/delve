@@ -523,6 +523,48 @@ def test_toast_anchor_flips_exactly_at_the_screen_midpoint():
     assert right_left > left_left == 0
 
 
+# -- Toast-loading spinner cadence (DELVE-0093) ---------------------------------------------------
+# Braille cell layout for decoding which edge-dot is missing from each `_SPINNER` glyph:
+#   1 4
+#   2 5
+#   3 6
+#   7 8
+
+
+def _missing_dot_pos(glyph: str) -> tuple[int, int]:
+    """(col, row) of the single empty edge-dot in a 7-of-8 braille spinner glyph."""
+    bits = ord(glyph) - 0x2800
+    missing = [d for d in range(1, 9) if not (bits & (1 << (d - 1)))]
+    assert len(missing) == 1, glyph
+    return {1: (0, 0), 2: (0, 1), 3: (0, 2), 7: (0, 3),
+            4: (1, 0), 5: (1, 1), 6: (1, 2), 8: (1, 3)}[missing[0]]
+
+
+def test_toast_poll_is_a_multiple_of_spinner_hold():
+    """The app-loop wake and the per-glyph hold must stay divisible, or redraws land mid-cycle
+    and the spinner jitters again (DELVE-0093). `_TOAST_POLL_MS` is derived from `_SPINNER_MS`,
+    but assert the relationship directly so a later edit that breaks the derivation still fails."""
+    from delve.ui import app
+    assert app._TOAST_POLL_MS % windows._SPINNER_MS == 0
+    assert app._TOAST_POLL_MS // windows._SPINNER_MS == 1   # exactly one glyph per redraw
+
+
+def test_spinner_advances_one_adjacent_glyph_per_toast_poll():
+    """Drive `_spinner_glyph` across timestamps spaced like the app loop's toast-pending wake and
+    assert every consecutive pair is the next glyph in `_SPINNER` *and* a unit step of the missing
+    edge-dot (the orbit the sequence was designed for)."""
+    from delve.ui import app
+    step = app._TOAST_POLL_MS
+    # Two full laps from an unaligned start, so wrap and phase both get exercised.
+    t0 = 37
+    glyphs = [windows._spinner_glyph(t0 + i * step) for i in range(len(windows._SPINNER) * 2)]
+    for a, b in zip(glyphs, glyphs[1:], strict=False):
+        assert b == windows._SPINNER[(windows._SPINNER.index(a) + 1) % len(windows._SPINNER)]
+        ax, ay = _missing_dot_pos(a)
+        bx, by = _missing_dot_pos(b)
+        assert abs(ax - bx) + abs(ay - by) == 1, (a, b)
+
+
 def test_player_x_distinguishes_the_learner_from_a_keeper_drawn_the_same_glyph():
     from delve.session.views import Cell, Colour, MapView
     from delve.ui.render import _player_x
