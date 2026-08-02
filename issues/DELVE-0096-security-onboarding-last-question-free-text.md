@@ -1,7 +1,7 @@
 ---
 id: DELVE-0096
 title: Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader
-status: proposed
+status: in-progress
 area: [content]
 type: story
 epic:
@@ -11,8 +11,8 @@ version:
 version_span:
 created: 2026-08-02
 updated: 2026-08-02
-accepted_by:
-accepted_at:
+accepted_by: George Moses
+accepted_at: 2026-08-02
 commits: []
 related: []
 supersedes: []
