@@ -1,23 +1,23 @@
 ---
 id: DELVE-0092
 title: Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer
-status: in-progress
+status: implemented
 area: [ui, tools, docs]
 type: story
 epic:
 effort: medium
 milestone:
-version:
+version: 1.34.0
 version_span:
 created: 2026-08-01
 updated: 2026-08-02
 accepted_by: George Moses
 accepted_at: 2026-08-02
-commits: []
+commits: [e104913, ba04a2c]
 related: [DELVE-0018]
 supersedes: []
 docs: [docs/SCREENS.md, docs/PLAN.md]
-changelog:
+changelog: "1.34.0"
 ---
 
 # Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer
@@ -145,3 +145,9 @@ impact: none, the tool renders whatever locale a scenario asks for, same as `scr
   `issues/TEMPLATE.md`, `tools/README.md` (the live process docs) returns nothing, while archived
   issues under `issues/archive/` are left untouched. Covers the third story.
 - `./run-tests.sh` passes.
+
+## Peer review
+
+- **Auto (agent)**, 2026-08-02: pass. Acceptance covered: `tests/test_screenshot.py` drives `capture`/`render_scenario` for mcq/assertion/tutorial against an independent `render.draw` fixture; ANSI dim + `attrs._BASE` pair tracing + `NO_COLOR`/non-tty plain path asserted; `docs/SCREENS.md` and `tools/screens.py` removed; `run-tests.sh` has no screens step; live process docs no longer name `docs/SCREENS.md`; `infoscreen_mockups` kept via `_ascii_mock.py`. `./run-tests.sh` green. No follow-ups.
+- **Claude Code**, 2026-08-02: reviewed the initial diff (clean; verified the real-render-path claim by hand, confirmed a live `\x1b[2m` dim code on an eliminated option, all acceptance criteria met). Manual exploration and the maintainer's own playtesting then surfaced three real gaps not caught by the original tests: room walls fell back to ASCII (no `enable_fake_acs`), the `two-rooms` scenario never actually reached room 2 (vision radius too short for the walked distance), and a title emoji left a phantom extra column in `CursesEmu`'s row model (a genuine modelling bug, caught only after a first fix attempt was itself wrong and corrected against a real play-session screenshot the maintainer supplied). All three fixed with regression tests (commit `ba04a2c`); `./run-tests.sh` green (665 tests) after each round. No outstanding findings.
+- **George Moses** (maintainer), 2026-08-02: tested and accepted.

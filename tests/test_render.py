@@ -6,7 +6,12 @@ this one wraps and asserts the box is well formed and the map survives beside it
 """
 
 import curses
+import sys
 from collections import deque
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tools"))
+from _fakescreen import CursesEmu  # noqa: E402
 
 from delve.engine.world import Direction, Point
 from delve.session.commands import Move, Talk
@@ -15,44 +20,6 @@ from delve.session.views import AmountView, Cell, InfoTab, InfoView, PromptView,
 from delve.ui import attrs, render, walls, windows
 
 _BOX = set("═║╔╗╚╝")
-
-
-class CursesEmu:
-    """A minimal stdscr that reproduces curses' addstr wrapping and its bottom-right-cell error,
-    so a write that overruns a row spills onto the next one here too."""
-
-    def __init__(self, rows: int, cols: int):
-        self.rows, self.cols = rows, cols
-        self.g = [[" "] * cols for _ in range(rows)]
-        self.a = [[0] * cols for _ in range(rows)]   # the attr each cell was last written with
-
-    def getmaxyx(self):
-        return (self.rows, self.cols)
-
-    def erase(self):
-        self.g = [[" "] * self.cols for _ in range(self.rows)]
-        self.a = [[0] * self.cols for _ in range(self.rows)]
-
-    def refresh(self):
-        pass
-
-    def addstr(self, y, x, text, attr=0):
-        cy, cx = y, x
-        for ch in text:
-            if cy >= self.rows or cy < 0:
-                raise curses.error
-            if 0 <= cx < self.cols:
-                self.g[cy][cx] = ch
-                self.a[cy][cx] = attr
-            cx += 1
-            if cx >= self.cols:      # wrap to the next row, exactly as curses does
-                cx, cy = 0, cy + 1
-
-    def row(self, r):
-        return "".join(self.g[r])
-
-    def attr_row(self, r):
-        return self.a[r]
 
 
 _CARD = {Point(0, -1): Direction.N, Point(0, 1): Direction.S,
@@ -157,6 +124,23 @@ def test_wrap_keeps_emoji_text_within_the_panel_and_leaves_ascii_untouched():
     emoji_text = "spot the \U0001F3A3 in the link " * 6
     lines = windows._wrap(emoji_text.strip(), windows.TEXT_W)
     assert all(windows._width(line) <= windows.TEXT_W for line in lines)
+
+
+def test_curses_emu_drops_a_wide_glyphs_phantom_column_not_a_real_space():
+    """Two playtesting rounds on the screenshot tool's lesson scenario (a title emoji), against a
+    real play session for ground truth: the first fix advanced CursesEmu's cursor two cells for a
+    wide glyph but left a real, printable space in the trailing cell, so the joined row carried a
+    phantom extra column no real terminal ever emits (real ncursesw expands the one codepoint
+    across two columns itself; it is never asked to render a second character there). The fix:
+    the trailing cell holds '', which `row()`'s plain join drops entirely, so the row's Python
+    length is one shorter than its column count for a row carrying one wide glyph, while its
+    _width() still equals the true column count (DELVE-0092)."""
+    scr = CursesEmu(3, 20)
+    scr.addstr(0, 0, "\U0001F3A3 hi", 0)   # fishing pole, then a space and two ASCII chars
+    row = scr.row(0)
+    assert row == "\U0001F3A3 hi" + " " * (20 - windows._width("\U0001F3A3 hi"))
+    assert len(row) == 19               # one codepoint short of 20: the phantom column is gone
+    assert windows._width(row) == 20    # but the true display width is still the full row
 
 
 def _grid(picture: str) -> list[list[Cell]]:

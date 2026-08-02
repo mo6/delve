@@ -3,20 +3,21 @@
 A NetHack-style training application. Learners descend a dungeon; keepers teach a topic and
 examine them on it; passing makes a door appear. Design in [docs/PLAN.md](docs/PLAN.md), the
 content format in [docs/AUTHORING.md](docs/AUTHORING.md), voice and the LLM pack-generation
-brief in [docs/STYLE.md](docs/STYLE.md), verified 100×30 screen mock-ups of the M2 slice in
-[docs/SCREENS.md](docs/SCREENS.md). This file is the short list of things that are expensive to
+brief in [docs/STYLE.md](docs/STYLE.md). This file is the short list of things that are expensive to
 get wrong.
 
-**The mock-ups are generated, not drawn** — `./tools.sh screens` (add `--check` for
-assertions only). Change a screen there and re-paste into SCREENS.md; never hand-edit the frames,
-or they stop being evidence. Its assertions have already caught four real bugs.
+**Screen look is inspected on demand, not checked in** — `./tools.sh screenshot <scenario>`
+drives a real `RunState` through the real `delve/ui` renderer onto a headless fake terminal and
+prints the frame (ANSI colour on a tty). `./tools.sh screenshot` with no name lists every
+scenario. There is no checked-in mock-up doc to keep in sync; if a change affects what a screen
+looks like, run the relevant scenario and note anything notable in the issue.
 
 **Issues live in [issues/](issues/README.md)** — one Markdown file per change
 (front matter plus testable prose), stating *what* a change must do, distinct from `docs/` (*why*)
 and CHANGELOG (*when*). Implemented ones move to `issues/archive/` carrying their commit ids,
 rejected ones to `issues/rejected/`; the seed set (`DELVE-0001`–`DELVE-0014`) was backfilled from
 history by feature arc. The index in `issues/README.md` is generated and gate-checked by
-`./tools.sh issues` (`--check`), the same way `screens.py` guards the mock-ups. **Before adding
+`./tools.sh issues` (`--check`). **Before adding
 an issue, run `./tools.sh issues --check`** — it prints the next free id (`DELVE-NNNN`) to
 name the new file, then regenerate the index with `./tools.sh issues` once the file is written.
 **To list or filter issues (e.g. "what's proposed", "what's left to pick up"), use
@@ -318,8 +319,8 @@ which was never true: `packs/` has shipped **178 non-ASCII characters** since `n
 
 **No emoji in map glyphs.** Not aesthetics, arithmetic: they're double-width (2 cells in a 1-cell
 grid, which rewrites layout), astral-plane (worst case for PDCurses, already the Windows risk), and
-often multi-codepoint, which stops `glyph: str` meaning "a character". Measurements in
-[docs/SCREENS.md](docs/SCREENS.md) §9. The map is the expensive surface (DISPLAY.md §2), and this
+often multi-codepoint, which stops `glyph: str` meaning "a character". Width arithmetic is in
+[docs/DISPLAY.md](docs/DISPLAY.md). The map is the expensive surface (DISPLAY.md §2), and this
 half stands: the grid is ASCII, and it's NetHack, so the `@` *is* the game.
 
 **Emoji in panel prose is allowed, single-codepoint only** (shipped: the low-risk half of
@@ -388,7 +389,7 @@ not developers and most run this once.
 be**. The learner must see the room, the keeper and themselves while the keeper talks — that's
 most of what stops a lesson feeling like a slide deck reached by walking, the project's top risk.
 It's also the *real* reason the minimum is 100 columns; PLAN §3's old reason ("100 is a better
-reading surface than 80") was disproved by the mock-ups, since the panel is 69 columns.
+reading surface than 80") was disproved once the lesson panel sat beside the map at 69 columns.
 
 **Panel height minimises wasted rows, not pages** — and that inverts the answer: for the pilot
 lesson, 4 pages is an 18-row panel keeping 9 rows of map, while 3 pages is a 24-row panel keeping
@@ -576,10 +577,10 @@ have failed.
   zips `strict=True`). Local dev data only; no migration was written. This is the place to look if
   resume ever has to survive a chapter-count change.
 - **It is coupled to the renderer and nothing checks that.** Its job is to describe the interface,
-  so it hard-codes it: one pass of screen mock-ups broke it twice (`"Walls are - and |"`, `"the
+  so it hard-codes it: early screen-layout passes broke it twice (`"Walls are - and |"`, `"the
   bottom two lines are you"`). Engine-ownership stops it drifting *per pack*, not from `ui/`. **If
-  you change what a screen looks like, grep `delve/tutorial/` in both locales.** A structural
-  validator will not catch this.
+  you change what a screen looks like, grep `delve/tutorial/` in both locales** and re-check with
+  `./tools.sh screenshot tutorial`. A structural validator will not catch this.
 
 ---
 
@@ -638,12 +639,13 @@ both assume `.venv/` exists.
 - **`./delve.sh …`** plays the game. Args pass through verbatim (`./delve.sh --lang nl`,
   `./delve.sh validate ./pack`) and it `exec`s the venv python so Ctrl-C reaches the game.
 - **`./run-tests.sh`** is the dev check gate: `pytest`, `ruff` (including security rule set
-  `S`), `pip-audit`, the screen self-check (`tools/screens.py --check`), the issues-index
-  check (`tools/issues.py --check`), and `validate` on the shipped packs. It runs **every** step even
+  `S`), `pip-audit`, the issues-index check (`tools/issues.py --check`), and `validate` on the
+  shipped packs. It runs **every** step even
   when one fails, so one invocation surfaces every problem, and exits non-zero if any did. Pass
   arguments and they go **straight to pytest instead** (`./run-tests.sh -k tutorial -x`,
   `./run-tests.sh tests/test_languages.py`), for a tight edit-run loop. Security procedure:
-  [docs/SECURITY.md](docs/SECURITY.md).
+  [docs/SECURITY.md](docs/SECURITY.md). Screen look is inspected on demand with
+  `./tools.sh screenshot`, not gated here.
 
 ### Versioning
 

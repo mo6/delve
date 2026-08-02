@@ -64,7 +64,8 @@ What is explicitly out of scope, so the issue is not read as asking for more tha
 ## Design notes / links
 
 Pointers into `docs/` and constraints from `CLAUDE.md` (the five rules, cross-platform,
-locale). Do not re-derive the design here; link it.
+locale). Do not re-derive the design here; link it. If the change affects what a screen looks
+like, name the `./tools.sh screenshot` scenarios to re-check and note anything notable here.
 
 ## Acceptance / verification
 

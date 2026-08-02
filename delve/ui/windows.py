@@ -2,16 +2,14 @@
 
 Pagination and panel geometry live here, not in the core: the core hands over the whole text
 as semantic blocks and the UI breaks it into pages (PLAN.md section 4). Pages break on
-paragraph boundaries and never inside a URL or domain (break_on_hyphens=False), the rules the
-screen mock-ups verified (SCREENS.md section 8.3).
+paragraph boundaries and never inside a URL or domain (break_on_hyphens=False).
 
 The panel is a right-anchored double-line box, deliberately distinct from a room's single-line
-wall (SCREENS.md section 9.3). Its body height is a pure function of the terminal height (`_body`):
-held at the tuned minimum on a 100x30 floor, and one row taller per extra terminal row above it,
-so a taller terminal shows more of the lesson at once. Because it depends only on `rows`, it is
-constant across the whole encounter, so nothing jitters as the keeper walks greet/instruct/
-examine/explain. The content-aware minimise-wasted-rows sweep (section 8.2, prototyped in
-tools/screens.py) is a further refinement still to land in the engine.
+wall. Its body height is a pure function of the terminal height (`_body`): held at the tuned
+minimum on a 100x30 floor, and one row taller per extra terminal row above it, so a taller
+terminal shows more of the lesson at once. Because it depends only on `rows`, it is constant
+across the whole encounter, so nothing jitters as the keeper walks greet/instruct/
+examine/explain.
 """
 
 import curses
@@ -161,7 +159,7 @@ def _longest_word(cell) -> int:
 
 def _wrap_words(words, width: int) -> list[list]:
     """Fill `width` with `words` (each a list of `(text, strong)` segments), never breaking a word,
-    so a URL or domain stays whole (SCREENS §8.3). Returns lines of segments."""
+    so a URL or domain stays whole. Returns lines of segments."""
     if not words:
         return [[]]
     lines, line, width_so_far = [], [], 0

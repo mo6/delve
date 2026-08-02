@@ -4,16 +4,14 @@
     python tools/infoscreen_mockups.py            # print every mock-up
     python tools/infoscreen_mockups.py --check     # assert geometry, print nothing
 
-Reuses the drawing primitives from tools/screens.py (the real, generated-and-asserted M2 slice
-evidence) so these mock-ups sit on the same 100x30 grid and the same geometry assertions, but they
-are kept out of all_screens()/SCREENS.md on purpose: SCREENS.md is evidence of what is built, and
-these tabs do not exist yet. This script exists so DELVE-0035's proposed screens are pasted into
-the issue the same disciplined way, not hand-drawn free-hand ASCII that could silently drift from
-the panel width or line-length rules the real screens already enforce.
+Reuses the ASCII grid helpers in tools/_ascii_mock.py so these mock-ups sit on the same 100x30
+grid and the same geometry assertions. Built screens are rendered on demand by `screenshot.py`
+against the real renderer; this script stays for proposed, not-yet-built UI (DELVE-0035) that has
+no real draw path to drive yet.
 """
 import argparse
 
-from screens import (
+from _ascii_mock import (
     LW_LEFT,
     LW_W,
     MAP_ROWS,

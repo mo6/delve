@@ -1,8 +1,9 @@
 # Delve
 
 A NetHack-style training application. Learners descend a dungeon; keepers teach a topic and
-examine them on it; passing makes a door appear in the wall. Reaching the final chamber awards a
-certificate, collected across many training dungeons over time.
+examine them on it, multiple-choice or typed free text graded by a locally running LLM; passing
+makes a door appear in the wall. Reaching the final chamber awards a certificate, collected across
+many training dungeons over time.
 
 *Named for both meanings: dungeon delving, and delving into a subject.*
 

@@ -1,8 +1,8 @@
 # tools/
 
 Standalone dev scripts. None of these are part of the `delve` package and none are imported by
-it; they exist to generate or check evidence about the repo (mock-ups, the issues index, this
-table), stdlib-only, run from the project's venv.
+it; they exist to generate or check evidence about the repo (on-demand screenshots, the issues
+index, this table), stdlib-only, run from the project's venv.
 
 Run any of them through **`./tools.sh <tool> [args...]`** from the repo root (works from any
 working directory, no `activate` needed) — `<tool>` is the script's name with or without `.py`,
@@ -30,17 +30,30 @@ the generated README index block is current. `--check` reports every problem in 
 non-zero if any exist; without it, the index is rewritten. Also prints the next free `DELVE-NNNN`
 id, which is what to run before starting a new issue file.
 
-### `screens.py` — generate the screen mock-ups in docs/SCREENS.md
+### `screenshot.py` — print a real screen for a named scenario
 
 ```
-./tools.sh screens            # print all screens
-./tools.sh screens --check    # geometry assertions only, no output
+./tools.sh screenshot                 # list scenarios
+./tools.sh screenshot mcq             # one 100x30 frame (ANSI colour on a tty)
+./tools.sh screenshot tutorial --plain
+./tools.sh screenshot arrival --ascii-walls
+./tools.sh screenshot --all           # every scenario in one pass, headed by name
 ```
 
-Renders the verified 100x30 M2-slice mock-ups from real pack content
-(`packs/security-onboarding/`), asserting every frame is exactly 100x30 and every prose line fits
-its window. The mock-ups in `docs/SCREENS.md` are *generated, not drawn* — change a screen here
-and re-paste the output, never hand-edit the frames in SCREENS.md or they stop being evidence.
+Drives a real `RunState` with real `Command`s to a named panel state, then paints through
+`delve.ui.render.draw` onto the shared headless `CursesEmu` (`tools/_fakescreen.py`, also used by
+`tests/test_render.py`). Colour comes from the same `delve.ui.attrs` pair map the live game uses;
+`NO_COLOR` or a non-tty stdout prints plain characters. Not a CI gate: run on demand when a change
+touches what a screen looks like. Private helpers (`_fakescreen.py`, `_ascii_mock.py`) are skipped
+by `./tools.sh`'s menu.
+
+Two things a headless run can't get from curses for free, both faked from the real code's own
+tables rather than reinvented: colour (`curses.color_pair` needs `curses.initscr()`, never called
+here) and room walls (`curses.ACS_*` needs it too, so `delve/ui/walls.py` falls back to a plain
+`-`/`|`). `tools/_fakescreen.py`'s `enable_fake_colour`/`enable_fake_acs` context managers stand in
+for both, on by default, so a room reads with real box-drawing glyphs the same as a learner
+actually sees in a live terminal. Pass `--ascii-walls` to see `walls.py`'s own ASCII stand-in
+instead (what an alternate-character-set-incapable terminal falls back to).
 
 ### `infoscreen_mockups.py` — proposed mock-ups for DELVE-0035
 
@@ -49,11 +62,9 @@ and re-paste the output, never hand-edit the frames in SCREENS.md or they stop b
 ./tools.sh infoscreen_mockups --check    # assert geometry, print nothing
 ```
 
-Same drawing primitives and geometry assertions as `screens.py`, reused for a screen that doesn't
-exist yet (the DELVE-0035 tabbed information screen). Deliberately kept out of `screens.py`'s
-`all_screens()`/`SCREENS.md`, since that file is evidence of what's *built*; this is proposed-issue
-scaffolding pasted into `issues/` the same disciplined way instead of hand-drawn ASCII that could
-silently drift from the real panel-width/line-length rules.
+Hand-drawn ASCII mock-ups with asserted geometry for a screen that does not exist yet (the
+DELVE-0035 tabbed information screen). Uses `tools/_ascii_mock.py` helpers. Deliberately separate
+from `screenshot.py`, which only renders screens the real code can already draw.
 
 ### `effort_table.py` — Markdown table of issues by effort
 
@@ -70,6 +81,6 @@ since that's the usual "what's left to pick up" view.
 ## Adding a new tool
 
 Give it a module docstring whose first line is a one-sentence summary — `./tools.sh` with no
-arguments lists every script in this directory using exactly that line, so it doubles as the menu
-entry. Follow the existing scripts' shape: stdlib only, an `argparse` CLI, not imported by
-`delve` or by anything under `tests/`. Add a section here too.
+arguments lists every public script in this directory using exactly that line, so it doubles as the
+menu entry (names starting with `_` are skipped). Follow the existing scripts' shape: stdlib only,
+an `argparse` CLI. Add a section here too.

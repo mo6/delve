@@ -9,4 +9,4 @@ are expensive to get wrong.
 # scheme was 0.<milestone>.<patch> (it reached 0.8.4); from 1.0.0 on it is ordinary semver,
 # MAJOR.MINOR.PATCH. M7 content-tuning from real play evidence continues as post-1.0 patch
 # releases. Keep pyproject.toml's version in step (nothing syncs the two files).
-__version__ = "1.33.1"
+__version__ = "1.34.0"
