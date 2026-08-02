@@ -126,6 +126,23 @@ def test_wrap_keeps_emoji_text_within_the_panel_and_leaves_ascii_untouched():
     assert all(windows._width(line) <= windows.TEXT_W for line in lines)
 
 
+def test_curses_emu_drops_a_wide_glyphs_phantom_column_not_a_real_space():
+    """Two playtesting rounds on the screenshot tool's lesson scenario (a title emoji), against a
+    real play session for ground truth: the first fix advanced CursesEmu's cursor two cells for a
+    wide glyph but left a real, printable space in the trailing cell, so the joined row carried a
+    phantom extra column no real terminal ever emits (real ncursesw expands the one codepoint
+    across two columns itself; it is never asked to render a second character there). The fix:
+    the trailing cell holds '', which `row()`'s plain join drops entirely, so the row's Python
+    length is one shorter than its column count for a row carrying one wide glyph, while its
+    _width() still equals the true column count (DELVE-0092)."""
+    scr = CursesEmu(3, 20)
+    scr.addstr(0, 0, "\U0001F3A3 hi", 0)   # fishing pole, then a space and two ASCII chars
+    row = scr.row(0)
+    assert row == "\U0001F3A3 hi" + " " * (20 - windows._width("\U0001F3A3 hi"))
+    assert len(row) == 19               # one codepoint short of 20: the phantom column is gone
+    assert windows._width(row) == 20    # but the true display width is still the full row
+
+
 def _grid(picture: str) -> list[list[Cell]]:
     return [[Cell(glyph=ch) for ch in line] for line in picture.splitlines()]
 

@@ -9,6 +9,7 @@ import screenshot as screenshot_tool  # noqa: E402
 from _fakescreen import (  # noqa: E402
     ansi_render,
     colour_wanted,
+    enable_fake_acs,
     enable_fake_colour,
     pair_number,
 )
@@ -16,15 +17,22 @@ from _fakescreen import (  # noqa: E402
 from delve.session.views import Colour  # noqa: E402
 from delve.ui import attrs as ui_attrs  # noqa: E402
 from delve.ui import render  # noqa: E402
+from delve.ui.windows import _width  # noqa: E402
 
 
 def _assert_100x30(text: str) -> list[str]:
+    """100 *display* columns, not 100 Python characters: a row holding a wide glyph (an emoji
+    title) is legitimately fewer codepoints than columns, since CursesEmu drops a wide glyph's
+    trailing cell(s) from the joined string the same way a real terminal never emits a second
+    character for that column (DELVE-0092 playtesting; a first cut checked raw `len()`, which a
+    wide-glyph row can never satisfy once the phantom-column bug above is actually fixed)."""
     lines = text.split("\n")
     assert len(lines) == 30, f"want 30 rows, got {len(lines)}"
     for i, line in enumerate(lines):
         # Strip ANSI for width check when present.
         plain = _strip_ansi(line)
-        assert len(plain) == 100, f"row {i}: want 100 cols, got {len(plain)}"
+        w = _width(plain)
+        assert w == 100, f"row {i}: want 100 display columns, got {w} ({len(plain)} chars)"
     return lines
 
 
@@ -50,15 +58,24 @@ def test_list_scenarios_with_no_name_exits_clean():
         assert name in listing
 
 
+def test_all_flag_prints_every_scenario_headed_by_name(capsys):
+    assert screenshot_tool.main(["--all", "--plain"]) == 0
+    out = capsys.readouterr().out
+    for name in screenshot_tool.SCENARIOS:
+        assert f"--- {name} " in out
+
+
 def test_mcq_assertion_tutorial_match_real_draw_path():
-    """The tool's capture equals an independent render.draw of the same scenario frame."""
+    """The tool's capture equals an independent render.draw of the same scenario frame. Includes
+    "lesson", whose title carries an emoji: a real regression (a phantom extra column after the
+    glyph, playtesting caught it against a live session) only shows up on a wide-glyph row."""
     from _fakescreen import CursesEmu
 
-    for name in ("mcq", "assertion", "tutorial"):
+    for name in ("mcq", "assertion", "tutorial", "lesson"):
         _summary, fn = screenshot_tool.SCENARIOS[name]
         shot = fn()
         expected = CursesEmu(30, 100)
-        with enable_fake_colour():
+        with enable_fake_colour(), enable_fake_acs():
             render.draw(expected, shot.frame, page=shot.page, msg_page=shot.msg_page)
 
         got = screenshot_tool.capture(name)
@@ -73,6 +90,41 @@ def test_capture_is_deterministic():
     a = screenshot_tool.render_scenario("mcq", colour=False)
     b = screenshot_tool.render_scenario("mcq", colour=False)
     assert a == b
+
+
+def _map_rows(scr) -> list[str]:
+    """Rows 1..27 (windows.py: row 0 is the message line, 28-29 are status/hint), where a room's
+    walls actually paint, so hint-line text (which can contain a literal '-') can't false-positive
+    the wall-glyph assertions below."""
+    return [scr.row(r) for r in range(1, 28)]
+
+
+def test_two_rooms_scenario_actually_shows_two_rooms():
+    """A playtesting report found this scenario only walked one step past the door: vision only
+    lights the whole current room or a corridor's immediate 1-tile neighbourhood (`delve.engine.
+    vision.lit_tiles`), so a corridor longer than one tile (the true case for this scenario's
+    seed) never reached room 2's walls. Both rooms' box glyphs must be on screen (room 1 stays
+    visible, already `discovered`, once room 2 is reached; see AGENTS.md/vision.py)."""
+    scr = screenshot_tool.capture("two-rooms")
+    rows = "".join(_map_rows(scr))
+    assert rows.count("┌") >= 2  # a top-left corner per room, room 1 and room 2 both on screen
+
+
+def test_room_walls_default_to_box_drawing_not_ascii():
+    """Rooms paint through box-drawing glyphs by default (the same look a real terminal's
+    alternate character set gives a learner), not walls.py's own ASCII stand-in, which only
+    exists because curses.ACS_* needs curses.initscr() and this tool is deliberately headless."""
+    scr = screenshot_tool.capture("arrival")
+    rows = "".join(_map_rows(scr))
+    assert any(ch in rows for ch in "─│┌┐└┘")
+    assert "-" not in rows and "|" not in rows
+
+
+def test_ascii_walls_flag_shows_the_real_stand_in():
+    scr = screenshot_tool.capture("arrival", ascii_walls=True)
+    rows = "".join(_map_rows(scr))
+    assert not any(ch in rows for ch in "─│┌┐└┘")
+    assert "-" in rows or "|" in rows
 
 
 def test_eliminated_option_ansi_traces_to_attrs_and_no_color_is_plain():

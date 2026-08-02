@@ -17,6 +17,7 @@ import argparse
 import sys
 from collections import deque
 from collections.abc import Callable
+from contextlib import ExitStack
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from _fakescreen import (  # noqa: E402
     CursesEmu,
     ansi_render,
     colour_wanted,
+    enable_fake_acs,
     enable_fake_colour,
 )
 
@@ -244,24 +246,23 @@ def sc_repelled() -> Shot:
 
 
 def sc_two_rooms() -> Shot:
-    """Two rooms connected by a corridor after the first door is earned."""
+    """Two rooms connected by a corridor after the first door is earned. Room 1 stays visible
+    (dimmed, already `discovered`) once room 2 is lit; vision only reveals a room fully from
+    inside it or a corridor tile-by-tile (`delve.engine.vision.lit_tiles`), so reaching the door
+    is not enough, the walk has to continue into room 2 itself (playtesting note, DELVE-0092)."""
     run = _exam_run()
     _approach(run)
     run.apply(Talk())
     _sit(run, _correct)
     door = run.chapter.exits["phishing"]
-    path = _path(run.chapter.grid, run.player.pos, door, blocked=set(run.keepers))
-    assert path is not None
-    for a, b in zip(path, path[1:], strict=False):
+    blocked = set(run.keepers)
+    to_door = _path(run.chapter.grid, run.player.pos, door, blocked=blocked)
+    assert to_door is not None
+    next_room = next(r for r in run.chapter.rooms if r.id != "phishing")
+    to_room2 = _path(run.chapter.grid, door, next_room.center, blocked=blocked)
+    assert to_room2 is not None
+    for a, b in zip(to_door + to_room2[1:], (to_door + to_room2[1:])[1:], strict=False):
         run.apply(Move(_CARD[Point(b.x - a.x, b.y - a.y)]))
-    # One step beyond the door into the corridor so room 2's approach is in view.
-    for d in (Direction.E, Direction.W, Direction.N, Direction.S):
-        n = Point(run.player.pos.x + d.delta.x, run.player.pos.y + d.delta.y)
-        if n in run.keepers:
-            continue
-        if run.chapter.grid.walkable(n.x, n.y):
-            run.apply(Move(d))
-            break
     return Shot(run.frame())
 
 
@@ -350,21 +351,28 @@ SCENARIOS: dict[str, tuple[str, Callable[[], Shot]]] = {
 }
 
 
-def capture(name: str) -> CursesEmu:
-    """Drive the named scenario and paint it onto a fresh CursesEmu. Public entry for tests."""
+def capture(name: str, *, ascii_walls: bool = False) -> CursesEmu:
+    """Drive the named scenario and paint it onto a fresh CursesEmu. Public entry for tests.
+
+    Rooms paint through box-drawing glyphs by default (`enable_fake_acs`), the same as a real
+    terminal with a working alternate character set would show a learner; `ascii_walls=True` shows
+    `walls.py`'s own ASCII stand-in instead (what an ACS-incapable terminal falls back to)."""
     if name not in SCENARIOS:
         raise KeyError(name)
     _summary, fn = SCENARIOS[name]
     shot = fn()
     scr = CursesEmu(ROWS, COLS)
-    with enable_fake_colour():
+    with ExitStack() as stack:
+        stack.enter_context(enable_fake_colour())
+        if not ascii_walls:
+            stack.enter_context(enable_fake_acs())
         render.draw(scr, shot.frame, page=shot.page, msg_page=shot.msg_page)
     return scr
 
 
-def render_scenario(name: str, *, colour: bool = False) -> str:
+def render_scenario(name: str, *, colour: bool = False, ascii_walls: bool = False) -> str:
     """Paint a scenario and return the grid as a string (ANSI when colour=True)."""
-    scr = capture(name)
+    scr = capture(name, ascii_walls=ascii_walls)
     return ansi_render(scr, colour=colour)
 
 
@@ -380,20 +388,22 @@ def main(argv: list[str] | None = None) -> int:
         description="Print a real Delve screen for a named scenario (live renderer, ANSI colour).",
     )
     ap.add_argument("scenario", nargs="?", help="scenario name; omit to list")
+    ap.add_argument("--all", action="store_true",
+                    help="print every scenario in turn (each headed by its name), to eyeball the "
+                         "whole set in one pass; ignores a given scenario name")
     ap.add_argument("--plain", action="store_true",
                     help="force plain characters (also the default when not a tty / NO_COLOR)")
     ap.add_argument("--colour", "--color", action="store_true",
                     help="force ANSI colour even when stdout is not a tty")
+    ap.add_argument("--ascii-walls", action="store_true",
+                    help="show walls.py's own ASCII wall stand-in ('-'/'|') instead of the "
+                         "box-drawing glyphs a real terminal's alternate character set draws "
+                         "(the default)")
     args = ap.parse_args(argv)
 
-    if not args.scenario:
+    if not args.scenario and not args.all:
         print(list_scenarios())
         return 0
-
-    if args.scenario not in SCENARIOS:
-        print(f"screenshot: unknown scenario {args.scenario!r}", file=sys.stderr)
-        print(list_scenarios(), file=sys.stderr)
-        return 1
 
     if args.plain:
         use_colour = False
@@ -402,7 +412,20 @@ def main(argv: list[str] | None = None) -> int:
     else:
         use_colour = colour_wanted()
 
-    print(render_scenario(args.scenario, colour=use_colour))
+    if args.all:
+        for i, name in enumerate(SCENARIOS):
+            if i:
+                print()
+            print(f"--- {name} {'-' * max(0, 76 - len(name))}")
+            print(render_scenario(name, colour=use_colour, ascii_walls=args.ascii_walls))
+        return 0
+
+    if args.scenario not in SCENARIOS:
+        print(f"screenshot: unknown scenario {args.scenario!r}", file=sys.stderr)
+        print(list_scenarios(), file=sys.stderr)
+        return 1
+
+    print(render_scenario(args.scenario, colour=use_colour, ascii_walls=args.ascii_walls))
     return 0
 
 

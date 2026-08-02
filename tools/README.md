@@ -36,6 +36,8 @@ id, which is what to run before starting a new issue file.
 ./tools.sh screenshot                 # list scenarios
 ./tools.sh screenshot mcq             # one 100x30 frame (ANSI colour on a tty)
 ./tools.sh screenshot tutorial --plain
+./tools.sh screenshot arrival --ascii-walls
+./tools.sh screenshot --all           # every scenario in one pass, headed by name
 ```
 
 Drives a real `RunState` with real `Command`s to a named panel state, then paints through
@@ -44,6 +46,14 @@ Drives a real `RunState` with real `Command`s to a named panel state, then paint
 `NO_COLOR` or a non-tty stdout prints plain characters. Not a CI gate: run on demand when a change
 touches what a screen looks like. Private helpers (`_fakescreen.py`, `_ascii_mock.py`) are skipped
 by `./tools.sh`'s menu.
+
+Two things a headless run can't get from curses for free, both faked from the real code's own
+tables rather than reinvented: colour (`curses.color_pair` needs `curses.initscr()`, never called
+here) and room walls (`curses.ACS_*` needs it too, so `delve/ui/walls.py` falls back to a plain
+`-`/`|`). `tools/_fakescreen.py`'s `enable_fake_colour`/`enable_fake_acs` context managers stand in
+for both, on by default, so a room reads with real box-drawing glyphs the same as a learner
+actually sees in a live terminal. Pass `--ascii-walls` to see `walls.py`'s own ASCII stand-in
+instead (what an alternate-character-set-incapable terminal falls back to).
 
 ### `infoscreen_mockups.py` — proposed mock-ups for DELVE-0035
 

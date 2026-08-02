@@ -13,6 +13,8 @@ import sys
 
 from delve.session.views import Colour
 from delve.ui import attrs as ui_attrs
+from delve.ui import walls as ui_walls
+from delve.ui.windows import _cw
 
 # Synthetic colour-pair encoding in the same A_COLOR bits curses.color_pair uses
 # (pairs 1-8 = fg on default bg; 9-16 = black on solid colour), without calling color_pair,
@@ -38,14 +40,28 @@ class CursesEmu:
         pass
 
     def addstr(self, y, x, text, attr=0):
+        """Real ncursesw (a UTF-8 locale, `locale.setlocale` in `ui/app.py`) advances its cursor
+        by a wide glyph's true *display* width, not one cell per codepoint, but it never writes a
+        second character for that glyph's second column: the terminal's own rendering spans both
+        columns from the one codepoint. A first cut here got this wrong, writing the glyph into one
+        cell and leaving the next cell's pre-existing blank in place, which `row()` then rejoined as
+        a *real*, printable space, a phantom extra column no real terminal emits (confirmed against
+        an actual play session, DELVE-0092 playtesting). The fix: mark a wide glyph's trailing
+        cell(s) with `''`, which `row()`'s plain join drops entirely, same as a real terminal drops
+        nothing there because it was never asked to render anything there."""
         cy, cx = y, x
         for ch in text:
             if cy >= self.rows or cy < 0:
                 raise curses.error
+            w = _cw(ch) or 1          # a zero-width combining mark still needs the cursor to move
             if 0 <= cx < self.cols:
                 self.g[cy][cx] = ch
                 self.a[cy][cx] = attr
-            cx += 1
+                for trail in range(1, w):
+                    if cx + trail < self.cols:
+                        self.g[cy][cx + trail] = ""
+                        self.a[cy][cx + trail] = attr
+            cx += w
             if cx >= self.cols:      # wrap to the next row, exactly as curses does
                 cx, cy = 0, cy + 1
 
@@ -106,6 +122,37 @@ class enable_fake_colour:
     def __exit__(self, *exc):
         ui_attrs.attr_for = self._prev_attr_for
         ui_attrs.bar_attr = self._prev_bar_attr
+        return False
+
+
+# The box-drawing glyph curses.ACS_* would resolve to on a real terminal with a working alternate
+# character set, keyed the same as walls._ACS_NAME. `walls.acs_for` only reaches this stand-in
+# because curses.ACS_* isn't populated without `curses.initscr()` (headless, same reason colour
+# needs its own stand-in above); the tool fakes it too so a wall reads as a wall, not a dash, the
+# same way a learner playing for real would see it.
+_ACS_UNICODE = {
+    "hline": "─", "vline": "│",
+    "ul": "┌", "ur": "┐", "ll": "└", "lr": "┘",
+    "ltee": "├", "rtee": "┤", "ttee": "┬", "btee": "┴",
+    "plus": "┼",
+}
+
+
+class enable_fake_acs:
+    """Temporarily replace `walls.acs_for` with a version that returns the box-drawing glyph a
+    real terminal's alternate character set would draw, instead of `walls.py`'s own ASCII stand-in
+    (which only exists because `curses.ACS_*` needs `curses.initscr()`, never called headlessly).
+    Returns a plain string, not a curses ACS int, so it paints through the same `_put` path the
+    ASCII stand-in already uses (no int-decoding pitfall). Use as a context manager, the same as
+    `enable_fake_colour`, so `test_render.py`'s own ASCII-fallback assertions stay unaffected."""
+
+    def __enter__(self):
+        self._prev = ui_walls.acs_for
+        ui_walls.acs_for = lambda role: _ACS_UNICODE[role]  # type: ignore[assignment]
+        return self
+
+    def __exit__(self, *exc):
+        ui_walls.acs_for = self._prev
         return False
 
 
