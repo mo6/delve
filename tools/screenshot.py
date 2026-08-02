@@ -354,6 +354,19 @@ def sc_grader() -> Shot:
     return Shot(run.apply(TabCycle(2)))
 
 
+def sc_trophies() -> Shot:
+    """Info / Trophies tab with a couple of finished-pack rows."""
+    lines = [
+        " 95.0%   Security Onboarding   18 July 2026",
+        " 80.0%   Security Onboarding   17 July 2026",
+        " 91.7%   holy-grail   12 June 2026",
+    ]
+    run = new_run(seed=1, cols=COLS, rows=ROWS, pet_species="none", name="Ada")
+    run._trophy_lines = lines
+    run.apply(Inventory())
+    return Shot(run.apply(TabCycle(5)))
+
+
 SCENARIOS: dict[str, tuple[str, Callable[[], Shot]]] = {
     "tutorial": ("Tutorial floor (Dlvl 0), first screen", sc_tutorial),
     "arrival": ("Arrival on Dlvl 1, bare map", sc_arrival),
@@ -374,6 +387,7 @@ SCENARIOS: dict[str, tuple[str, Callable[[], Shot]]] = {
     "help": ("Help panel, Keys tab", sc_help),
     "toast": ("Ambient room-entry toast", sc_toast),
     "grader": ("Info / Grader tab, two columns with sparklines", sc_grader),
+    "trophies": ("Info / Trophies tab with finished packs", sc_trophies),
 }
 
 

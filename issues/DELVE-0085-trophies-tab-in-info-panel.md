@@ -1,7 +1,7 @@
 ---
 id: DELVE-0085
 title: Add a Trophies tab to the Info panel showing finished packs and their scores
-status: proposed
+status: in-progress
 area: [session, progress, ui]
 type: feature
 epic:
@@ -11,8 +11,8 @@ version:
 version_span:
 created: 2026-07-31
 updated: 2026-08-02
-accepted_by:
-accepted_at:
+accepted_by: George Moses
+accepted_at: 2026-08-02
 commits: []
 related: []
 supersedes: []
@@ -104,3 +104,7 @@ information the Info panel already exists for, so it belongs there rather than o
   <scenario>`), reaching the Info panel with the new tab selected, confirming the tab strip and
   body still fit the panel's fixed layout.
 - `./run-tests.sh` green, both locales (`item.tab_trophies` added to both `en.toml` and `nl.toml`).
+
+## Peer review
+
+- Auto (implementing agent), 2026-08-02: `trophy_lines` threaded into `RunState` via `new_game`/`launch.start`/`resume` (same ready-to-print lines as `launch.trophies`); sixth Info tab `trophies` with `_trophies_body` (condensed list, or `item.trophies_empty`); en/nl `tab_trophies`/`trophies_empty`; session tests for non-empty, empty, and launch.start threading; `trophies` screenshot scenario. Tab strip still fits at 100×30. `./run-tests.sh` green.

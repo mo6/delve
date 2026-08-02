@@ -225,7 +225,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0082](archive/DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | implemented | 1.32.0 |
 | [DELVE-0083](archive/DELVE-0083-doomed-nudge-loading-spinner.md) | The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge | bug | low | implemented | 1.32.1 |
 | [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | proposed | - |
-| [DELVE-0085](DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | proposed | - |
+| [DELVE-0085](DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | in-progress | - |
 | [DELVE-0086](archive/DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | implemented | 1.34.2 |
 | [DELVE-0087](archive/DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | implemented | 1.34.3 |
 | [DELVE-0088](DELVE-0088-pet-ignores-you-leaving-for-a-reward-coin.md) | The pet chases a keeper's dropped reward coin even after you've already left for the next room | bug | medium | proposed | - |
@@ -236,6 +236,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0093](archive/DELVE-0093-toast-spinner-redraw-cadence.md) | Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time | bug | low | implemented | 1.33.1 |
 | [DELVE-0094](archive/DELVE-0094-resume-queues-a-doomed-ambient-toast-for-the-spawn-room.md) | Resuming a run queues an ambient toast for the pre-restore spawn room, then silently discards it | bug | medium | implemented | 1.34.1 |
 | [DELVE-0095](DELVE-0095-keeper-halo-never-dims-at-a-distance.md) | A visited room's keeper halo never dims, so going dark shows it brighter than a lit torch would | bug | medium | proposed | - |
+| [DELVE-0096](DELVE-0096-security-onboarding-last-question-free-text.md) | Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader | story | medium | proposed | - |
 
 ### Epics
 
@@ -324,5 +325,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0096**.
+Next free id: **DELVE-0097**.
 <!-- issues:index:end -->

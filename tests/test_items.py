@@ -430,7 +430,7 @@ def test_info_panel_defaults_to_pack_and_cycles_tabs():
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     inv = run.apply(Inventory())
     assert [t.key for t in inv.overlay.tabs] == \
-        ["pack", "scoring", "grader", "status", "messages"]
+        ["pack", "scoring", "grader", "status", "messages", "trophies"]
     assert inv.overlay.active == 0                       # Pack, unasked
 
     frame = run.apply(TabCycle(1))
@@ -447,10 +447,13 @@ def test_info_panel_defaults_to_pack_and_cycles_tabs():
     assert frame.overlay.active == 4                     # Messages
 
     frame = run.apply(TabCycle(1))
+    assert frame.overlay.active == 5                     # Trophies
+
+    frame = run.apply(TabCycle(1))
     assert frame.overlay.active == 0                      # wraps back to Pack
 
     frame = run.apply(TabCycle(-1))
-    assert frame.overlay.active == 4                      # Shift-Tab wraps the other way
+    assert frame.overlay.active == 5                      # Shift-Tab wraps the other way
 
 
 def test_info_panel_tab_cycle_is_ignored_outside_the_panel():
@@ -1077,6 +1080,47 @@ def test_grader_offline_stays_a_full_width_body_line_not_columns():
     assert frame.overlay.grader_left == [] and frame.overlay.grader_right == []
     assert len(frame.overlay.body) == 1
     assert "no model configured" in frame.overlay.body[0].text.lower()
+
+
+# -- the Trophies tab (DELVE-0085) ----------------------------------------------------------------
+
+
+def test_trophies_tab_shows_the_lines_threaded_in_at_start():
+    lines = [" 95.0%   Security Onboarding   18 July 2026",
+             " 80.0%   Security Onboarding   17 July 2026"]
+    run = _pilot_game(pet_species="none", trophy_lines=lines)
+    run.apply(Inventory())
+    frame = run.apply(TabCycle(5))                    # Trophies
+    assert frame.overlay.active == 5
+    assert frame.overlay.tabs[5].key == "trophies"
+    assert frame.overlay.body == run._trophies_body()
+    text = frame.overlay.body[0].text
+    assert "95.0%" in text and "80.0%" in text
+    assert "Security Onboarding" in text
+
+
+def test_trophies_tab_empty_state_when_no_completions():
+    run = _pilot_game(pet_species="none")             # default: no trophy_lines
+    assert run._trophy_lines == []
+    run.apply(Inventory())
+    frame = run.apply(TabCycle(5))
+    assert len(frame.overlay.body) == 1
+    assert frame.overlay.body[0].text == run.strings("item.trophies_empty")
+
+
+def test_launch_start_threads_trophies_into_the_run(tmp_path):
+    from delve.progress.store import SQLiteStore
+    from delve.session import launch
+
+    store = SQLiteStore(str(tmp_path / "t.db"))
+    pack = load_pack(PILOT, "en")
+    user = store.user_by_name("Ada")
+    r1 = store.create_run(user.id, pack.id, "1", 1, 100, 30)
+    store.award_scroll(user.id, pack.id, r1.id, 0.80)
+    expected = launch.trophies(store, pack, "Ada")
+    run = launch.start(store, pack, name="Ada", seed=1, cols=100, rows=30, pet_species="none")
+    assert run._trophy_lines == expected
+    assert run._trophies_body()[0].text == "\n".join(expected)
 
 
 def test_mcq_is_answered_by_number_not_letter():

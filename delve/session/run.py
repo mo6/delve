@@ -159,9 +159,10 @@ _HISTORY_MAX = 10
 # "Progress" since it shows score, not completion), Grader (DELVE-0054) and Status (DELVE-0044)
 # all have real content now. Messages (a playtesting request) folds the former standalone message
 # log panel (once its own `p` key) in here; that key is retired, reachable only via this tab now.
+# Trophies (DELVE-0085) shows finished packs from before this run started.
 _INFO_TABS = (("pack", "item.tab_pack"), ("scoring", "item.tab_scoring"),
               ("grader", "item.tab_grader"), ("status", "item.tab_status"),
-              ("messages", "item.tab_messages"))
+              ("messages", "item.tab_messages"), ("trophies", "item.tab_trophies"))
 
 # A sentinel `def_id` for a Pack-tab drop only, never a real `ItemDef.id`: the currently-burning
 # torch is never a `Stack` (DELVE-0062, a steps-remaining counter, not a spare count), so it can't
@@ -291,7 +292,8 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
              difficulty: str | None = None, recorder=None, *, strings: Strings | None = None,
              tutorial: Pack | None = None, skip_tutorial: bool = False,
              pet_species: str = "cat", pet_name: str | None = None,
-             grader_runner=None, observe: bool = True) -> RunState:
+             grader_runner=None, observe: bool = True,
+             trophy_lines: list[str] | None = None) -> RunState:
     """Build a full multi-chapter dungeon from a parsed pack. Every pack room is gated; each
     chapter is generated from a seed derived from `seed` so the whole run is reproducible, and
     only the last chapter's final keeper reveals the pedestal. `recorder`, if given, persists it.
@@ -348,7 +350,7 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
                     idx=start_idx, strings=strings, pet_rng=Rng(seed * 100 + 777),
                     flavour_rng=Rng(seed * 100 + 333), seed=seed,
                     pet_species=pet_species, pet_name=pet_name, grader_runner=grader_runner,
-                    observe=observe)
+                    observe=observe, trophy_lines=trophy_lines)
 
 
 def _scatter_tutorial_coins(cr: ChapterRun, rng: Rng) -> None:
@@ -483,7 +485,8 @@ class RunState:
                  strings: Strings | None = None, pet_rng: Rng | None = None,
                  flavour_rng: Rng | None = None, seed: int = 0,
                  pet_species: str = "cat", pet_name: str | None = None,
-                 grader_runner=None, observe: bool = True):
+                 grader_runner=None, observe: bool = True,
+                 trophy_lines: list[str] | None = None):
         self.chapters = chapters
         self.idx = idx
         self.player = player
@@ -500,6 +503,11 @@ class RunState:
         self.pack = pack
         self.recorder = recorder
         self.strings = strings or _default_strings()
+        # The learner's trophy case as already-formatted lines (DELVE-0085), computed once at
+        # start/resume via `launch.trophies` and never refreshed mid-run; empty means no
+        # completions yet (the Trophies tab shows `item.trophies_empty`). Not snapshotted: resume
+        # re-reads the store the same way start does.
+        self._trophy_lines: list[str] = list(trophy_lines or ())
         self.turn = 0
         self.messages: list[str] = [welcome] if welcome else []
         self._greeted: set[str] = set()
@@ -1853,13 +1861,14 @@ class RunState:
     def _info_overlay(self) -> InfoView:
         """The `i` panel: a tab strip, Scoring's own sub-tab strip, and the active (tab, sub-tab)
         body (DELVE-0035/DELVE-0040/DELVE-0042/DELVE-0043/DELVE-0044/DELVE-0054/DELVE-0055/
-        DELVE-0056, plus Messages folding in the `p` key's former standalone panel). All five
-        primary tabs have real content; the `else` branch is now unreachable (kept as the safe
-        fallback for `_INFO_TABS`, same as before adding a fifth key). Dispatch is keyed by
-        `(active primary key, active sub key)` rather than a growing string if/elif chain, per
-        DELVE-0055's own maintainer story, so a later tab's sub-tab keys can't collide with
-        Scoring's. `sub_focus` only ever carries through when `subtabs` is non-empty, so a
-        row-focus toggle set while Scoring was active can't leak a stale True onto another tab."""
+        DELVE-0056, plus Messages folding in the `p` key's former standalone panel, plus the
+        Trophies tab at DELVE-0085). All six primary tabs have real content; the `else` branch is
+        now unreachable (kept as the safe fallback for `_INFO_TABS`, same as before adding a
+        sixth key). Dispatch is keyed by `(active primary key, active sub key)` rather than a
+        growing string if/elif chain, per DELVE-0055's own maintainer story, so a later tab's
+        sub-tab keys can't collide with Scoring's. `sub_focus` only ever carries through when
+        `subtabs` is non-empty, so a row-focus toggle set while Scoring was active can't leak a
+        stale True onto another tab."""
         tabs = [InfoTab(key=key, label=self.strings(label_key)) for key, label_key in _INFO_TABS]
         active_key = _INFO_TABS[self._info_tab][0]
         subtabs: list[InfoTab] = []
@@ -1900,6 +1909,8 @@ class RunState:
             body = self._status_body()
         elif active_key == "messages":
             body = self._messages_body()
+        elif active_key == "trophies":
+            body = self._trophies_body()
         else:
             body = [TextBlock("para", self.strings("item.tab_soon"))]
         sub_focus = self._info_sub_focus and bool(subtabs)
@@ -2024,6 +2035,17 @@ class RunState:
                     break
         return (self._condensed([f"{i}. {m}" for i, m in enumerate(recent, 1)])
                 or [TextBlock("para", self.strings("ui.no_messages"))])
+
+    def _trophies_body(self) -> list[TextBlock]:
+        """The Trophies tab's body (DELVE-0085): the learner's finished-pack history as the same
+        ready-to-print lines `launch.trophies` builds for the pre-run screen, already threaded
+        into the run at start/resume (`self._trophy_lines`). Condensed into one block so a long
+        case packs tight; empty (no completions yet) is a single explanatory line rather than a
+        blank panel, since the pre-run screen itself skips entirely when the case is empty and
+        the tab still needs something to show."""
+        if not self._trophy_lines:
+            return [TextBlock("para", self.strings("item.trophies_empty"))]
+        return self._condensed(self._trophy_lines)
 
     def _text(self, title: str, body) -> TextView:
         """A TextView carrying the localised pager chrome, so every paginated panel (lesson,

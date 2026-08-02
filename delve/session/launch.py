@@ -144,9 +144,10 @@ def start(store: Store, pack: Pack, *, name: str, seed: int, cols: int, rows: in
     user = store.user_by_name(name)
     row = store.create_run(user.id, pack.id, PACK_VERSION, seed, cols, rows)
     recorder = Recorder(store, user.id, row.id, pack.id)
+    trophy_lines = trophies(store, pack, name, strings)
     run = new_game(pack, seed, cols, rows, name=name, recorder=recorder, strings=strings,
                    tutorial=tutorial, skip_tutorial=skip_tutorial, pet_species=pet_species,
-                   pet_name=pet_name, grader_runner=grader_runner)
+                   pet_name=pet_name, grader_runner=grader_runner, trophy_lines=trophy_lines)
     recorder.save(run)
     return run
 
@@ -165,9 +166,10 @@ def resume(store: Store, pack: Pack, *, run_row: Run, name: str, strings: String
     `_observe` runs once below, against the restored position, so a genuinely unvisited restored
     room still gets its toast and an already-visited one queues nothing."""
     recorder = Recorder(store, run_row.user_id, run_row.id, pack.id)
+    trophy_lines = trophies(store, pack, name, strings)
     run = new_game(pack, run_row.seed, run_row.map_cols, run_row.map_rows,
                    name=name, recorder=recorder, strings=strings, tutorial=tutorial,
-                   grader_runner=grader_runner, observe=False)
+                   grader_runner=grader_runner, observe=False, trophy_lines=trophy_lines)
     if run_row.snapshot:
         apply_dict(run, json.loads(run_row.snapshot))
     run._observe()
