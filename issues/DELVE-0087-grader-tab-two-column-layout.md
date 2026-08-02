@@ -114,3 +114,7 @@ fits two roughly-33-column halves.
   rows fit within the new column width in both locales, including the long example from this issue
   (`qwen2.5:3b @ http://localhost:11434`).
 - `./run-tests.sh` green, both locales.
+
+## Peer review
+
+- Auto (implementing agent), 2026-08-02: `InfoView` gains `grader_left`/`grader_right`; `_grader_columns` builds one condensed `kv` block per section (heading included, so no blank between heading and data); `Model`/`This run` split onto two string keys each in en/nl; `windows._draw_grader_columns` mirrors Pack's even-split divider (`GRADER_COL_W` = 33). Offline stays a full-width `body` line. New `grader` screenshot scenario; session tests cover one-page with sparklines, wrap width in both locales, and offline; render test asserts side-by-side headings. `./tools.sh screenshot grader` shows both columns on one page. `./run-tests.sh` green (678).
