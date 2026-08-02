@@ -43,6 +43,7 @@ from delve.session.commands import (
     Inventory,
     Move,
     Select,
+    TabCycle,
     Talk,
 )
 from delve.session.launch import load_tutorial
@@ -329,6 +330,30 @@ def sc_toast() -> Shot:
     return Shot(run.frame())
 
 
+def sc_grader() -> Shot:
+    """Info / Grader tab with both model sections and at least one Latency sparkline."""
+    from delve.assess.grader import LLMGrader
+    from delve.assess.llm import ChatMetrics
+
+    class FakeClient:
+        model = "qwen2.5:3b"
+        host = "http://localhost:11434"
+
+    grader = LLMGrader(FakeClient())
+    for ms in (200, 400, 350):
+        grader.metrics.record_call(ChatMetrics(total_duration_ms=ms, load_duration_ms=0,
+                                               prompt_tokens=180, completion_tokens=40))
+    grader.metrics.llm_verdicts = 3
+    run = new_run(seed=1, cols=COLS, rows=ROWS, pet_species="none", name="Ada")
+    run._grader_runner = type("R", (), {"grader": grader})()
+    for ms in (500, 800):
+        run._ambient_metrics.record_call(ChatMetrics(total_duration_ms=ms, load_duration_ms=0,
+                                                     prompt_tokens=50, completion_tokens=20))
+    run._ambient_metrics.ambient_calls = 2
+    run.apply(Inventory())
+    return Shot(run.apply(TabCycle(2)))
+
+
 SCENARIOS: dict[str, tuple[str, Callable[[], Shot]]] = {
     "tutorial": ("Tutorial floor (Dlvl 0), first screen", sc_tutorial),
     "arrival": ("Arrival on Dlvl 1, bare map", sc_arrival),
@@ -348,6 +373,7 @@ SCENARIOS: dict[str, tuple[str, Callable[[], Shot]]] = {
     "drop-amount": ("Drop-how-many amount field", sc_drop_amount),
     "help": ("Help panel, Keys tab", sc_help),
     "toast": ("Ambient room-entry toast", sc_toast),
+    "grader": ("Info / Grader tab, two columns with sparklines", sc_grader),
 }
 
 

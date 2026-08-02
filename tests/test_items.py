@@ -996,6 +996,89 @@ def test_grader_body_shows_the_latency_line_from_two_calls_on():
     assert any("(calls)" in t.lower() for t in texts)
 
 
+# -- Grader tab two-column layout (DELVE-0087) ---------------------------------------------------
+
+
+def _grader_with_sparklines():
+    """A run whose Grader tab has both sections populated, each holding a Latency sparkline."""
+    from delve.assess.grader import LLMGrader
+    from delve.assess.llm import ChatMetrics
+
+    class FakeClient:
+        model = "qwen2.5:3b"
+        host = "http://localhost:11434"
+
+    grader = LLMGrader(FakeClient())
+    for ms in (200, 400, 350):
+        grader.metrics.record_call(ChatMetrics(total_duration_ms=ms, load_duration_ms=0,
+                                               prompt_tokens=180, completion_tokens=40))
+    grader.metrics.llm_verdicts = 3
+    run = _pilot_game(pet_species="none")
+    run._grader_runner = type("R", (), {"grader": grader})()
+    for ms in (500, 800):
+        run._ambient_metrics.record_call(ChatMetrics(total_duration_ms=ms, load_duration_ms=0,
+                                                     prompt_tokens=50, completion_tokens=20))
+    run._ambient_metrics.ambient_calls = 2
+    return run
+
+
+def test_grader_columns_are_side_by_side_not_stacked_when_a_model_is_configured():
+    run = _grader_with_sparklines()
+    cols = run._grader_columns()
+    assert cols is not None
+    left, right = cols
+    assert len(left) == 1 and len(right) == 1
+    assert "Grading" in left[0].text and "Ambient toast" in right[0].text
+    assert "Grading" not in right[0].text and "Ambient toast" not in left[0].text
+    # Heading and data share one block, so the pager cannot insert a blank between them.
+    assert left[0].text.startswith("Grading\nModel:")
+    assert right[0].text.startswith("Ambient toast\nModel:")
+
+
+def test_grader_tab_overlay_carries_columns_and_fits_one_page_with_sparklines():
+    from delve.ui import windows
+
+    run = _grader_with_sparklines()
+    run.apply(Inventory())
+    frame = run.apply(TabCycle(2))                    # Grader
+    assert frame.overlay.active == 2
+    assert frame.overlay.grader_left and frame.overlay.grader_right
+    assert frame.overlay.body == []
+    assert windows.page_count(frame.overlay, 30) == 1
+
+
+def test_grader_model_and_run_rows_are_two_lines_fitting_the_column_width():
+    from delve import strings as strings_pkg
+    from delve.ui import windows
+
+    host = "http://localhost:11434"
+    model = "qwen2.5:3b"
+    for lang in ("en", "nl"):
+        s = strings_pkg.load(lang)
+        for key, kwargs in (
+            ("item.grader_model", {"model": model}),
+            ("item.grader_model_host", {"host": host}),
+            ("item.grader_run", {"tin": 180, "tout": 40}),
+            ("item.grader_run_verdicts", {"llm": 1, "keyword": 0}),
+            ("item.ambient_model", {"model": model}),
+            ("item.ambient_model_host", {"host": host}),
+            ("item.ambient_run", {"tin": 50, "tout": 20}),
+            ("item.ambient_run_calls", {"calls": 2}),
+        ):
+            line = s(key, **kwargs)
+            assert windows._width(line) <= windows.GRADER_COL_W, f"{lang} {key}: {line!r}"
+
+
+def test_grader_offline_stays_a_full_width_body_line_not_columns():
+    run = _pilot_game(pet_species="none")
+    assert run._grader_columns() is None
+    run.apply(Inventory())
+    frame = run.apply(TabCycle(2))
+    assert frame.overlay.grader_left == [] and frame.overlay.grader_right == []
+    assert len(frame.overlay.body) == 1
+    assert "no model configured" in frame.overlay.body[0].text.lower()
+
+
 def test_mcq_is_answered_by_number_not_letter():
     from delve.session.views import MenuItem
 

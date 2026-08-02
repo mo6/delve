@@ -1,7 +1,7 @@
 ---
 id: DELVE-0087
 title: Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page
-status: proposed
+status: in-progress
 area: [ui, session]
 type: bug
 epic:
@@ -11,8 +11,8 @@ version:
 version_span:
 created: 2026-07-31
 updated: 2026-08-02
-accepted_by:
-accepted_at:
+accepted_by: George Moses
+accepted_at: 2026-08-02
 commits: []
 related: [DELVE-0066, DELVE-0075, DELVE-0077, DELVE-0078]
 supersedes: []

@@ -1728,42 +1728,47 @@ class RunState:
         return (client.model, client.host) if client is not None else None
 
     def _grader_body(self) -> list[TextBlock]:
-        """The Grader tab's body (DELVE-0054, INFOSCREEN.md §7; split into two sections at
-        DELVE-0066): a heading plus `Model`/`Status`/`This run` rows for the configured grader
-        model, then the same shape again for the ambient toast model, each reading its own
-        `GraderMetrics` instance rather than one blended total (`RunState._ambient_metrics`,
-        separate from whatever the configured `LLMGrader` accumulates into on its own). No model
-        configured is a first-class state, not an error, so it renders as a single explanatory
-        line instead of either section (the ambient toast is never reachable without the same
-        client the grader uses, `_backstory_client`/`_ambient_info`, so there is nothing of its own
-        to show either).
+        """The Grader tab's body content (DELVE-0054/DELVE-0066/DELVE-0087). Offline (no model
+        configured) is a single explanatory line. Online returns the two columns flattened
+        left-then-right so existing content tests can still read every row from one list; the
+        Info overlay itself carries them as `grader_left`/`grader_right` via `_grader_columns`
+        so `ui` can paint them side by side."""
+        cols = self._grader_columns()
+        if cols is None:
+            return [TextBlock("plain", self.strings("item.grader_offline"))]
+        left, right = cols
+        return left + right
 
-        `Avg latency` and `Latency` (DELVE-0077's sparkline) are each section's own mean/series now,
-        not a blend of grading and ambient traffic the way one shared accumulator used to report
-        them. The ambient section always renders, even at zero calls, so its presence is
-        predictable rather than conditional on traffic having happened yet (a run with no keeper
-        rooms visited still shows a zeroed ambient block). Every row is `Label: value`
-        (DELVE-0078), each section condensed into its own `kind="kv"` block via `_condensed
-        (kv=True)` (DELVE-0059/DELVE-0078) so `ui` colours each label, and the pager's own blank
-        row between distinct blocks is what visually separates the two sections."""
+    def _grader_columns(self) -> tuple[list[TextBlock], list[TextBlock]] | None:
+        """The Grader tab's two side-by-side sections (DELVE-0087), or None when no model is
+        configured (the offline single-line state still goes through `_grader_body`/`body`, not a
+        half column). Each column is one condensed `kind="kv"` block whose first line is the
+        section heading, so the pager never inserts a blank row between the heading and its data
+        (the blank that used to appear when they were two separate `TextBlock`s). Both columns
+        always render when a model is configured, including a zeroed ambient section
+        (DELVE-0066)."""
         grader = self._grader_info()
         if grader is None:
-            return [TextBlock("plain", self.strings("item.grader_offline"))]
+            return None
         model, host = grader
         metrics = getattr(self._grader_runner.grader, "metrics", None)
-        body = [TextBlock("plain", self.strings("item.grader_section_grading"))]
-        body += self._grader_metrics_lines(model, host, metrics)
+        left = self._grader_metrics_lines(model, host, metrics)
         ambient = self._ambient_info()
         model, host = ambient if ambient is not None else ("", "")
-        body.append(TextBlock("plain", self.strings("item.grader_section_ambient")))
-        body += self._ambient_metrics_lines(model, host, self._ambient_metrics)
-        return body
+        right = self._ambient_metrics_lines(model, host, self._ambient_metrics)
+        return left, right
 
     def _grader_metrics_lines(self, model: str, host: str, metrics) -> list[TextBlock]:
-        """The grading model's own `Model`/`Status`/`This run`/`Avg latency`/`Latency` rows
-        (DELVE-0066), factored out of `_grader_body` so the same shape (bar the verdict-count
-        row, `_ambient_metrics_lines`'s own concern) is not duplicated across the two sections."""
-        lines = [self.strings("item.grader_model", model=model, host=host)]
+        """The grading model's own headed `Model`/`Status`/`This run`/`Avg latency`/`Latency`
+        column (DELVE-0066/DELVE-0087), factored out of `_grader_columns` so the same shape (bar
+        the verdict-count row, `_ambient_metrics_lines`'s own concern) is not duplicated across
+        the two sections. `Model` and `This run` each occupy two string keys so the narrower
+        column width fits without mid-word wraps."""
+        lines = [
+            self.strings("item.grader_section_grading"),
+            self.strings("item.grader_model", model=model),
+            self.strings("item.grader_model_host", host=host),
+        ]
         if metrics is None or metrics.last_latency_ms is None:
             lines.append(self.strings("item.grader_status_none"))
         else:
@@ -1773,7 +1778,8 @@ class RunState:
         tout = metrics.completion_tokens if metrics else 0
         llm = metrics.llm_verdicts if metrics else 0
         keyword = metrics.keyword_verdicts if metrics else 0
-        lines.append(self.strings("item.grader_run", tin=tin, tout=tout, llm=llm, keyword=keyword))
+        lines.append(self.strings("item.grader_run", tin=tin, tout=tout))
+        lines.append(self.strings("item.grader_run_verdicts", llm=llm, keyword=keyword))
         avg = metrics.avg_latency_ms if metrics else None
         if avg is not None:
             lines.append(self.strings("item.grader_avg", ms=avg))
@@ -1783,21 +1789,25 @@ class RunState:
         return self._condensed(lines, kv=True)
 
     def _ambient_metrics_lines(self, model: str, host: str, metrics) -> list[TextBlock]:
-        """The ambient toast model's own `Model`/`Status`/`This run`/`Avg latency`/`Latency` rows
-        (DELVE-0066): the same shape `_grader_metrics_lines` renders, but `This run` reports a
-        single call count (`ambient_calls`) rather than an LLM/keyword verdict split, since an
-        ambient passage is never graded. Always renders, even with `model`/`host` blank (no grader
-        configured) and every count at zero, so the section's presence never depends on whether a
-        room with a toast has been entered yet this run."""
-        lines = [self.strings("item.ambient_model", model=model, host=host)]
+        """The ambient toast model's own headed `Model`/`Status`/`This run`/`Avg latency`/
+        `Latency` column (DELVE-0066/DELVE-0087): the same shape `_grader_metrics_lines` renders,
+        but `This run` reports a single call count (`ambient_calls`) rather than an LLM/keyword
+        verdict split, since an ambient passage is never graded. Always renders, even with
+        `model`/`host` blank (no grader configured) and every count at zero, so the section's
+        presence never depends on whether a room with a toast has been entered yet this run."""
+        lines = [
+            self.strings("item.grader_section_ambient"),
+            self.strings("item.ambient_model", model=model),
+            self.strings("item.ambient_model_host", host=host),
+        ]
         if metrics.last_latency_ms is None:
             lines.append(self.strings("item.ambient_status_none"))
         else:
             key = "item.ambient_status_warm" if metrics.last_warm else "item.ambient_status_cold"
             lines.append(self.strings(key, ms=metrics.last_latency_ms))
         lines.append(self.strings(
-            "item.ambient_run", tin=metrics.prompt_tokens, tout=metrics.completion_tokens,
-            calls=metrics.ambient_calls))
+            "item.ambient_run", tin=metrics.prompt_tokens, tout=metrics.completion_tokens))
+        lines.append(self.strings("item.ambient_run_calls", calls=metrics.ambient_calls))
         avg = metrics.avg_latency_ms
         if avg is not None:
             lines.append(self.strings("item.ambient_avg", ms=avg))
@@ -1856,6 +1866,8 @@ class RunState:
         active_sub = 0
         pack_rows: list[str] = []
         pack_selected = -1
+        grader_left: list[TextBlock] = []
+        grader_right: list[TextBlock] = []
         if active_key == "pack":
             # The two-column layout (DELVE-0075, replacing DELVE-0069's list/detail toggle): an
             # empty pack keeps the old single-message body; a non-empty one always carries both
@@ -1876,7 +1888,14 @@ class RunState:
             sub_key = _SCORING_SUBTABS[active_sub][0]
             body = self._scoring_rooms_body() if sub_key == "rooms" else self._scoring_now_body()
         elif active_key == "grader":
-            body = self._grader_body()
+            # Two-column layout when a model is configured (DELVE-0087); the offline single line
+            # stays on `body` alone so it is never squeezed into a half column.
+            cols = self._grader_columns()
+            if cols is None:
+                body = self._grader_body()
+            else:
+                grader_left, grader_right = cols
+                body = []
         elif active_key == "status":
             body = self._status_body()
         elif active_key == "messages":
@@ -1887,6 +1906,7 @@ class RunState:
         return InfoView(tabs=tabs, active=self._info_tab, body=body,
                         subtabs=subtabs, active_sub=active_sub, sub_focus=sub_focus,
                         pack_rows=pack_rows, pack_selected=pack_selected,
+                        grader_left=grader_left, grader_right=grader_right,
                         title=self.strings("item.info_title"),
                         more_label=self.strings("ui.more"), end_label=self.strings("ui.end"),
                         page_fmt=self.strings("ui.page_fmt"))

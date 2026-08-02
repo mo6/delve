@@ -122,6 +122,12 @@ class InfoView:
     # uses.
     pack_rows: list[str] = field(default_factory=list)
     pack_selected: int = -1
+    # The Grader tab's two-column split (DELVE-0087): non-empty means the Grading section is
+    # `grader_left` and the Ambient toast section is `grader_right`, drawn side by side the same
+    # way Pack uses `pack_rows`/`body`. Empty on every other tab, and on Grader's offline
+    # single-line state (which still renders through `body` alone).
+    grader_left: list[TextBlock] = field(default_factory=list)
+    grader_right: list[TextBlock] = field(default_factory=list)
     title: str = "Info"   # the fixed panel name shown before the tab strip (DELVE-0041)
     more_label: str = "--More--"
     end_label: str = "(end)"

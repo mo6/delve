@@ -227,7 +227,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | proposed | - |
 | [DELVE-0085](DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | proposed | - |
 | [DELVE-0086](archive/DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | implemented | 1.34.2 |
-| [DELVE-0087](DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | proposed | - |
+| [DELVE-0087](DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | in-progress | - |
 | [DELVE-0088](DELVE-0088-pet-ignores-you-leaving-for-a-reward-coin.md) | The pet chases a keeper's dropped reward coin even after you've already left for the next room | bug | medium | proposed | - |
 | [DELVE-0089](DELVE-0089-rebalance-ambient-toast-prompt.md) | Rebalance the ambient toast prompt away from carried items, toward the keeper and the room's lesson goal | feature | medium | proposed | - |
 | [DELVE-0090](DELVE-0090-dragon-companion.md) | A third companion species, the Dragon, that hunts torches and breathes fire once fed | feature | high | proposed | - |
