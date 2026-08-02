@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "delve"
 # 1.0.0 release; ordinary semver from here. See delve/__init__.py. Keep the two in step.
-version = "1.33.1"
+version = "1.34.0"
 description = "A NetHack-style training application: descend a dungeon, learn a topic, pass the keeper."
 readme = "README.md"
 requires-python = ">=3.14"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 authors = [{ name = "George Moses", email = "gmo6nl@gmail.com" }]
 
 # The only runtime dependency, and it is platform-conditional and invisible on Unix.
@@ -43,7 +43,7 @@ select = ["E", "F", "I", "UP", "B", "S"]
 # still flags urllib regardless (see docs/SECURITY.md).
 "delve/assess/llm.py" = ["S310"]
 # Maintainer tooling: fixed argv lists to `git` on PATH (no shell, no user input as argv0);
-# screens.py / similar check scripts use assert as their failure mode (same idea as tests).
+# check scripts use assert as their failure mode (same idea as tests).
 "tools/**" = ["S101", "S603", "S607"]
 
 [tool.pytest.ini_options]

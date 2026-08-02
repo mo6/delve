@@ -27,7 +27,8 @@ fi
 list_tools() {
     for f in "$tools_dir"/*.py; do
         name="$(basename "$f" .py)"
-        [[ "$name" == __init__ ]] && continue
+        # Skip package markers and private helpers (leading underscore); only public tools list.
+        [[ "$name" == __init__ || "$name" == _* ]] && continue
         summary="$("$py" - "$f" <<'EOF'
 import ast, sys
 tree = ast.parse(open(sys.argv[1]).read())

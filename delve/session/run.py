@@ -2444,7 +2444,7 @@ class RunState:
 
     def _repelled_overlay(self, keeper) -> TextView:
         """The keeper's own panel, still, saying the same thing in fewer words: not yet, read it
-        again, nothing is lost. The tone is the point (SCREENS.md section 6): a pause, not a
+        again, nothing is lost. The tone is the point: a pause, not a
         defeat. The keeper's pronoun is unknown to the engine, so the English keeps 'they' and the
         Dutch is phrased around a pronoun entirely (delve/strings/nl.toml)."""
         first = _keeper_ref(keeper.name)

@@ -67,7 +67,7 @@ def draw(stdscr, frame: Frame, page: int = 1, msg_page: int = 1) -> None:
         _put(stdscr, 0, 0, msg[: cols - 1])
 
     # The map is anchored top-left of the map area; the panel (when present) covers the right,
-    # which at this point in the slice is unexplored and therefore black anyway (SCREENS 8.2).
+    # which at this point in the slice is unexplored and therefore black anyway.
     for y in range(min(m.rows, map_area_h)):
         for x in range(m.cols):
             cell = m.cells[y][x]

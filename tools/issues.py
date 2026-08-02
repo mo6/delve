@@ -4,7 +4,7 @@
     python tools/issues.py            # rebuild the index table in issues/README.md
     python tools/issues.py --check    # lint + assert the index is current; write nothing
 
-Not part of the delve package and not imported by it, exactly like tools/screens.py. Stdlib
+Not part of the delve package and not imported by it, exactly like tools/screenshot.py. Stdlib
 only: the front matter is a small, fixed shape, so it is parsed by hand rather than pulling in
 a YAML dependency (the same no-Pydantic, stdlib-only line the issues README states).
 
