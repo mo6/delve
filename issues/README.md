@@ -236,7 +236,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0093](archive/DELVE-0093-toast-spinner-redraw-cadence.md) | Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time | bug | low | implemented | 1.33.1 |
 | [DELVE-0094](archive/DELVE-0094-resume-queues-a-doomed-ambient-toast-for-the-spawn-room.md) | Resuming a run queues an ambient toast for the pre-restore spawn room, then silently discards it | bug | medium | implemented | 1.34.1 |
 | [DELVE-0095](DELVE-0095-keeper-halo-never-dims-at-a-distance.md) | A visited room's keeper halo never dims, so going dark shows it brighter than a lit torch would | bug | medium | proposed | - |
-| [DELVE-0096](DELVE-0096-security-onboarding-last-question-free-text.md) | Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader | story | medium | proposed | - |
+| [DELVE-0096](archive/DELVE-0096-security-onboarding-last-question-free-text.md) | Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader | story | medium | implemented | 1.36.0 |
 | [DELVE-0097](archive/DELVE-0097-drop-obsolete-status-grader-rows.md) | Drop the Status tab's Grader/Ambient rows, now that the Grader tab holds all the detail | bug | low | implemented | 1.35.1 |
 
 ### Epics

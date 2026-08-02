@@ -109,10 +109,10 @@ He hands you nothing at all, which is the point.
 > to password resets everywhere, and it deserves the strongest protection you can give
 > it. But the manager can *hold* it. It can't hold its own key.
 
-### Letting your browser remember passwords is equivalent to using a password manager.
+### In a few words, name one thing a real password manager gives you that browser-saved passwords generally don't.
 
-- [ ] True
-- [x] False
+- ?answer: cross-device sync, works across browsers, works outside the browser, protected by a master passphrase, covers more than websites, syncs across devices
+- ?reject: nothing, they're the same, it's identical
 
 > Browser storage has closed most of the gap and is much better than reuse, if the
 > choice is browser or `Summer2024!`, take the browser.

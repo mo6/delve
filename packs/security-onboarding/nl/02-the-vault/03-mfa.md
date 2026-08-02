@@ -99,10 +99,10 @@ en staat aan de deur op de bel te drukken."
 > Hardwaresleutels zijn juist véél makkelijker kwijt te raken dan een telefoon. En app-codes
 > werken al offline; dat is hun voordeel boven sms, geen zwakte.
 
-### Sms-gebaseerde MFA is zo zwak dat het niet de moeite waard is om aan te zetten.
+### Noem in een paar woorden waarom je sms-MFA toch moet aanzetten, ook al is het de zwakste optie.
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: het stopt de meeste aanvallen, beter dan niets, het stopt credential stuffing en massale phishing, het houdt de meeste aanvallers tegen, het stopt aanvallen op schaal
+- ?reject: het is waardeloos, niet de moeite waard, laat het uit
 
 > Sms is werkelijk de zwakste optie; simswapping is echt en niet moeilijk tegen een gericht
 > slachtoffer. Maar "zwakst" is niet "waardeloos".

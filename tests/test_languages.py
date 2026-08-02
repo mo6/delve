@@ -10,6 +10,7 @@ asserts on the Dutch surface.
 from datetime import datetime
 from pathlib import Path
 
+import pytest
 from test_dungeon import _all_points, _clear_chapter, _stand_on
 
 from delve import strings as strings_pkg
@@ -254,3 +255,37 @@ def test_pilot_plays_in_dutch_to_the_scroll():
     assert "100,0%" in text                  # score with a Dutch decimal comma
     # The date is Dutch-formatted (lower-case month), robust to whatever day the test runs.
     assert format_date(datetime.now(), strings_pkg.load("nl").fmt) in text
+
+
+# -- DELVE-0096: every room's last question is free text, no other question is ---------------
+#
+# Exception: "phishing" (chapter 1's first room) stays all-checkbox. It is also the hardcoded M2
+# "golden slice" (`delve.content.pilot.PHISHING_ROOM`), byte-tied to this file by
+# test_parser.py's golden test and reused as the default single-room fixture across a wide swath
+# of engine-mechanics tests (stakes, pets, elimination, screenshots) that answer every question by
+# index and know nothing about free text. Converting it would ripple well past this pack's own
+# content, so the acceptance criteria was narrowed to the other 11 rooms in agreement with the
+# maintainer.
+
+
+@pytest.mark.parametrize("locale", ["en", "nl"])
+def test_security_onboarding_last_question_per_room_is_free_text(locale):
+    pack = load_pack(PILOT, locale)
+    rooms = [room for chapter in pack.chapters for room in chapter.rooms
+             if room.id != "phishing"]
+    assert rooms, "expected security-onboarding to have rooms"
+    for room in rooms:
+        assert room.questions, f"{room.id} has no questions"
+        *earlier, last = room.questions
+        assert last.kind == "freetext", f"{room.id}'s last question is not free text"
+        for q in earlier:
+            assert q.kind != "freetext", f"{room.id} has a non-last free-text question"
+
+
+@pytest.mark.parametrize("locale", ["en", "nl"])
+def test_security_onboarding_phishing_room_stays_all_checkbox(locale):
+    """The M2 golden-slice exception (see above): phishing's questions are unchanged, all
+    checkbox, so the hardcoded `PHISHING_ROOM` fixture and its dependent engine tests stay valid."""
+    room = next(r for c in load_pack(PILOT, locale).chapters for r in c.rooms
+                if r.id == "phishing")
+    assert all(q.kind != "freetext" for q in room.questions)

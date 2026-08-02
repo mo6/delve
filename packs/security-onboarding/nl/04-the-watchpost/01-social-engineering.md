@@ -98,12 +98,10 @@ dagen lang.
 > Dit is dezelfde les die Grigor twee verdiepingen hoger gaf, in een ander kostuum: dingen over je weten
 > bewijst huiswerk, geen identiteit. Het is *bedoeld* om als bewijs te voelen. Daarvoor dient het.
 
-### Een beller van de IT-helpdesk vraagt je je wachtwoord te bevestigen om een accountprobleem op te lossen. Wat is het nuttigst om op te merken?
+### Noem in een paar woorden het ene teken dat een IT-helpdeskgesprek waarin om je wachtwoord gevraagd wordt, altijd onecht is, ongeacht de context.
 
-- [ ] Dat IT al toegang zou moeten hebben tot je accountgegevens
-- [x] Dat geen enkel legitiem ondersteuningsproces ooit je wachtwoord nodig heeft; het verzoek zelf is het teken
-- [ ] Dat het gesprek ongevraagd kwam
-- [ ] Dat ze haast creëerden door een lopend probleem te beschrijven
+- ?answer: geen legitieme ondersteuning heeft je wachtwoord nodig, ze hebben nooit je wachtwoord nodig, om een wachtwoord vragen is het teken, echte ondersteuning vraagt nooit om je wachtwoord, het verzoek zelf is het teken
+- ?reject: het gesprek kwam ongevraagd, ze creëerden haast, IT zou al toegang moeten hebben
 
 > Sommige verzoeken ontkrachten zichzelf. Niemand legitiems heeft ooit je wachtwoord nodig;
 > ondersteuners hebben hun eigen toegangspaden en willen je inloggegevens niet. Het verzoek hoeft dus

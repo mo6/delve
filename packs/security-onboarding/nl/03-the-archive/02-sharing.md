@@ -98,12 +98,10 @@ niet op terug. Dat heb je nog nooit gedaan.
 > afliep, de collega die van team wisselde, de partner wiens project opgeleverd is. Allemaal nog
 > in de deling. Stel de vervaldatum in wanneer je de deling maakt; je komt er niet op terug.
 
-### Voordat je een werkblad extern deelt, welk risico is het makkelijkst over het hoofd te zien?
+### Noem, naast wat er op het scherm te zien is, iets dat geruisloos meereist met een gedeeld werkblad.
 
-- [ ] Het bestand is mogelijk te groot voor het mailsysteem van de ontvanger
-- [x] Verborgen tabbladen, weggefilterde regels, opmerkingen en versiegeschiedenis reizen mee
-- [ ] De ontvanger heeft mogelijk geen geschikte software
-- [ ] Het bestand bevat mogelijk formules die naar interne systemen verwijzen
+- ?answer: verborgen tabbladen, verborgen bladen, weggefilterde regels, opmerkingen, versiegeschiedenis, bijgehouden wijzigingen, metadata
+- ?reject: bestandsgrootte, opmaak, lettertypeproblemen, compatibiliteit
 
 > Documenten dragen meer dan wat er op het scherm staat. Verborgen bladen, weggefilterde regels,
 > bijgehouden wijzigingen, opmerkingen en volledige versiegeschiedenis reizen allemaal mee, en

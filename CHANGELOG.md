@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.36.0] — 2026-08-02
+
+- **`security-onboarding` gains a free-text question per room, so a playthrough exercises the LLM grader** (DELVE-0096, story, content): every question in the pack was checkbox (MCQ or True/False), so `LLMGrader` never saw a call and the Grader tab (DELVE-0054) always read "no grade yet this run". The last question of 11 of the pack's 12 rooms, `en` and `nl`, is now a `- ?answer:` free-text question (docs/AUTHORING.md §10); Dutch accept/reject sets are idiomatic phrasings, not literal translations, since compounding defeats the offline substring fallback. `01-phishing.md` (chapter 1's first room) is the one exception, unchanged and still all-checkbox: it doubles as the hardcoded M2 "golden slice" (`delve.content.pilot.PHISHING_ROOM`) reused as the default single-room fixture across unrelated engine-mechanics tests. No engine or parser code changed.
+
 ## [1.35.1] — 2026-08-02
 
 - **The Status tab drops its now-obsolete Grader/Ambient rows** (DELVE-0097, bug, session/ui): `Grader: {model} @ {host}` and `Ambient: {model} @ {host}` (DELVE-0066) were a strict subset of what the Grader tab's own two sections already show in full (model, host, status, this run, avg latency, latency); Status now shows only version/pack/locale/terminal size, the same shape it already had with no grader configured. Dead `item.status_grader`/`item.status_ambient` keys removed from both locales. Addendum: the Status tab also moves to the last position in the tab strip (Pack, Scoring, Grader, Messages, Trophies, Status), since it's app/run diagnostics, the least gameplay-relevant tab.

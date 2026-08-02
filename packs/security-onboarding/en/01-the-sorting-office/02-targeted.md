@@ -103,10 +103,10 @@ cannot be at my desk. So make them try."
 > forwarding to finance just moves the decision to someone with less context on the
 > relationship than you have.
 
-### Because spear phishing relies on public information about you, keeping a low online profile is the main defence.
+### Since you can't undo the public information spear phishing relies on, what should you actually verify instead, in a few words?
 
-- [ ] True
-- [x] False
+- ?answer: the transaction, the request, verify the request, verify the transaction, verify through a second channel
+- ?reject: your online profile, how much they know about you, your visibility
 
 > Tempting, but it doesn't survive contact with reality. The information is your
 > employer's website, your role, your colleagues' names, the industry you work in.

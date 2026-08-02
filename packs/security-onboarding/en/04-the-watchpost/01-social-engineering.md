@@ -103,12 +103,10 @@ is me, on your third floor, for three days.
 > knowing things about you proves research, not identity. It's *supposed* to feel like
 > proof. That's what it's for.
 
-### An IT support caller asks you to confirm your password so they can resolve an account issue. What's the most useful thing to notice?
+### In a few words, what's the one tell that an IT support call asking for your password is illegitimate, regardless of the surrounding context?
 
-- [ ] That IT should already have access to your account details
-- [x] That no legitimate support process ever needs your password; the request itself is the tell
-- [ ] That the call was unsolicited
-- [ ] That they created urgency by describing an ongoing problem
+- ?answer: no legitimate support needs your password, they never need your password, asking for a password is the tell, real support never asks for your password, the request itself is the tell
+- ?reject: it was unsolicited, they created urgency, IT should have access already
 
 > Some requests are self-invalidating. Nobody legitimate needs your password, ever;
 > support staff have their own access paths and don't want your credentials. So the

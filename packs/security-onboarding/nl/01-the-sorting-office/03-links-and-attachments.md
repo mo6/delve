@@ -104,10 +104,9 @@ excuus hebben om het niet te doen."
 > probleem dan een gehaaste. En leunen op de scanner draait de verhouding om: de scanner
 > vangt wat al bekend is, en ú bent degene die beslist over het ding dat dat niet is.
 
-### Een bestand met de naam `rapport.pdf` is een PDF.
+### Noem in een paar woorden de ene vraag die bepaalt of je een onverwachte bijlage moet openen, ongeacht wat de bestandsnaam beweert te zijn.
 
-- [ ] Waar
-- [x] Niet waar
+- ?answer: verwachtte ik dit, had ik dit verwacht, verwachtte je dit, was dit verwacht, verwacht ik dit
 
 > Een bestandsnaam is tekst die gekozen is door wie hem verstuurde, precies zoals de
 > zichtbare tekst van een link. Hij kan liegen, en er bestaan decennia aan trucs om hem

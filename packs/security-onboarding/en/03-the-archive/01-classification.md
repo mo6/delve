@@ -100,10 +100,10 @@ usually answers itself. Answer it lazily and no table on any wall will save you.
 > classification. And the customer's expectations may not even be known to them; the
 > obligation is yours either way.
 
-### If you're unsure how to classify something, the safe default is to mark it Restricted.
+### In a few words, what should you actually do when you're unsure how to classify something, instead of defaulting to the highest label?
 
-- [ ] True
-- [x] False
+- ?answer: ask someone, ask the data owner, handle it carefully and ask, check with whoever owns the data, ask whoever owns it
+- ?reject: mark it restricted, use the highest label, default to restricted, classify it as restricted
 
 > This is over-classification wearing the costume of caution, and it moves your
 > uncertainty onto everyone downstream.

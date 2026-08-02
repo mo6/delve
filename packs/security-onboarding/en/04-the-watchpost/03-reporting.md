@@ -110,12 +110,10 @@ That's the door."
 > they're being targeted by professionals. It just makes them quiet. This is the reason
 > "no blame" isn't kindness; it's the only version that works.
 
-### You notice a colleague's account sending slightly odd messages. It's probably nothing, and raising it might embarrass them. What's the reasoning?
+### A colleague's account is sending slightly odd messages. It's probably nothing, and raising it might embarrass them. In a few words, what should you do?
 
-- [ ] Ask the colleague directly first, so they're not blindsided by a report
-- [ ] Wait and see whether the messages continue before escalating
-- [x] Report it now; a compromised account is exactly what this looks like, and speed matters more than the awkwardness
-- [ ] Only report if you receive one of the messages yourself
+- ?answer: report it, report it now, report it immediately, flag it to security right away, report it straight away
+- ?reject: ask them first, wait and see, do nothing, ignore it
 
 > Odd messages from a real account is the signature of account takeover, the exact case
 > where every sender check passes, from the very first room. And it isn't an accusation:
