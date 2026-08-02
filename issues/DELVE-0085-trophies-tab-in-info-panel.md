@@ -10,7 +10,7 @@ milestone:
 version:
 version_span:
 created: 2026-07-31
-updated: 2026-07-31
+updated: 2026-08-02
 accepted_by:
 accepted_at:
 commits: []
@@ -99,5 +99,8 @@ information the Info panel already exists for, so it belongs there rather than o
   non-empty trophy list, open the Info panel, select the trophies tab, and assert the rendered
   body matches the same lines `launch.trophies()` would have produced.
 - A second test for the empty-state case (no finished runs).
-- `./tools.sh screens --check` still passes (a new tab must not break the panel's fixed layout).
+- A new `trophies` scenario in `tools/screenshot.py`'s `SCENARIOS` (`docs/SCREENS.md`/`./tools.sh
+  screens` were retired by DELVE-0092; the current on-demand tool is `./tools.sh screenshot
+  <scenario>`), reaching the Info panel with the new tab selected, confirming the tab strip and
+  body still fit the panel's fixed layout.
 - `./run-tests.sh` green, both locales (`item.tab_trophies` added to both `en.toml` and `nl.toml`).
