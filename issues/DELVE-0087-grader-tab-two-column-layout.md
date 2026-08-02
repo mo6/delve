@@ -10,7 +10,7 @@ milestone:
 version:
 version_span:
 created: 2026-07-31
-updated: 2026-07-31
+updated: 2026-08-02
 accepted_by:
 accepted_at:
 commits: []
@@ -96,13 +96,18 @@ fits two roughly-33-column halves.
   or a `ui`-side wrap that still treats the whole thing as one opaque localised string (rule 2:
   `ui` must never assemble words itself, only fit an already-localised string to a column, the same
   distinction the Status-line `Rooms`/`$` fix drew, CLAUDE.md's locale section).
-- `docs/SCREENS.md` mock-ups will need regenerating (`./tools.sh screens`) once the layout changes,
-  since the Grader screen frame is asserted there.
+- `docs/SCREENS.md` and `./tools.sh screens` are gone (DELVE-0092, retired 2026-08-02); the current
+  on-demand tool is `./tools.sh screenshot <scenario>` (`tools/screenshot.py`), driven against the
+  real `RunState`/`delve/ui/windows.py` rather than a checked-in mock-up. It has no `grader` scenario
+  yet (`tools/screenshot.py:332`'s `SCENARIOS` dict); this issue needs to add one (reaching the
+  Grader tab with both sections populated, one of them holding a `Latency` sparkline) alongside the
+  layout fix, so the new columns can actually be inspected on demand.
 
 ## Acceptance / verification
 
-- `./tools.sh screens --check` passes with the Grader tab showing both sections, each including a
-  `Latency` sparkline row, on a single page at 100x30.
+- A new `grader` scenario in `tools/screenshot.py`'s `SCENARIOS`, reaching the Grader tab with both
+  sections populated and at least one holding a `Latency` sparkline row; `./tools.sh screenshot
+  grader` shows both sections side by side on a single page at 100x30.
 - A session-level test asserting the Grader tab's rendered body no longer requires a second page
   once both sections include a latency sparkline (today's regression case).
 - A rendering test (or screen mock-up assertion) confirming the wrapped `Model:` and `This run:`
