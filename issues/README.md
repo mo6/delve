@@ -232,7 +232,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0089](DELVE-0089-rebalance-ambient-toast-prompt.md) | Rebalance the ambient toast prompt away from carried items, toward the keeper and the room's lesson goal | feature | medium | proposed | - |
 | [DELVE-0090](DELVE-0090-dragon-companion.md) | A third companion species, the Dragon, that hunts torches and breathes fire once fed | feature | high | proposed | - |
 | [DELVE-0091](DELVE-0091-suggested-pet-names.md) | Suggest a proper default name for a new companion when no env-var name is set | feature | low | proposed | - |
-| [DELVE-0092](DELVE-0092-retire-screens-md-for-an-on-demand-screenshot-tool.md) | Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer | story | medium | proposed | - |
+| [DELVE-0092](DELVE-0092-retire-screens-md-for-an-on-demand-screenshot-tool.md) | Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer | story | medium | in-progress | - |
 | [DELVE-0093](archive/DELVE-0093-toast-spinner-redraw-cadence.md) | Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time | bug | low | implemented | 1.33.1 |
 
 ### Epics

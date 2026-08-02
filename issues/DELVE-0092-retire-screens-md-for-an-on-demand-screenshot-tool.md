@@ -1,7 +1,7 @@
 ---
 id: DELVE-0092
 title: Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer
-status: proposed
+status: in-progress
 area: [ui, tools, docs]
 type: story
 epic:
@@ -10,9 +10,9 @@ milestone:
 version:
 version_span:
 created: 2026-08-01
-updated: 2026-08-01
-accepted_by:
-accepted_at:
+updated: 2026-08-02
+accepted_by: George Moses
+accepted_at: 2026-08-02
 commits: []
 related: [DELVE-0018]
 supersedes: []
