@@ -113,7 +113,7 @@ The row under focus draws its active tab as the filled pill (DELVE-0041's `bar_a
 | **Pack** | Hold / look | `player.gold`, `player.inventory`, item `look` |
 | **Scoring** | Am I answering correctly? | `Rooms a/b`, chapter list, per-gate `passed_score` / sittings from the run (and `room_results` for history across runs) |
 | **Grader** | Is the local model alive? | Model name from launch, last grade latency, fallback count; see §7 |
-| **Status** — **done, DELVE-0044** | What's actually running? | App version, active pack/locale, terminal size, grader model/host if configured |
+| **Status** — **done, DELVE-0044** (grader/ambient rows dropped, DELVE-0097) | What's actually running? | App version, active pack/locale, terminal size |
 
 Optional later: **Log** (today's message history on its own overlay) folding in as a fifth tab so `i` becomes the one "about me" key. Only if the message log's current binding feels redundant.
 
@@ -255,7 +255,7 @@ Rough priority if this ever becomes an epic; each row could be its own story.
 | 6 | Grader → Run (token totals + latency sparkline) | Honest local-AI literacy | `GraderMetrics` accumulator — **available, DELVE-0053**; tab itself still unbuilt |
 | 7 | Scoring → History (scrolls / prior runs) | Trophy case data mid-run | `progress` summaries into Frame (read-only) |
 | 8 | Floor loot scatter | Flavour only; easy to spoil | Explicit spoiler policy |
-| 9 | Status tab (version, pack/locale, terminal size, grader model/host) — **done, DELVE-0044** | Diagnostics with no new plumbing | `delve.__version__`, `Pack`/`Strings`, `stdscr.getmaxyx()`, launch-time grader config |
+| 9 | Status tab (version, pack/locale, terminal size) — **done, DELVE-0044** (grader/ambient rows dropped, DELVE-0097) | Diagnostics with no new plumbing | `delve.__version__`, `Pack`/`Strings`, `stdscr.getmaxyx()` |
 
 **Uses beyond "looks nice"**
 

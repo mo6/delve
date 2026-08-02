@@ -94,8 +94,6 @@ status_version = "Versie: {version}"
 status_pack    = "Pack: {pack}"
 status_locale  = "Taal: {locale}"
 status_size    = "Terminal:"
-status_grader  = "Nakijker: {model} @ {host}"
-status_ambient = "Ambient: {model} @ {host}"
 # Tabblad Nakijker (DELVE-0054; opgesplitst in twee secties bij DELVE-0066): zie [item] in en.toml
 # voor de opzet. "Label: waarde" (DELVE-0078).
 grader_offline         = "Trefwoordvloer, geen model geconfigureerd."
