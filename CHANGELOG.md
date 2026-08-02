@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.33.1] — 2026-08-02
+
+- **The toast-loading spinner steps one adjacent glyph per redraw** (DELVE-0093, bug, ui): `_TOAST_POLL_MS` (300) and `_SPINNER_MS` (120) were not multiples of each other, so idle redraws while a toast was generating sampled the braille orbit mid-cycle and the empty dot hopped non-adjacent most of the time. `_TOAST_POLL_MS` is now derived from `windows._SPINNER_MS` (120, the same cadence as `_GRADE_POLL_MS`), and a pure `_spinner_glyph` helper plus tests assert both the divisibility relationship and that consecutive poll-spaced samples are adjacent in the cell's missing-dot grid.
+
 ## [1.33.0] — 2026-08-01
 
 - **Spend gold to eliminate a wrong MCQ option, priced against the room reward** (DELVE-0018, story, assess/session/ui): during a multiple-choice question with three or more options still showing, `$` buys a removal at `round(R / (n - 1))` where `R` is the room's reward basis (same resolution as `_pay_reward`) and `n` is the still-standing count, so a four-option room at `R=100` costs 33 then 50 and refuses a third buy once only two remain. Paying gold never marks the question `assisted` (the score is kept; a pet consult on the same question still forfeits it). The lifeline is absent on the unscored tutorial floor, on assertions and free-text, and when `R` is 0. Gate tracks an `_eliminated` set of display indices (cleared on shuffle/re-sit; deterministic pick, never `self.rng`) and persists the pet's `_struck` so arrow focus no longer wipes a consult strike; `MenuItem.eliminated` / `PromptView.eliminated` distinguish a paid removal from an advisory strike; selection and digit keys skip eliminated options. New `msg.buy_*` / `hint.answer_many_buy` / `help.eliminate` strings in both locales; examination mock-up regenerated.

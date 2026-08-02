@@ -72,3 +72,13 @@ How "done" is judged: named tests, `./run-tests.sh`, `delve validate`, or a manu
 path. Each story's Given / When / Then should map to a named test here. An issue with no
 way to check it is not finished being written. The shared bar is the Definition of Ready (before
 building) and Definition of Done (before archiving) in [AGILE.md](AGILE.md).
+
+## Peer review
+
+Left blank until the change is implemented and tested. Filled in as part of the Definition of
+Done's landing gate ([AGILE.md](AGILE.md)): one line per reviewer, agent or human, appended (never
+overwritten) as each review happens. At minimum this is the reviewing agent's pass and the
+maintainer's own sign-off, in that order:
+
+- **<reviewer name>** (agent|maintainer), YYYY-MM-DD: verdict, and a one-line pointer to any
+  findings (fixed inline, or left as a follow-up issue), not a re-statement of what the diff does.

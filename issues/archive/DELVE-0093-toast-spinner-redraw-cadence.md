@@ -1,23 +1,23 @@
 ---
 id: DELVE-0093
 title: Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time
-status: in-progress
+status: implemented
 area: [ui]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.33.1
 version_span:
 created: 2026-08-02
 updated: 2026-08-02
 accepted_by: George Moses
 accepted_at: 2026-08-02
-commits: []
+commits: [7fec26d]
 related: [DELVE-0082, DELVE-0083]
 supersedes: []
 docs: []
-changelog:
+changelog: "1.33.1"
 reason:
 ---
 
@@ -104,3 +104,16 @@ is needed to couple the two constants directly if that's the chosen fix; a plain
   the inverse, whichever constant is now derived), so a future edit to either alone fails
   `./run-tests.sh` instead of silently drifting again. Covers the second story.
 - `./run-tests.sh` passes.
+
+## Peer review
+
+- **Claude Code**, 2026-08-02: reviewed the implementation diff against both stories and both
+  acceptance criteria. `_TOAST_POLL_MS` is derived directly from `windows._SPINNER_MS` rather than
+  just tuned to match, so the coupling is structural; the chosen branch (speed up the poll rather
+  than slow the spinner) is re-justified against DELVE-0082's original idle-CPU concern, matching
+  the design notes' explicit ask to re-check that reasoning. `_spinner_glyph()` is a clean pure
+  extraction. Both required tests exist and go beyond the minimum: one asserts the divisibility
+  relationship directly (not just relying on the derivation), the other reuses the review's own
+  missing-dot adjacency check across two full laps from an unaligned start. `./run-tests.sh` green
+  (654 tests), CHANGELOG and version bump present, both locales correctly untouched. No findings.
+- **George Moses** (maintainer), 2026-08-02: implemented and tested; looks good.

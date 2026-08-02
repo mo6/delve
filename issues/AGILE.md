@@ -129,6 +129,14 @@ into `archive/`, and fill `commits:`.
       `delve/__init__.py` and `pyproject.toml`.
 - [ ] **The issue is archived**: moved to `archive/`, `commits:` filled, and the index
       regenerated with `./tools.sh issues`.
+- [ ] **Peer review is recorded in the issue.** Every review that happened before landing is
+      written into the issue's own "Peer review" section (`TEMPLATE.md`), one line per reviewer,
+      appended not overwritten: at minimum a reviewing agent's pass (Claude Code or another
+      review agent) and the maintainer's own sign-off, each with the reviewer, the date, the
+      verdict, and a one-line pointer to any findings (fixed inline, or spun out as a follow-up
+      issue rather than silently dropped). This is the track record a "commit and close this out?"
+      answer of yes is actually based on, not a separate courtesy step; do this before, not after,
+      asking the question below.
 - [ ] **It has been explicitly accepted to land.** The Definition of Ready's acceptance gate has a
       twin here: once the change is implemented, tested, and peer-reviewed (by the human
       maintainer, or a review agent whose findings the maintainer has seen), it is shown to the

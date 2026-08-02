@@ -67,9 +67,17 @@ TOAST_TOP = 2                # just under the message line, the same row the map
 # double-line window borders already make (proven macOS/Linux, unverified Windows/PDCurses) rather
 # than a new one. `_SPINNER_MS` is how long each glyph holds; the animation frame is derived from
 # wall-clock time at paint time, not any counter threaded through the Frame or the app loop, since
-# it is purely cosmetic (rule 2: nothing here is state `session` needs to know about).
+# it is purely cosmetic (rule 2: nothing here is state `session` needs to know about). The app
+# loop's toast-pending wake (`ui/app.py:_TOAST_POLL_MS`) is derived from this same value so every
+# idle redraw lands on the next glyph rather than mid-cycle (DELVE-0093); do not change one alone.
 _SPINNER = "⣾⣽⣻⢿⡿⣟⣯⣷"
 _SPINNER_MS = 120
+
+
+def _spinner_glyph(now_ms: float) -> str:
+    """The spinner glyph for a wall-clock millisecond timestamp. Pure so tests can drive a
+    simulated redraw sequence without painting through curses (DELVE-0093)."""
+    return _SPINNER[int(now_ms / _SPINNER_MS) % len(_SPINNER)]
 
 
 def _body(rows: int) -> int:
@@ -655,7 +663,7 @@ def draw_toast_loading(stdscr, text: str, map_cols: int, player_x: int = 0) -> N
     width = min(cols, map_cols)
     left = 0 if player_x >= width // 2 else max(0, width - TOAST_W)
     col = left + 2
-    glyph = _SPINNER[int(time.monotonic() * 1000 / _SPINNER_MS) % len(_SPINNER)]
+    glyph = _spinner_glyph(time.monotonic() * 1000)
     lines = _wrap(text, TOAST_TEXT_W - 2) or [""]
     max_lines = max(1, (rows - 3) - TOAST_TOP - 2)   # never run into the status/hint rows
     lines = lines[:max_lines]

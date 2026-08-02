@@ -32,9 +32,11 @@ from delve.ui import attrs, keys, render, terminal, windows
 _GRADE_POLL_MS = 120
 
 # How often (ms) the UI wakes to check for a resolved ambient room-entry toast (DELVE-0060) while
-# walking. Less urgent than a grade (nothing is waiting on it, unlike "Checking your answer..."),
-# so a slower tick than _GRADE_POLL_MS is enough not to spin the CPU during ordinary idle walking.
-_TOAST_POLL_MS = 300
+# walking, and to repaint the toast-loading spinner (DELVE-0082). Derived from
+# `windows._SPINNER_MS` so each idle redraw advances the spinner by exactly one adjacent glyph
+# (DELVE-0093); equal to `_GRADE_POLL_MS`'s own 120ms, so the CPU cost of idle-walking with a
+# toast pending stays in the same band as a free-text grade poll rather than a livelier loop.
+_TOAST_POLL_MS = windows._SPINNER_MS
 
 # ncurses' ESCDELAY (DELVE-0079): how long it waits after reading a lone `\x1b` for more bytes to
 # follow (an arrow/function key's own escape sequence) before delivering it as a standalone Esc.
