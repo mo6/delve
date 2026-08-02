@@ -218,15 +218,18 @@ LABEL_COLOUR = Colour.BRIGHT_CYAN  # a 'kv' block's label half (DELVE-0078)
 def _kv_spans(text: str) -> tuple:
     """Split each of a `kind="kv"` block's `"\\n"`-joined lines at its first `": "`, colouring the
     label half (including the colon) `LABEL_COLOUR` and leaving the value half plain. A line with
-    no `": "` (should not happen for a genuine label/value row, but never crashes) passes through
-    unstyled. Only the *first* `": "` counts, so a value containing its own colon (a host:port, a
-    model tag like `qwen2.5:3b`) never gets mistaken for a second label."""
+    no `": "` passes through: the *first* such line is a section heading (DELVE-0087's Grader
+    column titles `Grading` / `Ambient toast`), marked bold so `_put_line` paints it bright yellow
+    like a Pack-tab item title; later colon-less lines (a host follow-on `@ …`, a verdict-count
+    follow-on) stay plain. Only the *first* `": "` on a labelled line counts, so a value containing
+    its own colon (a host:port, a model tag like `qwen2.5:3b`) never gets mistaken for a second
+    label."""
     spans = []
     for i, line in enumerate(text.split("\n")):
         prefix = "\n" if i else ""
         cut = line.find(": ")
         if cut == -1:
-            spans.append((prefix + line, False))
+            spans.append((prefix + line, i == 0))   # first colon-less line = section heading
             continue
         spans.append((prefix + line[: cut + 1], LABEL_COLOUR))
         spans.append((line[cut + 1 :], False))
