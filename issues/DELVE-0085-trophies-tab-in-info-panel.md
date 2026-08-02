@@ -107,4 +107,4 @@ information the Info panel already exists for, so it belongs there rather than o
 
 ## Peer review
 
-- Auto (implementing agent), 2026-08-02: `trophy_lines` threaded into `RunState` via `new_game`/`launch.start`/`resume` (same ready-to-print lines as `launch.trophies`); sixth Info tab `trophies` with `_trophies_body` (condensed list, or `item.trophies_empty`); en/nl `tab_trophies`/`trophies_empty`; session tests for non-empty, empty, and launch.start threading; `trophies` screenshot scenario. Tab strip still fits at 100×30. `./run-tests.sh` green.
+- Auto (implementing agent), 2026-08-02: `trophy_rows` threaded into `RunState` via `new_game`/`launch.start`/`resume` (score/title/date, newest `awarded_at` first); Info/Trophies renders them as a Score/Pack/Date `table` TextBlock with localised headers; empty state `item.trophies_empty`; pre-run `_show_trophies` still uses the line form from `launch.trophies`. Session/locale/progress tests and a `trophies` screenshot scenario. Tab strip still fits at 100×30. `./run-tests.sh` green.

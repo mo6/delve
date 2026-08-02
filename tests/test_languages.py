@@ -47,6 +47,7 @@ def test_info_panel_tab_strings_exist_in_both_locales():
     assert en("item.tab_grader") and nl("item.tab_grader")
     assert en("item.tab_trophies") == "Trophies" and nl("item.tab_trophies") == "Prijzen"
     assert en("item.trophies_empty") and nl("item.trophies_empty")
+    assert en("item.trophies_col_score") and nl("item.trophies_col_date") == "Datum"
     assert en("item.tab_soon") and nl("item.tab_soon")
     assert "Tab" in en("hint.inventory") and "Tab" in nl("hint.inventory")
 

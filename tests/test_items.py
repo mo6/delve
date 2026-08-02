@@ -1085,30 +1085,35 @@ def test_grader_offline_stays_a_full_width_body_line_not_columns():
 # -- the Trophies tab (DELVE-0085) ----------------------------------------------------------------
 
 
-def test_trophies_tab_shows_the_lines_threaded_in_at_start():
-    lines = [" 95.0%   Security Onboarding   18 July 2026",
-             " 80.0%   Security Onboarding   17 July 2026"]
-    run = _pilot_game(pet_species="none", trophy_lines=lines)
+def test_trophies_tab_shows_the_rows_as_a_date_descending_table():
+    rows = [("95.0%", "Security Onboarding", "18 July 2026"),
+            ("80.0%", "Security Onboarding", "17 July 2026"),
+            ("91.7%", "holy-grail", "12 June 2026")]
+    run = _pilot_game(pet_species="none", trophy_rows=rows)
     run.apply(Inventory())
     frame = run.apply(TabCycle(5))                    # Trophies
     assert frame.overlay.active == 5
     assert frame.overlay.tabs[5].key == "trophies"
-    assert frame.overlay.body == run._trophies_body()
-    text = frame.overlay.body[0].text
-    assert "95.0%" in text and "80.0%" in text
-    assert "Security Onboarding" in text
+    body = frame.overlay.body
+    assert len(body) == 1 and body[0].kind == "table"
+    assert body[0].table[0][0][0][0] == "Score"       # header
+    assert body[0].table[0][2][0][0] == "Date"
+    # Data rows keep the date-descending order threaded in at start.
+    assert [row[2][0][0] for row in body[0].table[1:]] == [
+        "18 July 2026", "17 July 2026", "12 June 2026"]
+    assert "95.0%" in body[0].text and "holy-grail" in body[0].text
 
 
 def test_trophies_tab_empty_state_when_no_completions():
-    run = _pilot_game(pet_species="none")             # default: no trophy_lines
-    assert run._trophy_lines == []
+    run = _pilot_game(pet_species="none")             # default: no trophy_rows
+    assert run._trophy_rows == []
     run.apply(Inventory())
     frame = run.apply(TabCycle(5))
     assert len(frame.overlay.body) == 1
     assert frame.overlay.body[0].text == run.strings("item.trophies_empty")
 
 
-def test_launch_start_threads_trophies_into_the_run(tmp_path):
+def test_launch_start_threads_trophy_rows_into_the_run(tmp_path):
     from delve.progress.store import SQLiteStore
     from delve.session import launch
 
@@ -1117,10 +1122,11 @@ def test_launch_start_threads_trophies_into_the_run(tmp_path):
     user = store.user_by_name("Ada")
     r1 = store.create_run(user.id, pack.id, "1", 1, 100, 30)
     store.award_scroll(user.id, pack.id, r1.id, 0.80)
-    expected = launch.trophies(store, pack, "Ada")
+    expected = launch.trophy_rows(store, pack, "Ada")
     run = launch.start(store, pack, name="Ada", seed=1, cols=100, rows=30, pet_species="none")
-    assert run._trophy_lines == expected
-    assert run._trophies_body()[0].text == "\n".join(expected)
+    assert run._trophy_rows == expected
+    assert run._trophies_body()[0].kind == "table"
+    assert expected[0][0] in run._trophies_body()[0].text
 
 
 def test_mcq_is_answered_by_number_not_letter():

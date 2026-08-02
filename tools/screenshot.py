@@ -355,14 +355,14 @@ def sc_grader() -> Shot:
 
 
 def sc_trophies() -> Shot:
-    """Info / Trophies tab with a couple of finished-pack rows."""
-    lines = [
-        " 95.0%   Security Onboarding   18 July 2026",
-        " 80.0%   Security Onboarding   17 July 2026",
-        " 91.7%   holy-grail   12 June 2026",
+    """Info / Trophies tab as a Score/Pack/Date table, newest date first."""
+    rows = [
+        ("95.0%", "Security Onboarding", "18 July 2026"),
+        ("80.0%", "Security Onboarding", "17 July 2026"),
+        ("91.7%", "holy-grail", "12 June 2026"),
     ]
     run = new_run(seed=1, cols=COLS, rows=ROWS, pet_species="none", name="Ada")
-    run._trophy_lines = lines
+    run._trophy_rows = rows
     run.apply(Inventory())
     return Shot(run.apply(TabCycle(5)))
 

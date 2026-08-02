@@ -293,7 +293,7 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
              tutorial: Pack | None = None, skip_tutorial: bool = False,
              pet_species: str = "cat", pet_name: str | None = None,
              grader_runner=None, observe: bool = True,
-             trophy_lines: list[str] | None = None) -> RunState:
+             trophy_rows: list[tuple[str, str, str]] | None = None) -> RunState:
     """Build a full multi-chapter dungeon from a parsed pack. Every pack room is gated; each
     chapter is generated from a seed derived from `seed` so the whole run is reproducible, and
     only the last chapter's final keeper reveals the pedestal. `recorder`, if given, persists it.
@@ -350,7 +350,7 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
                     idx=start_idx, strings=strings, pet_rng=Rng(seed * 100 + 777),
                     flavour_rng=Rng(seed * 100 + 333), seed=seed,
                     pet_species=pet_species, pet_name=pet_name, grader_runner=grader_runner,
-                    observe=observe, trophy_lines=trophy_lines)
+                    observe=observe, trophy_rows=trophy_rows)
 
 
 def _scatter_tutorial_coins(cr: ChapterRun, rng: Rng) -> None:
@@ -486,7 +486,7 @@ class RunState:
                  flavour_rng: Rng | None = None, seed: int = 0,
                  pet_species: str = "cat", pet_name: str | None = None,
                  grader_runner=None, observe: bool = True,
-                 trophy_lines: list[str] | None = None):
+                 trophy_rows: list[tuple[str, str, str]] | None = None):
         self.chapters = chapters
         self.idx = idx
         self.player = player
@@ -503,11 +503,11 @@ class RunState:
         self.pack = pack
         self.recorder = recorder
         self.strings = strings or _default_strings()
-        # The learner's trophy case as already-formatted lines (DELVE-0085), computed once at
-        # start/resume via `launch.trophies` and never refreshed mid-run; empty means no
-        # completions yet (the Trophies tab shows `item.trophies_empty`). Not snapshotted: resume
-        # re-reads the store the same way start does.
-        self._trophy_lines: list[str] = list(trophy_lines or ())
+        # The learner's trophy case as `(score, title, date)` rows (DELVE-0085), computed once at
+        # start/resume via `launch.trophy_rows` (newest `awarded_at` first) and never refreshed
+        # mid-run; empty means no completions yet (the Trophies tab shows `item.trophies_empty`).
+        # Not snapshotted: resume re-reads the store the same way start does.
+        self._trophy_rows: list[tuple[str, str, str]] = list(trophy_rows or ())
         self.turn = 0
         self.messages: list[str] = [welcome] if welcome else []
         self._greeted: set[str] = set()
@@ -2037,15 +2037,24 @@ class RunState:
                 or [TextBlock("para", self.strings("ui.no_messages"))])
 
     def _trophies_body(self) -> list[TextBlock]:
-        """The Trophies tab's body (DELVE-0085): the learner's finished-pack history as the same
-        ready-to-print lines `launch.trophies` builds for the pre-run screen, already threaded
-        into the run at start/resume (`self._trophy_lines`). Condensed into one block so a long
-        case packs tight; empty (no completions yet) is a single explanatory line rather than a
-        blank panel, since the pre-run screen itself skips entirely when the case is empty and
-        the tab still needs something to show."""
-        if not self._trophy_lines:
+        """The Trophies tab's body (DELVE-0085): a Score/Pack/Date table from the
+        `(score, title, date)` rows threaded in at start/resume (`self._trophy_rows`), newest
+        date first. Empty (no completions yet) is a single explanatory line rather than a blank
+        panel, since the pre-run screen itself skips entirely when the case is empty and the tab
+        still needs something to show."""
+        if not self._trophy_rows:
             return [TextBlock("para", self.strings("item.trophies_empty"))]
-        return self._condensed(self._trophy_lines)
+        header = (
+            ((self.strings("item.trophies_col_score"), False),),
+            ((self.strings("item.trophies_col_pack"), False),),
+            ((self.strings("item.trophies_col_date"), False),),
+        )
+        data = tuple(
+            (((score, False),), ((title, False),), ((when, False),))
+            for score, title, when in self._trophy_rows
+        )
+        text = "\n".join(f"{score}  {title}  {when}" for score, title, when in self._trophy_rows)
+        return [TextBlock("table", text, table=(header,) + data)]
 
     def _text(self, title: str, body) -> TextView:
         """A TextView carrying the localised pager chrome, so every paginated panel (lesson,
