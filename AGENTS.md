@@ -173,14 +173,17 @@ above; that boundary still needs the maintainer's explicit go-ahead before the c
 the branch out.
 
 **`main` is releases only; all development happens on `develop`.** `main` never receives an issue
-branch directly. It advances only via an explicit, maintainer-triggered release merge from
-`develop` (never on the assistant's own initiative, the same "never infer, always ask" rule the
-peer-review gate above already follows): `git checkout main && git merge --no-ff develop`, then
-`git tag -a v<version> -m "v<version>"` (the version just bumped on `develop`, e.g. `v1.28.0`) so
-`main`'s history is a clean, checkable list of tagged release points. **The tag is annotated
-(`-a`), not lightweight**, specifically so `git push --follow-tags` (pushes a branch together with
-every annotated tag that's now reachable from it, unlike bare `--tags`, which pushes every tag in
-the repo regardless of branch) picks it up in one step: `git push origin main --follow-tags`.
+branch directly. It advances only via an explicit, maintainer-triggered release (never on the
+assistant's own initiative, the same "never infer, always ask" rule the peer-review gate above
+already follows), opened as a real GitHub pull request, `develop` into `main` (`gh pr create --base
+main --head develop`), so a release is reviewable and has a record on GitHub before it lands, not
+folded silently into a local merge. Once merged (via GitHub, or `gh pr merge --merge` to keep it a
+real merge commit, never squash or rebase, so `main`'s history still shows the individual
+`DELVE-NNNN:`-prefixed commits), tag the result: `git checkout main && git pull && git tag -a
+v<version> -m "v<version>"` (the version `develop` had already bumped, e.g. `v1.28.0`), then `git
+push origin main --follow-tags`. **The tag is annotated (`-a`), not lightweight**, specifically so
+`--follow-tags` (pushes a branch together with every annotated tag now reachable from it, unlike
+bare `--tags`, which pushes every tag in the repo regardless of branch) picks it up in one step.
 Nothing else ever commits to `main`; there is no such thing as "incidental maintenance on `main`"
 any more; even a typo fix goes through `develop`.
 
@@ -198,11 +201,12 @@ squash or rebase), then delete the branch (`git branch -d <branch>`). **Anything
 itself `DELVE-NNNN` issue work** — the one standing exception already named above (typo fixes in
 an issue file, regenerating the index), or incidental repo maintenance — stays directly on
 `develop`, no branch. `develop` can therefore sit several versions ahead of whatever `main` last
-released; that gap is expected, not a problem to close eagerly. Both branches merge and commit
-locally first, exactly as above; a push to `origin` (`git push origin develop`, and
-`git push origin main --follow-tags` on a release) is its own separate, explicit step, never
-folded into a merge — still no PRs, since this is a solo project, but pushing is no longer
-optional once a remote exists, or the two clones drift.
+released; that gap is expected, not a problem to close eagerly. Issue branches merge into `develop`
+locally, exactly as above, no PR needed there (this stays a solo, in-the-moment loop); it is
+specifically the `develop` -> `main` release step that goes through a PR now. A push to `origin`
+(`git push origin develop` as issues land, then the release PR and its post-merge tag push) is its
+own separate, explicit step, never folded into a merge silently; pushing is not optional once a
+remote exists, or the two clones drift.
 
 ---
 
