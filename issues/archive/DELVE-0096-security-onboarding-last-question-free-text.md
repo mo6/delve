@@ -1,23 +1,23 @@
 ---
 id: DELVE-0096
 title: Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader
-status: in-progress
+status: implemented
 area: [content]
 type: story
 epic:
 effort: medium
 milestone:
-version:
+version: 1.36.0
 version_span:
 created: 2026-08-02
 updated: 2026-08-02
 accepted_by: George Moses
 accepted_at: 2026-08-02
-commits: []
+commits: [fcaa527, d47076f]
 related: []
 supersedes: []
 docs: [docs/AUTHORING.md, docs/PHASE2.md]
-changelog:
+changelog: "1.36.0"
 reason:
 ---
 
@@ -32,6 +32,16 @@ anywhere, in either locale. That means the pack never exercises the local LLM gr
 at all: the grader has nothing to grade. Change the last question of each of the pack's 12 rooms,
 in both `en` and `nl`, from its current checkbox form into a free-text question, so a real playthrough
 of this pack actually calls the grader.
+
+**Amended during implementation, agreed with the maintainer:** `01-phishing.md` ("phishing", chapter
+1's first room) is excluded and stays all-checkbox. It is also the hardcoded M2 "golden slice"
+(`delve.content.pilot.PHISHING_ROOM`), kept byte-equal to this file by `test_parser.py`'s golden
+test and reused as the default single-room fixture across a wide swath of engine-mechanics tests
+(stakes, pets, elimination, screenshots) that answer every question by index and know nothing about
+free text. Converting it broke ~25 tests unrelated to content; rather than rewrite that much
+engine-test infrastructure for one room, the scope narrowed to the other 11 rooms. Everything below
+that says "every room" or "12 rooms" means "every room except phishing" / "11 rooms" as of this
+amendment.
 
 ## Motivation / problem
 
@@ -113,3 +123,15 @@ run" status. A pack that is supposed to show off the grading feature currently c
   with its canonical (`?answer:`'s first) phrase, confirming every room still reaches its existing
   `pass` bar.
 - `./run-tests.sh` green, both locales.
+
+## Peer review
+
+- Claude Code (implementing agent), 2026-08-02: converted 11 rooms' last question to free text
+  (en/nl, idiomatic Dutch accept/reject sets); excluded "phishing" (see amendment above) after
+  converting it broke ~25 unrelated engine-mechanics tests reusing the hardcoded M2 golden-slice
+  fixture. Verified every canonical `?answer:[0]` grades correct against its own `?reject:` list
+  with `KeywordGrader` directly (no accidental collisions), not just via the playthrough test.
+  `_pass_room` (test_dungeon.py) extended to settle a threaded/LLM grading pause via `GradeReady`.
+  `./run-tests.sh` green: 685 tests, ruff, pip-audit, issues index, validate on all four packs.
+- George Moses (maintainer), 2026-08-02: peer-reviewed; implementation accepted, including the
+  phishing-room amendment.
