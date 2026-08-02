@@ -16,6 +16,7 @@ tools/screens.py) is a further refinement still to land in the engine.
 
 import curses
 import textwrap
+import time
 import unicodedata
 from dataclasses import replace
 
@@ -59,6 +60,24 @@ PACK_DESC_W = TEXT_W - PACK_LIST_W - 3
 TOAST_W = 44
 TOAST_TEXT_W = TOAST_W - 4
 TOAST_TOP = 2                # just under the message line, the same row the map itself starts on
+
+# The toast's own "still generating" spinner (DELVE-0082): the "dots" braille sequence (one of the
+# well-known set at stackoverflow.com/questions/2685435, the default in most modern CLI spinner
+# libraries). Single-codepoint, BMP, narrow, so it's the same class of Unicode bet this file's own
+# double-line window borders already make (proven macOS/Linux, unverified Windows/PDCurses) rather
+# than a new one. `_SPINNER_MS` is how long each glyph holds; the animation frame is derived from
+# wall-clock time at paint time, not any counter threaded through the Frame or the app loop, since
+# it is purely cosmetic (rule 2: nothing here is state `session` needs to know about). The app
+# loop's toast-pending wake (`ui/app.py:_TOAST_POLL_MS`) is derived from this same value so every
+# idle redraw lands on the next glyph rather than mid-cycle (DELVE-0093); do not change one alone.
+_SPINNER = "⣾⣽⣻⢿⡿⣟⣯⣷"
+_SPINNER_MS = 120
+
+
+def _spinner_glyph(now_ms: float) -> str:
+    """The spinner glyph for a wall-clock millisecond timestamp. Pure so tests can drive a
+    simulated redraw sequence without painting through curses (DELVE-0093)."""
+    return _SPINNER[int(now_ms / _SPINNER_MS) % len(_SPINNER)]
 
 
 def _body(rows: int) -> int:
@@ -189,13 +208,38 @@ def _wrap_spans(spans, width: int) -> list[list]:
     return lines or [[]]
 
 
+LABEL_COLOUR = Colour.BRIGHT_CYAN  # a 'kv' block's label half (DELVE-0078)
+
+
+def _kv_spans(text: str) -> tuple:
+    """Split each of a `kind="kv"` block's `"\\n"`-joined lines at its first `": "`, colouring the
+    label half (including the colon) `LABEL_COLOUR` and leaving the value half plain. A line with
+    no `": "` (should not happen for a genuine label/value row, but never crashes) passes through
+    unstyled. Only the *first* `": "` counts, so a value containing its own colon (a host:port, a
+    model tag like `qwen2.5:3b`) never gets mistaken for a second label."""
+    spans = []
+    for i, line in enumerate(text.split("\n")):
+        prefix = "\n" if i else ""
+        cut = line.find(": ")
+        if cut == -1:
+            spans.append((prefix + line, False))
+            continue
+        spans.append((prefix + line[: cut + 1], LABEL_COLOUR))
+        spans.append((line[cut + 1 :], False))
+    return tuple(spans)
+
+
 def _wrap_block_lines(block, width: int) -> list[list]:
     """A block's body as lines of segments. A code block is verbatim: split on its own newlines and
     never reflowed, because its whitespace is meaningful (carets pointing under a URL, columns of a
-    passphrase comparison) and textwrap would collapse it. Styled (spans) blocks word-wrap with
-    their weights; a plain block keeps the exact textwrap behaviour the mock-ups were built on."""
+    passphrase comparison) and textwrap would collapse it. A 'kv' block (DELVE-0078) colon-splits
+    and colours its label before wrapping, overriding whatever plain `spans` `session` set (colour
+    is a `ui` decision, rule 2). Styled (spans) blocks word-wrap with their weights; a plain block
+    keeps the exact textwrap behaviour the mock-ups were built on."""
     if block.kind == "code":
         return [[(line[:width], False)] for line in block.text.split("\n")]
+    if block.kind == "kv":
+        return _wrap_spans(_kv_spans(block.text), width)
     if block.spans:
         return _wrap_spans(block.spans, width)
     return [[(line, False)] for line in _wrap(block.text, width)]
@@ -479,7 +523,7 @@ def _fill_status_size(stdscr, view: InfoView | HelpView) -> InfoView | HelpView:
     lines = block.text.split("\n")
     lines[-1] = f"{lines[-1]} {rows}x{cols}"
     spans = tuple((("\n" if i else "") + line, False) for i, line in enumerate(lines))
-    filled = TextBlock("plain", "\n".join(lines), spans=spans)
+    filled = TextBlock(block.kind, "\n".join(lines), spans=spans)
     return replace(view, body=[filled, *view.body[1:]])
 
 
@@ -524,8 +568,10 @@ def _draw_pack_columns(stdscr, view: InfoView, r: int, col: int, bottom: int) ->
     both visible with no confirm/back step. The focused row's name is marked by highlighting it in
     the list (a full-width reverse-video block, the same `bar_attr` treatment used elsewhere for a
     filled highlight, DELVE-0076 moving it off the description, DELVE-0075's original spot); the
-    description column itself stays plain text. The list scrolls (`_pack_scroll_offset`) once the
-    carried-kind count outgrows its own visible rows."""
+    description column draws its lines through `_put_line`, the same styled-segment path every
+    other panel uses (DELVE-0078 fixed this column silently flattening its segments to plain text,
+    which had been discarding `_title_block`'s own bold title styling). The list scrolls
+    (`_pack_scroll_offset`) once the carried-kind count outgrows its own visible rows."""
     visible = max(0, bottom - r)
     offset = _pack_scroll_offset(view.pack_selected, len(view.pack_rows), visible)
     sep_col = col + PACK_LIST_W + 1
@@ -539,11 +585,10 @@ def _draw_pack_columns(stdscr, view: InfoView, r: int, col: int, bottom: int) ->
     desc_col = sep_col + 2
     dr = r
     for block in _blocks(view.body, PACK_DESC_W):
-        for _quote, segs in block:
+        for quote, segs in block:
             if dr >= bottom:
                 break
-            text = "".join(t for t, _ in segs)
-            _put(stdscr, dr, desc_col, text[:PACK_DESC_W])
+            _put_line(stdscr, dr, desc_col, quote, segs)
             dr += 1
 
 
@@ -608,6 +653,27 @@ def draw_toast(stdscr, view: ToastView, map_cols: int, player_x: int = 0) -> Non
         _put_line(stdscr, TOAST_TOP + 3 + i, col, False, segs)
 
 
+def draw_toast_loading(stdscr, text: str, map_cols: int, player_x: int = 0) -> None:
+    """The toast's own "still generating" spinner window (DELVE-0082), shown by `ui/render.py` in
+    place of `draw_toast` while the call behind it is still running: the same corner-anchoring
+    logic as `draw_toast` (top-left/top-right, whichever side the learner isn't standing on), but
+    smaller (no title row, since there is nothing yet to title) and with the spinner glyph
+    prefixing the wrapped text's first line; every continuation line indents to sit under it."""
+    rows, cols = stdscr.getmaxyx()
+    width = min(cols, map_cols)
+    left = 0 if player_x >= width // 2 else max(0, width - TOAST_W)
+    col = left + 2
+    glyph = _spinner_glyph(time.monotonic() * 1000)
+    lines = _wrap(text, TOAST_TEXT_W - 2) or [""]
+    max_lines = max(1, (rows - 3) - TOAST_TOP - 2)   # never run into the status/hint rows
+    lines = lines[:max_lines]
+    height = 2 + len(lines)
+    _box(stdscr, TOAST_TOP, left, height, TOAST_W)
+    _put(stdscr, TOAST_TOP + 1, col, f"{glyph} {lines[0]}")
+    for i, line in enumerate(lines[1:], start=1):
+        _put(stdscr, TOAST_TOP + 1 + i, col + 2, line)
+
+
 def _draw_menu(stdscr, view: MenuView, top: int, col: int) -> None:
     r = top + 2
     for line in _wrap(view.prompt, TEXT_W):
@@ -616,10 +682,13 @@ def _draw_menu(stdscr, view: MenuView, top: int, col: int) -> None:
     r += 1
     for i, item in enumerate(view.items):
         lines = _wrap(item.text, TEXT_W - 4)
-        base = curses.A_DIM if item.struck else curses.A_NORMAL   # ruled out by the pet
-        # Only the focused option's number badge is highlighted (black-on-cyan, reverse video with
-        # no colour), the same treatment the assertion buttons use; the text is never highlighted.
-        badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
+        # Pet strike and paid elimination both dim the text; elimination additionally dims the
+        # badge, so a removed option reads as gone rather than merely crossed off (DELVE-0018).
+        base = curses.A_DIM if (item.struck or item.eliminated) else curses.A_NORMAL
+        if item.eliminated:
+            badge = curses.A_DIM
+        else:
+            badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
         _put(stdscr, r, col, f" {item.key} ", badge)
         for dr, line in enumerate(lines):
             _put(stdscr, r + dr, col + 4, line, base)
@@ -695,10 +764,16 @@ def _draw_prompt(stdscr, view: PromptView, top: int, col: int) -> None:
         r += 1
     r += 1
     struck = view.struck or (False,) * len(view.choices)
+    elim = view.eliminated or (False,) * len(view.choices)
     for i, choice in enumerate(view.choices):
         lines = _wrap(choice, TEXT_W - 4)
-        base = curses.A_DIM if (i < len(struck) and struck[i]) else curses.A_NORMAL
-        badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
+        gone = i < len(elim) and elim[i]
+        ruled = i < len(struck) and struck[i]
+        base = curses.A_DIM if (ruled or gone) else curses.A_NORMAL
+        if gone:
+            badge = curses.A_DIM
+        else:
+            badge = attrs.bar_attr(Colour.CYAN) if i == view.selected else curses.A_NORMAL
         _put(stdscr, r, col, f" {choice[:1].lower()} ", badge)
         for dr, line in enumerate(lines):
             _put(stdscr, r + dr, col + 4, line, base)

@@ -64,7 +64,7 @@ class StatusView:
 
 @dataclass(frozen=True)
 class TextBlock:
-    kind: str   # 'para' | 'bullet' | 'quote' | 'plain' | 'code' | 'table' | 'bar'
+    kind: str   # 'para' | 'bullet' | 'quote' | 'plain' | 'code' | 'table' | 'bar' | 'kv'
     text: str
     # Inline (text, strong) runs for bold, and a table's cell grid (rows -> cells -> runs). Empty
     # `spans` means render `text` plain. compare=False so constructing a TextBlock by (kind, text)
@@ -76,6 +76,10 @@ class TextBlock:
     # count (DELVE-0043); `text` still carries a plain-text fallback for tests and any surface that
     # only reads text.
     bar: tuple = field(default=(), compare=False)
+    # A 'kv' block's lines are each "Label: value" (DELVE-0078): `ui` colon-splits every line at
+    # its first ": " and colours the label half, independent of `spans`. Used only where every line
+    # genuinely is a label/value pair (Keys, Objectives, Grader, Status); a 'plain' block with an
+    # incidental colon in its prose is never colon-split.
 
 
 @dataclass(frozen=True)
@@ -167,17 +171,19 @@ class TextView:
 class MenuItem:
     key: str
     text: str
-    struck: bool = False   # the pet ruled this one out; still selectable, shown crossed off
+    struck: bool = False      # the pet ruled this one out; still selectable, shown dimmed
+    eliminated: bool = False  # paid gold removal (DELVE-0018); not selectable, shown dimmed
 
 
 @dataclass
 class MenuView:
     """A multiple-choice question, drawn as a numbered list. Items are already shuffled and carry no
     hint of which is correct; the explanation only arrives after an answer. A `struck` item is one
-    the pet ruled out on consultation, never the correct answer revealed. `selected` is the option
-    the keyboard focus sits on (moved with the arrows, confirmed with Enter, or bypassed by pressing
-    its number), owned by the session so `ui` only paints it (rule 2); -1 means no focus (an item
-    menu answered purely by number, like drop/pickup)."""
+    the pet ruled out on consultation (still selectable); an `eliminated` item was removed for gold
+    and cannot be answered (DELVE-0018). `selected` is the option the keyboard focus sits on (moved
+    with the arrows, confirmed with Enter, or bypassed by pressing its number), owned by the session
+    so `ui` only paints it (rule 2); -1 means no focus (an item menu answered purely by number, like
+    drop/pickup)."""
 
     prompt: str
     items: list[MenuItem]
@@ -191,12 +197,14 @@ class PromptView:
     `selected` is the button the keyboard focus sits on (moved with the arrows, confirmed with
     Enter, or bypassed by pressing a label's key directly), owned by the session so `ui` only paints
     it (rule 2). `struck` parallels `choices`: a True there is a label the pet ruled out.
+    `eliminated` is the paid-removal twin (unused on assertions, which never offer a buy).
     `connector` is the localised word between the labels ('or'/'of'), kept for any caption."""
 
     text: str
     choices: list[str]
     footer: str = ""
     struck: tuple[bool, ...] = ()
+    eliminated: tuple[bool, ...] = ()
     connector: str = "or"
     selected: int = 0
 
@@ -274,6 +282,13 @@ class Frame:
     # rather than only once the learner happens to press something (the same non-blocking shape
     # `GradingView`'s poll already uses, but only while there is actually something to wait for).
     toast_pending: bool = False
+    # A short, localised loading line while a toast call is actually in flight, or None when there
+    # is nothing to show one for (DELVE-0082): the narrower "a background call is running right
+    # now" signal, unlike `toast_pending` above (which also covers the idle-nudge timer's own
+    # armed-but-not-yet-queued wait, purely for `ui/app.py`'s poll cadence). `ui` draws a small
+    # spinner window with this line in place of `toast` while it is set; the two are never both
+    # non-None at once (`RunState.frame()` only sets this when `toast` is still None).
+    toast_loading: str | None = None
     # The contextual hint line names the keys that work right now (PLAN.md section 7). It is
     # session state, not decoration, so the core supplies it rather than the UI guessing.
     hint: str = ""

@@ -32,9 +32,29 @@ from delve.ui import attrs, keys, render, terminal, windows
 _GRADE_POLL_MS = 120
 
 # How often (ms) the UI wakes to check for a resolved ambient room-entry toast (DELVE-0060) while
-# walking. Less urgent than a grade (nothing is waiting on it, unlike "Checking your answer..."),
-# so a slower tick than _GRADE_POLL_MS is enough not to spin the CPU during ordinary idle walking.
-_TOAST_POLL_MS = 300
+# walking, and to repaint the toast-loading spinner (DELVE-0082). Derived from
+# `windows._SPINNER_MS` so each idle redraw advances the spinner by exactly one adjacent glyph
+# (DELVE-0093); equal to `_GRADE_POLL_MS`'s own 120ms, so the CPU cost of idle-walking with a
+# toast pending stays in the same band as a free-text grade poll rather than a livelier loop.
+_TOAST_POLL_MS = windows._SPINNER_MS
+
+# ncurses' ESCDELAY (DELVE-0079): how long it waits after reading a lone `\x1b` for more bytes to
+# follow (an arrow/function key's own escape sequence) before delivering it as a standalone Esc.
+# The default is 1000ms, which makes every panel's Esc-to-close feel like the app hung; 25ms is
+# short enough to feel instant and still comfortably above a real terminal's own escape-sequence
+# byte gap (the same value commonly recommended for this exact trade-off, e.g. Vim's own
+# `ttimeoutlen` default guidance).
+_ESC_DELAY_MS = 25
+
+
+def _set_esc_delay() -> None:
+    """Shrink ncurses' default ESCDELAY once at startup. Guarded: on a platform whose curses build
+    lacks the `set_escdelay` extension, this is a no-op and the app just keeps that platform's
+    default delay, exactly as it did before this fix."""
+    try:
+        curses.set_escdelay(_ESC_DELAY_MS)
+    except AttributeError:
+        pass
 
 
 def _draw_centered(stdscr, lines: list[str], rows: int, cols: int) -> None:
@@ -257,6 +277,7 @@ def _run(stdscr, seed, name, pack, strings, tutorial, pet_species, pet_name, gra
          name_default=None, pet_name_defaults=None) -> None:
     curses.curs_set(0)
     stdscr.keypad(True)
+    _set_esc_delay()
     attrs.init()                       # allocate the 16-colour pairs (no-op without colour)
 
     if not _ensure_size(stdscr, terminal.MIN_COLS, terminal.MIN_ROWS):

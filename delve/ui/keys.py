@@ -18,6 +18,7 @@ from delve.session.commands import (
     Answer,
     Ascend,
     Backspace,
+    BuyRemoval,
     Command,
     Confirm,
     Consult,
@@ -53,7 +54,6 @@ _WALK: dict[int, Command] = {
     ord(">"): Descend(),
     ord("<"): Ascend(),
     ord(","): Pickup(),
-    ord("d"): Drop(),
     ord("i"): Inventory(),     # the message log lives inside here now, as the Messages tab
     ord(" "): Wait(),          # stand still a turn; the pet moves. Space pages inside an overlay.
     ord("q"): Quit(),
@@ -89,6 +89,10 @@ def panel_command(ch: int, overlay) -> Command | None:
                 return Select(-1)
             if ch == curses.KEY_DOWN:
                 return Select(1)
+            # DELVE-0081: `d` only exists here now, dropping the focused row, rather than as a
+            # standalone walking key opening its own menu to pick the same kind a second time.
+            if ch == ord("d"):
+                return Drop()
         else:
             # Up/down move keyboard focus between the primary and sub-tab rows (DELVE-0056), always
             # a FocusRow regardless of whether the active tab has any sub-tab row to focus (rule 2:
@@ -124,6 +128,8 @@ def panel_command(ch: int, overlay) -> Command | None:
         return None
     if ch == ord("@") and isinstance(overlay, (MenuView, PromptView)):
         return Consult()   # ask the pet about this question; costs its score (moved off ? at 0028)
+    if ch == ord("$") and isinstance(overlay, MenuView):
+        return BuyRemoval()   # spend gold to eliminate a wrong option (DELVE-0018)
     if isinstance(overlay, MenuView):
         # An MCQ list takes arrow focus + Enter as well as its direct number keys (the item menus
         # for drop/pickup ignore the focus, being answered purely by number).
@@ -134,7 +140,7 @@ def panel_command(ch: int, overlay) -> Command | None:
         if ch in (ord("\n"), ord("\r"), curses.KEY_ENTER):
             return Confirm(True)
         idx = ch - ord("1")            # options and drop items are numbered 1..n (OBJECTS.md)
-        if 0 <= idx < len(overlay.items):
+        if 0 <= idx < len(overlay.items) and not overlay.items[idx].eliminated:
             return Answer(idx)
     elif isinstance(overlay, PromptView):
         # The assertion's two buttons: arrows move the focus, Enter answers the focused one. Only

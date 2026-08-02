@@ -129,9 +129,25 @@ into `archive/`, and fill `commits:`.
       `delve/__init__.py` and `pyproject.toml`.
 - [ ] **The issue is archived**: moved to `archive/`, `commits:` filled, and the index
       regenerated with `./tools.sh issues`.
-- [ ] **Committed** (auto-commit once verified), with the `DELVE-NNNN:` prefix on the message so
-      `git log --grep` reconstructs the arc, on the issue's own branch (`bug/DELVE-NNNN` /
-      `feature/DELVE-NNNN` / `story/DELVE-NNNN` / `epic/DELVE-NNNN`, per CLAUDE.md).
+- [ ] **Peer review is recorded in the issue.** Every review that happened before landing is
+      written into the issue's own "Peer review" section (`TEMPLATE.md`), one line per reviewer,
+      appended not overwritten: at minimum a reviewing agent's pass (Claude Code or another
+      review agent) and the maintainer's own sign-off, each with the reviewer, the date, the
+      verdict, and a one-line pointer to any findings (fixed inline, or spun out as a follow-up
+      issue rather than silently dropped). This is the track record a "commit and close this out?"
+      answer of yes is actually based on, not a separate courtesy step; do this before, not after,
+      asking the question below.
+- [ ] **It has been explicitly accepted to land.** The Definition of Ready's acceptance gate has a
+      twin here: once the change is implemented, tested, and peer-reviewed (by the human
+      maintainer, or a review agent whose findings the maintainer has seen), it is shown to the
+      maintainer and the question "commit and close this out?" is asked outright. An agent
+      (Claude Code, Cursor, or any other) never commits, merges, or archives an issue's branch on
+      a silent absence of objection, no matter how green `run-tests.sh` is or how clean a review
+      came back; auto-committing incidental intermediate steps *within* ongoing work is fine, this
+      gate is specifically the boundary where a story's branch is about to land.
+- [ ] **Committed**, with the `DELVE-NNNN:` prefix on the message so `git log --grep` reconstructs
+      the arc, on the issue's own branch (`bug/DELVE-NNNN` / `feature/DELVE-NNNN` /
+      `story/DELVE-NNNN` / `epic/DELVE-NNNN`, per AGENTS.md).
 - [ ] **Merged**: `git checkout main && git merge --no-ff <branch>`, then the branch is deleted.
       No squash, no rebase, so `git log --grep` still finds the arc's individual commits.
 

@@ -158,7 +158,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0015](archive/DELVE-0015-random-reward-tile.md) | Reward coins land on a random room tile, not the far corner | story | - | implemented | 1.9.2 |
 | [DELVE-0016](archive/DELVE-0016-dog-fetches-every-item.md) | The dog fetches every item, one at a time, and delivers it to the learner | story | - | implemented | 1.10.0 |
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | epic | high | proposed | - |
-| [DELVE-0018](DELVE-0018-eliminate-wrong-answer-for-gold.md) | Eliminate a wrong answer for gold, priced against the room reward | story | high | proposed | - |
+| [DELVE-0018](archive/DELVE-0018-eliminate-wrong-answer-for-gold.md) | Eliminate a wrong answer for gold, priced against the room reward | story | high | implemented | 1.33.0 |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | epic | high | proposed | - |
 | [DELVE-0020](DELVE-0020-declare-and-substitute-variables.md) | Declare and substitute translatable pack variables | story | medium | proposed | - |
 | [DELVE-0021](DELVE-0021-validate-variables-available.md) | Validate that every referenced pack variable is available | story | medium | proposed | - |
@@ -206,7 +206,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0063](archive/DELVE-0063-info-help-panel-playtesting-fixes.md) | Five playtesting fixes to the Info/Help panels and the torch | bug | low | implemented | 1.25.1 |
 | [DELVE-0064](archive/DELVE-0064-ambient-prompt-items-first.md) | Rework the room ambient prompt to lead with floor items, not atmosphere | feature | low | implemented | 1.26.0 |
 | [DELVE-0065](archive/DELVE-0065-keeper-candle-light.md) | A keeper's own candle lights their immediate surroundings regardless of the player's torch | feature | medium | implemented | 1.26.7 |
-| [DELVE-0066](DELVE-0066-per-model-grader-metrics.md) | Show the grader model and the ambient model as separate rows in Info/Grader and Info/Status | feature | high | proposed | - |
+| [DELVE-0066](archive/DELVE-0066-per-model-grader-metrics.md) | Show the grader model and the ambient model as separate rows in Info/Grader and Info/Status | feature | high | implemented | 1.30.0 |
 | [DELVE-0067](archive/DELVE-0067-torch-charge-preserved-across-drop-pickup.md) | A dropped torch remembers its remaining burn steps instead of relighting at full duration | bug | high | implemented | 1.26.5 |
 | [DELVE-0068](archive/DELVE-0068-playtesting-fixes-hints-drop-messages.md) | Three playtesting fixes: stale hint-line key, torch drop label, and a longer Messages tab | bug | low | implemented | 1.26.1 |
 | [DELVE-0069](archive/DELVE-0069-info-pack-item-subnavigation.md) | Info/Pack becomes a selectable item list with descriptions on demand, instead of one long page | feature | high | implemented | 1.27.0 |
@@ -217,17 +217,34 @@ otherwise the single first-shipped `version`.
 | [DELVE-0074](DELVE-0074-generic-per-unit-item-properties.md) | Generalise Stack's torch-only charge field into per-unit item properties | feature | high | proposed | - |
 | [DELVE-0075](archive/DELVE-0075-pack-two-column-layout.md) | Info/Pack becomes a two-column list-plus-description layout with a scrolling list | feature | medium | implemented | 1.27.1 |
 | [DELVE-0076](archive/DELVE-0076-pack-highlight-list-not-description.md) | Info/Pack highlights the focused item's name in the list, not its description | bug | low | implemented | 1.27.2 |
+| [DELVE-0077](archive/DELVE-0077-grader-latency-sparkline.md) | Grader tab grows a latency sparkline | story | medium | implemented | 1.28.0 |
+| [DELVE-0078](archive/DELVE-0078-info-panel-label-colour.md) | Info/Help panels colour labels and item titles instead of flattening them plain | story | medium | implemented | 1.29.0 |
+| [DELVE-0079](archive/DELVE-0079-esc-delay.md) | Esc takes a full second to close a panel, because ncurses' default ESCDELAY is untouched | bug | low | implemented | 1.29.1 |
+| [DELVE-0080](archive/DELVE-0080-toast-character-budget.md) | Instruct the ambient toast model with an explicit character budget, so the sentence-boundary cap rarely fires | bug | low | implemented | 1.29.2 |
+| [DELVE-0081](archive/DELVE-0081-drop-from-pack.md) | Drop an item straight from Info/Pack instead of a standalone drop menu | feature | medium | implemented | 1.31.0 |
+| [DELVE-0082](archive/DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | implemented | 1.32.0 |
+| [DELVE-0083](archive/DELVE-0083-doomed-nudge-loading-spinner.md) | The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge | bug | low | implemented | 1.32.1 |
+| [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | proposed | - |
+| [DELVE-0085](DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | proposed | - |
+| [DELVE-0086](DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | proposed | - |
+| [DELVE-0087](DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | proposed | - |
+| [DELVE-0088](DELVE-0088-pet-ignores-you-leaving-for-a-reward-coin.md) | The pet chases a keeper's dropped reward coin even after you've already left for the next room | bug | medium | proposed | - |
+| [DELVE-0089](DELVE-0089-rebalance-ambient-toast-prompt.md) | Rebalance the ambient toast prompt away from carried items, toward the keeper and the room's lesson goal | feature | medium | proposed | - |
+| [DELVE-0090](DELVE-0090-dragon-companion.md) | A third companion species, the Dragon, that hunts torches and breathes fire once fed | feature | high | proposed | - |
+| [DELVE-0091](DELVE-0091-suggested-pet-names.md) | Suggest a proper default name for a new companion when no env-var name is set | feature | low | proposed | - |
+| [DELVE-0092](DELVE-0092-retire-screens-md-for-an-on-demand-screenshot-tool.md) | Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer | story | medium | in-progress | - |
+| [DELVE-0093](archive/DELVE-0093-toast-spinner-redraw-cadence.md) | Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time | bug | low | implemented | 1.33.1 |
 
 ### Epics
 
 | Epic | Title | Children |
 |------|-------|----------|
 | [DELVE-0010](archive/DELVE-0010-objects-and-money.md) | Objects, money, on-pass reward | DELVE-0015 |
-| [DELVE-0011](archive/DELVE-0011-companion-pet.md) | The companion pet | DELVE-0016, DELVE-0029 |
+| [DELVE-0011](archive/DELVE-0011-companion-pet.md) | The companion pet | DELVE-0016, DELVE-0029, DELVE-0090, DELVE-0091 |
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | DELVE-0018 |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | DELVE-0020, DELVE-0021, DELVE-0022, DELVE-0023 |
 | [DELVE-0024](archive/DELVE-0024-security-scanning.md) | Security scanning for code and dependencies | DELVE-0025, DELVE-0026, DELVE-0027 |
-| [DELVE-0035](DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055, DELVE-0056 |
+| [DELVE-0035](DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055, DELVE-0056, DELVE-0077 |
 
 ```mermaid
 flowchart LR
@@ -243,6 +260,10 @@ flowchart LR
     DELVE_0011 --> DELVE_0016
     DELVE_0029["DELVE-0029<br/>Inventory item descriptions keep their source line breaks instead of reflowing"]
     DELVE_0011 --> DELVE_0029
+    DELVE_0090["DELVE-0090<br/>A third companion species, the Dragon, that hunts torches and breathes fire once fed"]
+    DELVE_0011 --> DELVE_0090
+    DELVE_0091["DELVE-0091<br/>Suggest a proper default name for a new companion when no env-var name is set"]
+    DELVE_0011 --> DELVE_0091
 ```
 
 ```mermaid
@@ -297,7 +318,9 @@ flowchart LR
     DELVE_0035 --> DELVE_0055
     DELVE_0056["DELVE-0056<br/>Arrow-key row focus and a distinct colour for the Info panel's focused tab strip"]
     DELVE_0035 --> DELVE_0056
+    DELVE_0077["DELVE-0077<br/>Grader tab grows a latency sparkline"]
+    DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0077**.
+Next free id: **DELVE-0094**.
 <!-- issues:index:end -->

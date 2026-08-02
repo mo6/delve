@@ -12,8 +12,9 @@ from delve.engine.world import Direction
 
 __all__ = [
     "Direction", "Move", "Talk", "Answer", "AnswerText", "Type", "GradeReady", "Confirm",
-    "Consult", "Rest", "Wait", "Descend", "Ascend", "Dismiss", "Pickup", "Drop", "Inventory",
-    "TabCycle", "SubTabCycle", "FocusRow", "Digit", "Backspace", "Quit", "Help", "Command",
+    "Consult", "BuyRemoval", "Rest", "Wait", "Descend", "Ascend", "Dismiss", "Pickup", "Drop",
+    "Inventory", "TabCycle", "SubTabCycle", "FocusRow", "Digit", "Backspace", "Quit", "Help",
+    "Command",
 ]
 
 
@@ -61,6 +62,11 @@ class Consult:
 
 
 @dataclass(frozen=True)
+class BuyRemoval:
+    pass   # spend gold to eliminate one wrong MCQ option; keeps the score (DELVE-0018)
+
+
+@dataclass(frozen=True)
 class Rest:
     pass   # rest until healed; the return of HP the failure model needs (PLAN section 6)
 
@@ -92,7 +98,8 @@ class Pickup:
 
 @dataclass(frozen=True)
 class Drop:
-    pass   # open the drop menu: choose a kind, then an amount, and put it on your tile
+    pass   # drop the Info/Pack tab's focused row (DELVE-0081): straight away, or after an amount
+           # prompt for a multi-count pile; a no-op anywhere else
 
 
 @dataclass(frozen=True)
@@ -144,7 +151,7 @@ class Help:
 
 
 Command = (
-    Move | Talk | Answer | AnswerText | Type | GradeReady | Confirm | Consult | Rest | Wait
-    | Descend | Ascend | Dismiss | Pickup | Drop | Inventory | TabCycle | SubTabCycle | FocusRow
-    | Select | Digit | Backspace | Quit | Help
+    Move | Talk | Answer | AnswerText | Type | GradeReady | Confirm | Consult | BuyRemoval
+    | Rest | Wait | Descend | Ascend | Dismiss | Pickup | Drop | Inventory | TabCycle
+    | SubTabCycle | FocusRow | Select | Digit | Backspace | Quit | Help
 )

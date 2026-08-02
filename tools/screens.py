@@ -123,7 +123,7 @@ HINTS = {
         'walk':   'Move: arrows    Talk: t    Look: ;    Help: ?    Quit: Q',
         'talk':   'Talk to Ada: t          Move: arrows              Help: ?',
         'read':   'Next page: space        Back: -            Put it down: Esc',
-        'answer': 'Answer: 1-4             Ask your kitten: ?   Put it down: Esc',
+        'answer': 'Answer: 1-4    Ask companion: @    Eliminate ($33): $    Put it down: Esc',
         'more':   'Continue: space',
         'door':   'Move: arrows    The door is a + . Walk through it.',
         'stairs': 'Descend: >              Move: arrows              Help: ?',
@@ -614,14 +614,17 @@ def screen_lesson(page=1):
 # different interfaces wearing one character. The panel is the keeper's frame for the whole
 # encounter -- greet, instruct, examine, explain -- so nothing jumps as the gate advances
 # through the states in PLAN 6.
-def _options(labels):
+def _options(labels, eliminated=()):
     """Numbered menu with a hanging indent (keys 1..n, OBJECTS.md 1.1.0). Each option is a key
     badge (` 1 `) then its text; the focused option's badge is highlighted in colour in the real
-    render, which an ASCII frame cannot show. At 69 cols the pack's longest option wraps."""
+    render, which an ASCII frame cannot show. An eliminated option (DELVE-0018, paid gold removal)
+    is still listed but marked with a leading `x` in place of its number, matching the dimmed
+    badge the real renderer paints. At 69 cols the pack's longest option wraps."""
     out = []
     for i, text in enumerate(labels, 1):
         w = wrap(text, TEXT_W - 4)
-        out.append(f' {i}  {w[0]}')
+        badge = " x " if (i - 1) in eliminated else f" {i} "
+        out.append(f'{badge} {w[0]}')
         out += ['    ' + x for x in w[1:]]
     return out
 
@@ -636,7 +639,7 @@ EXAM = (
         'It combines manufactured urgency with a request to bypass normal purchasing',
         'A CEO would not normally email someone in your role directly',
         'The message came by email rather than in person',
-    ])
+    ], eliminated={0})                               # first wrong option removed for gold
     + ['', 'Question 1 of 4.']            # the counter is all the panel footer carries (localised)
 )
 

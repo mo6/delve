@@ -21,6 +21,12 @@ from datetime import datetime
 
 import delve
 
+# DELVE-0066: the ambient toast gets its own GraderMetrics instance, separate from whatever the
+# configured LLMGrader accumulates, so the Grader tab can report each model's workload on its own
+# rather than one blended total. `session/grading.py` already imports this same module directly
+# (rule 1's diagram predates that; the boundary that matters is engine/ui, not session/assess).
+from delve.assess.grader import GraderMetrics
+
 # The M2 slice: the pilot's first room is gated; the rest of the Sorting Office is walkable but
 # has no keeper. It is kept exactly as it was, the independent reference the parser is checked
 # against, while the full pack loads through new_game below.
@@ -45,7 +51,7 @@ from delve.engine.items import (
 from delve.engine.rng import Rng
 from delve.engine.world import Chapter, Direction, Point, TileKind
 from delve.gate import Gate, GateState, install_chapter_gates, install_gates
-from delve.progress.scrolls import render_scroll
+from delve.progress.scrolls import format_money, render_scroll
 from delve.session import backstory, flavour
 from delve.session import help as help_catalogue
 from delve.session.commands import (
@@ -53,6 +59,7 @@ from delve.session.commands import (
     AnswerText,
     Ascend,
     Backspace,
+    BuyRemoval,
     Confirm,
     Consult,
     Descend,
@@ -156,9 +163,9 @@ _INFO_TABS = (("pack", "item.tab_pack"), ("scoring", "item.tab_scoring"),
               ("grader", "item.tab_grader"), ("status", "item.tab_status"),
               ("messages", "item.tab_messages"))
 
-# A sentinel `def_id` for the drop menu only, never a real `ItemDef.id`: the currently-burning
+# A sentinel `def_id` for a Pack-tab drop only, never a real `ItemDef.id`: the currently-burning
 # torch is never a `Stack` (DELVE-0062, a steps-remaining counter, not a spare count), so it can't
-# share `TORCH.id` with an ordinary carried torch in `_droppable_list` without the two colliding on
+# share `TORCH.id` with an ordinary carried torch in `_pack_droppable` without the two colliding on
 # drop. Dropping it is its own path (`_do_drop_lit_torch`), not `_do_drop`'s generic one.
 _LIT_TORCH_ID = "torch:lit"
 
@@ -495,7 +502,7 @@ class RunState:
         self._greeted: set[str] = set()
         self.active: Gate | None = None
         self._overlay = None          # a TextView | MenuView | PromptView | AmountView, or None
-        # kinds: lesson|question|explanation|repelled|scroll|info|drop_menu|drop_amount
+        # kinds: lesson|question|explanation|repelled|scroll|info|drop_amount
         self._overlay_kind: str | None = None
         # The `i` panel's active primary tab, remembered only while the panel stays open
         # (`_tab_cycle` mutates this); `_inventory` resets it to Pack (index 0) on every fresh
@@ -524,11 +531,11 @@ class RunState:
         self._help_tab: int = 0
         self._prior_overlay = None
         self._prior_overlay_kind: str | None = None
-        # The drop flow's transient state: the droppable kinds shown in the menu, the kind pending
-        # in the amount field, and the digits typed into it so far. All cleared when it closes.
-        # (def-id, label, available, charge) - charge is None except for a torch of known charge
-        # (DELVE-0067), threaded through so a menu choice picks the exact floor/pack stack it named.
-        self._droppables: list[tuple[str, str, int, int | None]] = []   # to drop
+        # The pickup menu's transient state, and the amount field shared by pickup and a Pack-tab
+        # drop (DELVE-0081): the kind pending in the amount field, and the digits typed into it so
+        # far, all cleared when either closes. (def-id, label, available, charge) - charge is None
+        # except for a torch of known charge (DELVE-0067), threaded through so a menu/row choice
+        # picks the exact floor/pack stack it named.
         self._pickables: list[tuple[str, str, int, int | None]] = []    # to pick up
         self._pending: tuple[str, str, int, int | None] | None = None    # kind, label, max, charge
         self._amount_buf: str = ""                           # digits typed into the amount field
@@ -544,9 +551,12 @@ class RunState:
         # with no grader model configured, or if a room's call fails; entering it then simply grows
         # no toast (no error, no gating, DELVE-0033's opposite: this is flavour, not required to
         # play). Reuses whichever `OllamaClient` the free-text grader is already configured with,
-        # so this needs no config of its own.
+        # so this needs no config of its own. `_ambient_metrics` (DELVE-0066) is its own
+        # `GraderMetrics`, separate from the configured `LLMGrader`'s own, so the Grader tab can
+        # report the ambient model's tokens/latency/call count apart from grading's.
+        self._ambient_metrics = GraderMetrics()
         self._room_backstory = backstory.RoomBackstoryRunner(
-            self._backstory_client(), model=_BACKSTORY_MODEL, metrics=self._backstory_metrics())
+            self._backstory_client(), model=_BACKSTORY_MODEL, metrics=self._ambient_metrics)
         self._toast: ToastView | None = None
         self._toast_turn: int = 0             # the turn `_toast` was shown, for ageing it out
         # DELVE-0070: the TTL only starts counting down once the learner has taken a turn since the
@@ -662,6 +672,8 @@ class RunState:
                 self._confirm()
             case Consult():
                 self._consult()
+            case BuyRemoval():
+                self._buy_removal()
             case Rest():
                 self._rest()
             case Wait():
@@ -831,9 +843,6 @@ class RunState:
             self.messages.append("")
 
     def _answer(self, choice: int) -> None:
-        if self._overlay_kind == "drop_menu":
-            self._drop_select(choice)
-            return
         if self._overlay_kind == "pickup_menu":
             self._pickup_select(choice)
             return
@@ -843,6 +852,8 @@ class RunState:
         options = gate.display_options()
         if not 0 <= choice < len(options):
             return
+        if choice in gate.eliminated:
+            return   # a paid removal took this option; digits and focus skip it (DELVE-0018)
         q = gate.current_question()
         # MCQ options are numbered 1..n (not lettered), so the keys never clash with the map's
         # d/,/i and are faster to hit (OBJECTS.md); an assertion echoes its chosen label.
@@ -857,7 +868,7 @@ class RunState:
         """Show the current question and reset the free-text buffer, so a fresh field is empty (the
         one place a new answer starts). Shared by the lesson->exam and explanation->next steps."""
         self._answer_buf = ""
-        self._selected_option = 0
+        self._selected_option = self._first_standing(gate)
         self._overlay = self._question_overlay(gate)
         self._overlay_kind = "question"
 
@@ -865,9 +876,10 @@ class RunState:
         """Move the option focus (the arrows) on an assertion's buttons or an MCQ's list, or, while
         the Pack tab's compact list is showing (DELVE-0069), the focused carried-kind row: the same
         command, dispatched on which one is actually open, since both are "move a list focus by
-        +1/-1, Enter/space confirms it" in the same shape. Wraps either way. The number/label keys
-        still answer a question directly, so this is an alternative way in there, not the only one;
-        free text has no focus to move."""
+        +1/-1, Enter/space confirms it" in the same shape. Wraps either way, skipping options a
+        paid removal eliminated (DELVE-0018). The number/label keys still answer a question
+        directly, so this is an alternative way in there, not the only one; free text has no focus
+        to move."""
         if self._overlay_kind == "info":
             self._pack_select(delta)
             return
@@ -876,7 +888,15 @@ class RunState:
         if self.active.current_question().kind == "freetext":
             return
         n = len(self.active.display_options())
-        self._selected_option = (self._selected_option + delta) % n
+        if n == 0:
+            return
+        # Walk past eliminated options; if somehow every option is gone, stay put.
+        cur = self._selected_option
+        for _ in range(n):
+            cur = (cur + delta) % n
+            if cur not in self.active.eliminated:
+                self._selected_option = cur
+                break
         self._overlay = self._question_overlay(self.active)
 
     def _pack_select(self, delta: int) -> None:
@@ -970,11 +990,71 @@ class RunState:
         # consult always costs the question (OBJECTS.md section 8).
         free = self.pet.species == "cat" and not gate.free_consult_used
         q = gate.current_question()
-        display = gate.consult(self.pet.hint_for(q), free=free)
-        self._overlay = self._question_overlay(gate, struck=display)
+        gate.consult(self.pet.hint_for(q), free=free)
+        self._overlay = self._question_overlay(gate)
         self._overlay_kind = "question"
         self.messages.append(self.strings("msg.pet_free" if free else "msg.pet_strike",
                                           name=self.pet.name))
+
+    def _reward_basis(self, gate: Gate) -> int:
+        """The room's unscaled reward basis `R`: the room's own `reward`, or the pack default when
+        the room sets none. An unscored floor (the tutorial) never inherits the pack default
+        (same rule as `_pay_reward`). Used for the paid-removal price (DELVE-0018); the paid
+        reward itself still scales by sitting score after a pass."""
+        reward = gate.content.reward
+        if reward is None:
+            reward = self.pack.reward if (self.cur.scored and self.pack is not None) else 0
+        return reward
+
+    def _removal_price(self, gate: Gate) -> int | None:
+        """Gold cost to eliminate one wrong option now, or None when the lifeline is unavailable:
+        unscored floor, free-text/assertion, fewer than three options still standing, or a zero
+        reward basis. Price is `round(R / (n - 1))` with `n` still standing (DELVE-0018)."""
+        if not self.cur.scored or self._overlay_kind != "question":
+            return None
+        if gate.current_question().kind != "mcq":
+            return None
+        reward = self._reward_basis(gate)
+        if reward <= 0:
+            return None
+        standing = gate.standing_count()
+        if standing < 3:
+            return None
+        return round(reward / (standing - 1))
+
+    def _first_standing(self, gate: Gate) -> int:
+        """The lowest display index that is still selectable (not eliminated)."""
+        for i in range(len(gate.display_options())):
+            if i not in gate.eliminated:
+                return i
+        return 0
+
+    def _buy_removal(self) -> None:
+        """Spend gold to eliminate one wrong MCQ option. The coin is the price; the question keeps
+        counting toward the score (unlike a pet consult). Immediate on the keypress; the hint line
+        shows the price beforehand (DELVE-0018)."""
+        if not self.active or self._overlay_kind != "question":
+            self.messages.append(self.strings("msg.buy_nothing"))
+            return
+        gate = self.active
+        price = self._removal_price(gate)
+        if price is None:
+            self.messages.append(self.strings("msg.buy_nothing"))
+            return
+        if self.player.gold < price:
+            self.messages.append(self.strings("msg.buy_poor", coins=self._coins(price)))
+            return
+        original = gate.next_wrong_to_eliminate()
+        if original is None:
+            self.messages.append(self.strings("msg.buy_nothing"))
+            return
+        self.player.gold -= price
+        gate.eliminate(original)
+        if self._selected_option in gate.eliminated:
+            self._selected_option = self._first_standing(gate)
+        self._overlay = self._question_overlay(gate)
+        self._overlay_kind = "question"
+        self.messages.append(self.strings("msg.buy_remove", coins=self._coins(price)))
 
     def _rest(self) -> None:
         if self.active or self._overlay is not None:
@@ -1035,8 +1115,12 @@ class RunState:
         if self._overlay_kind == "help":
             self._close_help()
             return
-        if self._overlay_kind in ("info", "drop_menu", "drop_amount",
-                                  "pickup_menu", "pickup_amount"):
+        if self._overlay_kind == "drop_amount":
+            # DELVE-0081: the amount field is only ever reached from Info/Pack now, so Esc backs
+            # out to Pack (updated if anything changed), not out of the panel entirely.
+            self._close_pack_drop()
+            return
+        if self._overlay_kind in ("info", "pickup_menu", "pickup_amount"):
             # The Pack tab has no separate detail mode to back out of any more (DELVE-0075): its
             # list and the focused row's description show together at all times, so Esc always
             # just closes the panel here, same as every other tab.
@@ -1081,9 +1165,7 @@ class RunState:
         (PLAN §9); it still pays when a room sets an explicit `reward:` (DELVE-0031)."""
         if gate.rewarded:
             return
-        reward = gate.content.reward
-        if reward is None:
-            reward = self.pack.reward if (self.cur.scored and self.pack is not None) else 0
+        reward = self._reward_basis(gate)
         coins = round(reward * gate.passed_score)
         if coins <= 0:
             return
@@ -1335,26 +1417,17 @@ class RunState:
         self._overlay = self._info_overlay()
 
     def _drop(self) -> None:
-        """Open the drop menu, unless there is nothing to drop or only one thing to choose from
-        (mirroring `_pickup`'s own shortcut): a single droppable entry goes straight to
-        `_drop_select(0)`, which drops it immediately if it's a lone unit, or still asks how many
-        if it's a multi-count pile (e.g. the only droppable thing is several coins)."""
-        if self.active or self._overlay is not None:
+        """Drop the Info/Pack tab's currently focused row (DELVE-0081, replacing the old
+        standalone drop menu that made the learner pick the same kind a second time): a lone unit
+        (including the currently-burning torch) drops at once; a multi-count pile (coins, spare
+        torches) still asks how many first, the same amount field the old flow already had. A
+        no-op off the Pack tab, or with nothing carried to focus a row on."""
+        if self._overlay_kind != "info" or _INFO_TABS[self._info_tab][0] != "pack":
             return
-        self._droppables = self._droppable_list()
-        if not self._droppables:
-            self.messages.append(self.strings("item.nothing"))
+        entries = self._pack_entries()
+        if not entries:
             return
-        if len(self._droppables) == 1:
-            self._drop_select(0)
-            return
-        self._overlay = self._drop_menu_overlay()
-        self._overlay_kind = "drop_menu"
-
-    def _drop_select(self, choice: int) -> None:
-        if not 0 <= choice < len(self._droppables):
-            return
-        def_id, label, available, charge = self._droppables[choice]
+        def_id, label, available, charge = self._pack_droppable(self._pack_row)
         if available <= 1:                       # a single unit: no amount to type, drop it
             self._do_drop(def_id, 1, charge)
             return
@@ -1391,7 +1464,7 @@ class RunState:
     def _drop_confirm(self) -> None:
         amount = int(self._amount_buf) if self._amount_buf else 0
         if self._pending is None or amount <= 0:      # nothing typed: treat Enter as a cancel
-            self._close_item()
+            self._close_pack_drop()
             return
         self._do_drop(self._pending[0], amount, self._pending[3])
 
@@ -1399,7 +1472,9 @@ class RunState:
         """Put `count` of a kind onto the player's tile, from gold (money) or the pack (a carriable
         stack). Refused, with a message, if a bulky item would have to share the tile. `charge`
         (DELVE-0067) picks which pack stack to drop when the pack holds more than one
-        differently-charged torch spare; every other kind passes its own `charge`, always `None`."""
+        differently-charged torch spare; every other kind passes its own `charge`, always `None`.
+        Only ever reached from the Info/Pack tab now (DELVE-0081), so every exit rebuilds Pack
+        (`_close_pack_drop`) rather than closing the panel outright."""
         if def_id == _LIT_TORCH_ID:
             self._do_drop_lit_torch()
             return
@@ -1411,15 +1486,15 @@ class RunState:
             stack = next((s for s in self.player.inventory if s.defn.id == def_id
                          and (charge is ANY_CHARGE or s.charge == charge)), None)
             if stack is None:
-                self._close_item()
+                self._close_pack_drop()
                 return
             defn, count, charge = stack.defn, min(count, stack.count), stack.charge
         if count <= 0:
-            self._close_item()
+            self._close_pack_drop()
             return
         if not can_place(pile, defn):
             self.messages.append(self.strings("item.no_room"))
-            self._close_item()
+            self._close_pack_drop()
             return
         if def_id == MONEY.id:
             self.player.gold -= count
@@ -1429,7 +1504,7 @@ class RunState:
         self.turn += 1
         self.messages.append(self.strings("item.drop", what=self._item_phrase(defn, count)))
         self._pet_step()
-        self._close_item()
+        self._close_pack_drop()
 
     def _do_drop_lit_torch(self) -> None:
         """Drop the currently-burning torch itself (a playtesting request, to reach the unlit
@@ -1444,7 +1519,7 @@ class RunState:
         pile = self.items.get(pos, [])
         if not can_place(pile, TORCH):
             self.messages.append(self.strings("item.no_room"))
-            self._close_item()
+            self._close_pack_drop()
             return
         # Normalised to `None` at exactly full duration, so a torch dropped the instant it is lit
         # merges with an untouched fresh one on the same tile instead of rendering as a spuriously
@@ -1457,15 +1532,26 @@ class RunState:
         self.messages.append(self.strings("item.drop", what=self._torch_noun(1)))
         self._observe()
         self._pet_step()
-        self._close_item()
+        self._close_pack_drop()
 
     def _close_item(self) -> None:
         self._overlay = None
         self._overlay_kind = None
-        self._droppables = []
         self._pickables = []
         self._pending = None
         self._amount_buf = ""
+
+    def _close_pack_drop(self) -> None:
+        """Where every Pack-tab drop lands (DELVE-0081), whether it dropped something, was
+        cancelled, or was refused: back on Info/Pack rather than closed outright, since the whole
+        flow now starts there. `_pack_row` is clamped to the rebuilt list, which may have lost a
+        row (the dropped kind's only stack) or shrunk a pile without losing the row entirely."""
+        self._pending = None
+        self._amount_buf = ""
+        entries = self._pack_entries()
+        self._pack_row = min(self._pack_row, max(0, len(entries) - 1))
+        self._overlay = self._info_overlay()
+        self._overlay_kind = "info"
 
     def _set_pile(self, pos: Point, pile: list[Stack]) -> None:
         if pile:
@@ -1519,19 +1605,19 @@ class RunState:
         words = self.strings("item.numbers")
         return words[n] if 0 <= n < len(words) else str(n)
 
-    def _droppable_list(self) -> list[tuple[str, str, int, int | None]]:
-        out = [(s.defn.id, self._label(s.defn.id, s.defn.name, s.count, s.charge), s.count,
-               s.charge) for s in self.player.inventory]
-        if self.player.gold > 0:
-            out.append((MONEY.id, self._coins(self.player.gold), self.player.gold, None))
-        # The currently-burning torch last (a playtesting request, to be able to reach the unlit
-        # ambient scene deliberately rather than only by waiting it out): appended, not prepended,
-        # since a lit torch is present from turn one of almost every real run, and inserting it
-        # ahead of gold/inventory would silently shift every other entry's menu number.
+    def _pack_droppable(self, idx: int) -> tuple[str, str, int, int | None]:
+        """The (def_id, label, available, charge) a Pack-tab row drops (DELVE-0081), in exactly
+        `_pack_entries`'s own order (lit torch, gold, inventory stacks), so a row's focus and its
+        drop target always name the same carried thing."""
+        out: list[tuple[str, str, int, int | None]] = []
         if self.cur.scored and self.player.torch_charge > 0:
             out.append((_LIT_TORCH_ID,
                        self.strings("item.torch_lit_menu", n=self.player.torch_charge), 1, None))
-        return out
+        if self.player.gold > 0:
+            out.append((MONEY.id, self._coins(self.player.gold), self.player.gold, None))
+        out += [(s.defn.id, self._label(s.defn.id, s.defn.name, s.count, s.charge), s.count,
+                s.charge) for s in self.player.inventory]
+        return out[idx]
 
     def _title_block(self, label: str, look: str) -> TextBlock:
         """One item's block: a bold title, then its description on the next line (a '\\n' hard
@@ -1634,25 +1720,41 @@ class RunState:
         return (client.model, client.host) if client is not None else None
 
     def _grader_body(self) -> list[TextBlock]:
-        """The Grader tab's body (DELVE-0054, INFOSCREEN.md §7): `Model`/`Status`/`This run` rows
-        read from the configured `LLMGrader`'s run-scoped `GraderMetrics` (DELVE-0053), reached by
-        the same duck-typed attribute read `_grader_info` already uses (rule 1: no new
-        `assess.grader`/`assess.llm` import here). No model configured is a first-class state, not
-        an error, so it renders as a single explanatory line instead of the three rows.
+        """The Grader tab's body (DELVE-0054, INFOSCREEN.md §7; split into two sections at
+        DELVE-0066): a heading plus `Model`/`Status`/`This run` rows for the configured grader
+        model, then the same shape again for the ambient toast model, each reading its own
+        `GraderMetrics` instance rather than one blended total (`RunState._ambient_metrics`,
+        separate from whatever the configured `LLMGrader` accumulates into on its own). No model
+        configured is a first-class state, not an error, so it renders as a single explanatory
+        line instead of either section (the ambient toast is never reachable without the same
+        client the grader uses, `_backstory_client`/`_ambient_info`, so there is nothing of its own
+        to show either).
 
-        The ambient toast (DELVE-0060/0062) shares this same `GraderMetrics` instance
-        (`RunState._backstory_metrics`), so `This run` folds in its tokens/latency too and
-        `ambient` tallies how many of those calls happened, distinct from an actual verdict; a
-        playtesting note found the tab showing no change at all right after a toast appeared,
-        because it used to read only `LLMGrader`'s own, separate accumulator. `Avg latency` reads
-        the mean over every call this run, grading or ambient, since `avg_latency_ms` folds both in
-        the same way `max_latency_ms` already did (tracked since DELVE-0053 but never actually
-        shown until now). Condensed into one block via `_condensed` (DELVE-0059)."""
+        `Avg latency` and `Latency` (DELVE-0077's sparkline) are each section's own mean/series now,
+        not a blend of grading and ambient traffic the way one shared accumulator used to report
+        them. The ambient section always renders, even at zero calls, so its presence is
+        predictable rather than conditional on traffic having happened yet (a run with no keeper
+        rooms visited still shows a zeroed ambient block). Every row is `Label: value`
+        (DELVE-0078), each section condensed into its own `kind="kv"` block via `_condensed
+        (kv=True)` (DELVE-0059/DELVE-0078) so `ui` colours each label, and the pager's own blank
+        row between distinct blocks is what visually separates the two sections."""
         grader = self._grader_info()
         if grader is None:
             return [TextBlock("plain", self.strings("item.grader_offline"))]
         model, host = grader
         metrics = getattr(self._grader_runner.grader, "metrics", None)
+        body = [TextBlock("plain", self.strings("item.grader_section_grading"))]
+        body += self._grader_metrics_lines(model, host, metrics)
+        ambient = self._ambient_info()
+        model, host = ambient if ambient is not None else ("", "")
+        body.append(TextBlock("plain", self.strings("item.grader_section_ambient")))
+        body += self._ambient_metrics_lines(model, host, self._ambient_metrics)
+        return body
+
+    def _grader_metrics_lines(self, model: str, host: str, metrics) -> list[TextBlock]:
+        """The grading model's own `Model`/`Status`/`This run`/`Avg latency`/`Latency` rows
+        (DELVE-0066), factored out of `_grader_body` so the same shape (bar the verdict-count
+        row, `_ambient_metrics_lines`'s own concern) is not duplicated across the two sections."""
         lines = [self.strings("item.grader_model", model=model, host=host)]
         if metrics is None or metrics.last_latency_ms is None:
             lines.append(self.strings("item.grader_status_none"))
@@ -1663,21 +1765,49 @@ class RunState:
         tout = metrics.completion_tokens if metrics else 0
         llm = metrics.llm_verdicts if metrics else 0
         keyword = metrics.keyword_verdicts if metrics else 0
-        ambient = metrics.ambient_calls if metrics else 0
-        lines.append(self.strings(
-            "item.grader_run", tin=tin, tout=tout, llm=llm, keyword=keyword, ambient=ambient))
+        lines.append(self.strings("item.grader_run", tin=tin, tout=tout, llm=llm, keyword=keyword))
         avg = metrics.avg_latency_ms if metrics else None
         if avg is not None:
             lines.append(self.strings("item.grader_avg", ms=avg))
-        return self._condensed(lines)
+        spark = metrics.latency_sparkline if metrics else None
+        if spark is not None:
+            lines.append(self.strings("item.grader_latency", spark=spark))
+        return self._condensed(lines, kv=True)
+
+    def _ambient_metrics_lines(self, model: str, host: str, metrics) -> list[TextBlock]:
+        """The ambient toast model's own `Model`/`Status`/`This run`/`Avg latency`/`Latency` rows
+        (DELVE-0066): the same shape `_grader_metrics_lines` renders, but `This run` reports a
+        single call count (`ambient_calls`) rather than an LLM/keyword verdict split, since an
+        ambient passage is never graded. Always renders, even with `model`/`host` blank (no grader
+        configured) and every count at zero, so the section's presence never depends on whether a
+        room with a toast has been entered yet this run."""
+        lines = [self.strings("item.ambient_model", model=model, host=host)]
+        if metrics.last_latency_ms is None:
+            lines.append(self.strings("item.ambient_status_none"))
+        else:
+            key = "item.ambient_status_warm" if metrics.last_warm else "item.ambient_status_cold"
+            lines.append(self.strings(key, ms=metrics.last_latency_ms))
+        lines.append(self.strings(
+            "item.ambient_run", tin=metrics.prompt_tokens, tout=metrics.completion_tokens,
+            calls=metrics.ambient_calls))
+        avg = metrics.avg_latency_ms
+        if avg is not None:
+            lines.append(self.strings("item.ambient_avg", ms=avg))
+        spark = metrics.latency_sparkline
+        if spark is not None:
+            lines.append(self.strings("item.ambient_latency", spark=spark))
+        return self._condensed(lines, kv=True)
 
     def _status_body(self) -> list[TextBlock]:
         """The Status tab's body (DELVE-0044, INFOSCREEN.md §9): plain key/value rows of app and
-        run diagnostics that already exist elsewhere, no new plumbing. The grader row is omitted,
-        not shown blank, when no model is configured.
+        run diagnostics that already exist elsewhere, no new plumbing. The grader row, and the
+        ambient row beside it (DELVE-0066), are both omitted, not shown blank, when no model is
+        configured; they share that one condition, since the ambient toast is never reachable
+        without the same client the grader uses.
 
-        Every row, including the terminal-size one, condenses into a single block via
-        `_condensed` (DELVE-0059): a playtesting fix closed the tab's last remaining gap. The
+        Every row, including the terminal-size one, condenses into a single `kind="kv"` block via
+        `_condensed(kv=True)` (DELVE-0059/DELVE-0078): a playtesting fix closed the tab's last
+        remaining gap, and each row reads `Label: value` so `ui` can colour the label. The
         size row's live "RxC" value is still filled in at paint time by `ui`
         (`windows._fill_status_size`), since `session` has never read `stdscr` (rule 2); it used
         to be a structurally separate `kind="size"` block swapped wholesale, the only way to
@@ -1685,7 +1815,8 @@ class RunState:
         *last line* of this tab's sole body block instead: a private position-based contract
         between the two functions (this method always appends the size row last, and always
         returns exactly one block, since `lines` is never empty), not a block-level `kind` match
-        any more. The size row's own text still carries only its localised label here."""
+        any more. The size row's own text still carries only its localised `"Terminal:"` label
+        here, colon included, so the spliced value lands after it like every other row."""
         lines = [
             self.strings("item.status_version", version=delve.__version__),
             self.strings("item.status_pack", pack=self.pack.title if self.pack else ""),
@@ -1695,8 +1826,11 @@ class RunState:
         if grader is not None:
             model, host = grader
             lines.append(self.strings("item.status_grader", model=model, host=host))
+            ambient_model, ambient_host = self._ambient_info()
+            lines.append(self.strings(
+                "item.status_ambient", model=ambient_model, host=ambient_host))
         lines.append(self.strings("item.status_size"))
-        return self._condensed(lines)
+        return self._condensed(lines, kv=True)
 
     def _info_overlay(self) -> InfoView:
         """The `i` panel: a tab strip, Scoring's own sub-tab strip, and the active (tab, sub-tab)
@@ -1759,12 +1893,14 @@ class RunState:
         still works unchanged here too."""
         return getattr(getattr(self._grader_runner, "grader", None), "client", None)
 
-    def _backstory_metrics(self):
-        """The same `GraderMetrics` instance the configured `LLMGrader` accumulates into (duck-typed
-        like `_backstory_client`), or `None` when no model is configured. Handed to
-        `RoomBackstoryRunner` so an ambient call folds its tokens/latency into the Grader tab's
-        figures too, and counts itself under `ambient_calls`, distinct from an actual verdict."""
-        return getattr(getattr(self._grader_runner, "grader", None), "metrics", None)
+    def _ambient_info(self) -> tuple[str, str] | None:
+        """The ambient toast's own model/host (DELVE-0066), the same shape `_grader_info` returns:
+        `_BACKSTORY_MODEL` (the fixed override `RoomBackstoryRunner` asks the shared client for)
+        paired with that client's host, or `None` on the same default keyword-only floor
+        `_grader_info`/`_backstory_client` already treat as absent, since the ambient toast reuses
+        the grader's own client and never runs without one."""
+        client = self._backstory_client()
+        return (_BACKSTORY_MODEL, client.host) if client is not None else None
 
     def _next_gate(self) -> Gate | None:
         """The current chapter's next unpassed gate, in room order: the learner's next objective,
@@ -1780,7 +1916,7 @@ class RunState:
             return f"question_{self.active.current_question().kind}"
         return self._overlay_kind or "walking"
 
-    def _condensed(self, lines: list[str]) -> list[TextBlock]:
+    def _condensed(self, lines: list[str], kv: bool = False) -> list[TextBlock]:
         """Fold a dense list of one-line facts into a single `TextBlock`, each line joined by a
         literal `"\\n"` in its `spans` (DELVE-0059, generalised past its original Keys tab):
         `ui/windows.py`'s pager inserts a blank row between distinct top-level blocks (right for
@@ -1789,11 +1925,16 @@ class RunState:
         wasted rows, while each still word-wraps on its own if it runs long (`_wrap_spans` treats
         each `"\\n"`-separated segment independently, so pagination still only ever breaks between
         whole entries, never mid-one). An empty `lines` returns `[]`; the caller supplies its own
-        fallback line for that case, since the wording differs per tab."""
+        fallback line for that case, since the wording differs per tab.
+
+        `kv` (DELVE-0078) tags the block `kind="kv"` instead of `"plain"` when every line is
+        genuinely a `"Label: value"` pair (Keys, Objectives, Grader, Status); `ui` then colon-splits
+        each line and colours the label. Left False for a block like Scoring > Rooms's glyph
+        legend, which has no label/value shape."""
         if not lines:
             return []
         spans = tuple((("\n" if i else "") + line, False) for i, line in enumerate(lines))
-        return [TextBlock("plain", "\n".join(lines), spans=spans)]
+        return [TextBlock("kv" if kv else "plain", "\n".join(lines), spans=spans)]
 
     def _keys_body(self) -> list[TextBlock]:
         """The Keys tab: every catalogue row active in the current help context, each a plain key
@@ -1804,7 +1945,7 @@ class RunState:
         entries = help_catalogue.entries_for(self._help_context())
         if not entries:
             return [TextBlock("plain", self.strings("help.no_keys"))]
-        return self._condensed([f"{e.key}: {self.strings(e.string_id)}" for e in entries])
+        return self._condensed([f"{e.key}: {self.strings(e.string_id)}" for e in entries], kv=True)
 
     def _objectives_facts(self) -> list[TextBlock]:
         """The Objectives tab's static half (DELVE-0028): pack title, chapter position and title,
@@ -1823,7 +1964,7 @@ class RunState:
         if gate is not None:
             lines.append(self.strings("help.obj_keeper", name=gate.keeper.name,
                                       pct=round(gate.content.pass_mark * 100)))
-        return self._condensed(lines)
+        return self._condensed(lines, kv=True)
 
     def _help_overlay(self) -> HelpView:
         """The `?` panel: a two-tab strip (Keys, Objectives) over whichever tab is active,
@@ -1864,10 +2005,6 @@ class RunState:
                         more_label=self.strings("ui.more"),
                         end_label=self.strings("ui.end"),
                         page_fmt=self.strings("ui.page_fmt"))
-
-    def _drop_menu_overlay(self) -> MenuView:
-        items = [MenuItem(str(i + 1), label) for i, (_, label, _, _) in enumerate(self._droppables)]
-        return MenuView(prompt=self.strings("item.drop_prompt"), items=items)
 
     def _pickup_menu_overlay(self) -> MenuView:
         items = [MenuItem(str(i + 1), label) for i, (_, label, _, _) in enumerate(self._pickables)]
@@ -2271,7 +2408,7 @@ class RunState:
                 for b in gate.lesson.blocks]
         return self._text(title=gate.lesson.title, body=body)
 
-    def _question_overlay(self, gate: Gate, struck: int | None = None):
+    def _question_overlay(self, gate: Gate):
         q = gate.current_question()
         options = gate.display_options()
         idx, total = gate.progress()
@@ -2279,14 +2416,17 @@ class RunState:
         # Garnish the *displayed* prompt only; grading reads the options/answer, never this string,
         # so an added emoji cannot change what is correct (session/flavour.py).
         prompt = flavour.augment(q.prompt, self.strings.flavour_emoji())
+        struck = gate.struck
+        elim = gate.eliminated
         if q.kind == "freetext":
             return FreeTextView(prompt=prompt, typed=self._answer_buf, footer=footer)
         if q.kind == "assertion":
             marks = tuple(i == struck for i in range(len(options)))
+            gone = tuple(i in elim for i in range(len(options)))
             return PromptView(text=prompt, choices=options, footer=footer, struck=marks,
-                              connector=self.strings("question.or"),
+                              eliminated=gone, connector=self.strings("question.or"),
                               selected=self._selected_option)
-        items = [MenuItem(str(i + 1), text, struck=(i == struck))
+        items = [MenuItem(str(i + 1), text, struck=(i == struck), eliminated=(i in elim))
                  for i, text in enumerate(options)]
         return MenuView(prompt=prompt, items=items, footer=footer,
                         selected=self._selected_option)
@@ -2368,7 +2508,27 @@ class RunState:
             toast=self._toast,
             toast_pending=(self._room_backstory.pending()
                           or self._nudge_state in ("waiting", "queued")),
+            # DELVE-0082: only while a call is genuinely running (queued, in flight, or resolved
+            # but not yet delivered) and there is no fresher toast or panel already showing; the
+            # idle-nudge timer's own "waiting" (armed, not yet queued) state names nothing yet.
+            # DELVE-0083: a fired nudge whose text is now guaranteed to be dropped on arrival
+            # (`_poll_toast`'s own `is_nudge and self.turn != 0` rule, since the learner has since
+            # moved, which is exactly what the nudge exists to prompt) must not keep naming itself
+            # here too, unless something else is queued behind it that genuinely will show.
+            toast_loading=(self.strings("toast.loading")
+                          if self._overlay_kind is None and self._toast is None
+                             and self._room_backstory.pending()
+                             and not self._doomed_nudge_only()
+                          else None),
         )
+
+    def _doomed_nudge_only(self) -> bool:
+        """Whether the sole thing keeping `_room_backstory.pending()` true is a fired idle nudge
+        that will be dropped the instant it resolves (DELVE-0083): fired (`"queued"`, its one-shot
+        name for "submitted") and the learner has since moved, mirroring `_poll_toast`'s own drop
+        condition exactly, with nothing else queued behind it to still show for."""
+        return (self._nudge_state == "queued" and self.turn != 0
+               and not self._room_backstory.pending_other_than(self._nudge_room_id))
 
     def _visible_message(self) -> list[str]:
         """The top line, aged: a message shows on the turn it is posted and briefly after, then
@@ -2424,15 +2584,22 @@ class RunState:
             if kind == "assertion":
                 return self.strings("hint.answer_two", k1=options[0][0].lower(),
                                     k2=options[1][0].lower())
+            price = self._removal_price(self.active)
+            if price is not None:
+                return self.strings("hint.answer_many_buy", last=len(options),
+                                    price=format_money(price, self.strings.fmt))
             return self.strings("hint.answer_many", last=len(options))
         if self._overlay_kind == "info":
             if _INFO_TABS[self._info_tab][0] == "scoring":
                 return self.strings("hint.inventory_sub")
+            # DELVE-0081: `d` only ever does anything on the Pack tab, and only once there is a
+            # row to drop, so it's only named here in that one case; every other tab (and an empty
+            # Pack) keeps the plain hint with no key that would do nothing if pressed.
+            if _INFO_TABS[self._info_tab][0] == "pack" and self._pack_entries():
+                return self.strings("hint.inventory_pack")
             return self.strings("hint.inventory")
         if self._overlay_kind == "help":
             return self.strings("hint.help")
-        if self._overlay_kind == "drop_menu":
-            return self.strings("hint.drop_menu")
         if self._overlay_kind == "drop_amount":
             return self.strings("hint.drop_amount")
         # The tile underfoot comes first: a keeper often stands beside the stairs (the last one

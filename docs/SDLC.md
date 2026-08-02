@@ -61,7 +61,7 @@ Catching a rule-1 violation or a missed locale at design time is a checklist rea
 This phase is already almost entirely deterministic: `./tools.sh issues --check` prints the next free id, `issues/TEMPLATE.md` has the six sections, `issues/AGILE.md` has the epic/feature/story front matter and a Definition of Ready checklist that is, itself, already a list of yes/no questions. Deterministic and repeatable is exactly the shape a **skill** wants, not an agent.
 
 - **`write-issue`**: runs `./tools.sh issues --check` for the id, scaffolds `TEMPLATE.md` with front matter, asks (via a real question, not a guess) for `type`/`epic:`/`area:` when those aren't obvious from the request, drafts stories in `As a <role>, I want ..., so that ...` form, and walks the Definition of Ready checklist before leaving `status: proposed`. Ends by running `./tools.sh issues` to regenerate the index.
-- **`archive-issue`**: the done-side counterpart. Walks the Definition of Done checklist, confirms `./run-tests.sh` is green, moves the file to `archive/`, fills `commits:`, regenerates the index. This is currently a sequence of manual steps CLAUDE.md documents in prose ("move the file into archive/... fill commits:... regenerate the index"); a skill turns "remember to do all of that" into "run one command."
+- **`archive-issue`**: the done-side counterpart. Walks the Definition of Done checklist, confirms `./run-tests.sh` is green, checks the issue's "Peer review" section actually has an entry per reviewer rather than being blank, moves the file to `archive/`, fills `commits:`, regenerates the index. This is currently a sequence of manual steps AGENTS.md documents in prose ("move the file into archive/... fill commits:... regenerate the index"); a skill turns "remember to do all of that" into "run one command."
 
 Both skills are thin wrappers around tooling that already exists (`tools/issues.py`, `TEMPLATE.md`, `AGILE.md`). That is the point: nothing new to design, just less to hold in working memory each time.
 
@@ -77,6 +77,19 @@ moment `status:` moves to `in-progress` and strictly before any code for the iss
 `effort:`. This is the concrete instance of §1's general point: a tool enforcing beats a human
 remembering, and here the tool enforces that the *ask* happened, even though it cannot make the
 answer be yes.
+
+The Definition of Done has the same gate at the other end (DELVE-0093 added it, after a review that
+found real drift a mechanical check alone would have missed): before an issue is committed, merged,
+or archived, the maintainer is asked outright, "commit and close this out?", and an agent never
+infers a yes from silence any more than it infers acceptance at the Ready end. What's new relative
+to the Ready-side gate is that this one leaves a **written trail**: every review that happened
+(a reviewing agent's pass, the maintainer's own) is appended as a line in the issue's own "Peer
+review" section before the question is asked, not summarised in a chat transcript that scrolls away.
+That is deliberate: `accepted_by:`/`accepted_at:` records *that* a yes was given for the Ready gate,
+a single fact; the Done gate can have several reviewers across several passes, so it needs a small
+running log inside the issue rather than one more pair of front-matter fields, and future work on
+an issue (or a later audit of "was this actually reviewed") reads that section instead of trusting
+that a review happened because the issue is sitting in `archive/`.
 
 ---
 

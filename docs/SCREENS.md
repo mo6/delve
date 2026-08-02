@@ -193,7 +193,7 @@ Ada the Suspicious examines you.
                            ║ gift cards for a client, and to keep it quiet until the deal closes.  ║
     ┌────────────────────┐ ║ What is the strongest single signal that this is an attack?           ║
     │....................│ ║                                                                       ║
-    │..<.................│ ║  1  Gift cards are an unusual business expense                        ║
+    │..<.................│ ║  x  Gift cards are an unusual business expense                        ║
     │....................│ ║  2  It combines manufactured urgency with a request to bypass normal  ║
     │.................@.@│ ║     purchasing                                                        ║
     │................f...│ ║  3  A CEO would not normally email someone in your role directly      ║
@@ -206,16 +206,10 @@ Ada the Suspicious examines you.
                            ║                                                                       ║
                            ╚═══════════════════════════════════════════════════════════════════════╝
 George the Novice   Dlvl:1  Rooms:0/3  $:0  HP:12(12)  T:14
-Answer: 1-4             Ask your kitten: ?   Put it down: Esc
+Answer: 1-4    Ask companion: @    Eliminate ($33): $    Put it down: Esc
 ```
 
-Ada is visible while she asks. Options stay a **numbered list** (buttons are for binary questions,
-BUTTONS.md §5): each is a key badge (` 1 `) then its text, keys `1`-`n` (which never clash with the
-map's `d`/`,`/`i`, OBJECTS.md) and **shuffled** — option `2` is correct and the order differs from
-the file, which is why "all of the above" is banned. The arrows move a focus and Enter answers it,
-as well as the direct number keys; the focused option's badge is a colour highlight (black-on-cyan)
-the ASCII frame cannot show. `Question 1 of 4` is the whole panel footer; `pass: 0.75` and
-`difficulty: standard` set the stakes, but the panel does not spell them out.
+Ada is visible while she asks. Options stay a **numbered list** (buttons are for binary questions, BUTTONS.md §5): each is a key badge (` 1 `) then its text, keys `1`-`n` (which never clash with the map's `d`/`,`/`i`, OBJECTS.md) and **shuffled** — option `2` is correct and the order differs from the file, which is why "all of the above" is banned. The arrows move a focus and Enter answers it, as well as the direct number keys; the focused option's badge is a colour highlight (black-on-cyan) the ASCII frame cannot show. A paid gold removal (DELVE-0018) dims an option and replaces its badge with `x` so it cannot be selected; the hint line names `$` and the current price (`round(R / (n - 1))` against the room reward) before the buy. `Question 1 of 4` is the whole panel footer; `pass: 0.75` and `difficulty: standard` set the stakes, but the panel does not spell them out.
 
 Two things the narrower panel bought, both small and both fine: option `2` (78 characters) now
 **wraps with a hanging indent** rather than fitting on one line, and `(1-4, or ? to consult your

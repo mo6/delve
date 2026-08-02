@@ -30,6 +30,10 @@ pet_already   = "{name} has already told you what it thinks of this one."
 pet_strike    = "{name} noses at one answer and turns up its nose. That question no longer counts toward your score."
 pet_free      = "{name} noses one answer aside, a favour this once, and it costs you nothing."
 pet_pat       = "You ruffle {name}. It has nothing for you."
+# Paid option removal during an MCQ (DELVE-0018): gold is the price; the score is kept.
+buy_remove    = "You spend {coins}. One wrong answer falls away."
+buy_poor      = "You haven't enough gold. Removing an answer costs {coins}."
+buy_nothing   = "There is nothing here to buy."
 retrieve_cat  = "You corner {name} and prise {coins} loose."
 retrieve_dog  = "You take {coins} back from {name}."
 retrieve_dog_item = "{name} gives up {what}; it drops beside you."
@@ -67,9 +71,7 @@ one           = "a {name}"
 many          = "{count} {plural}"
 numbers       = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"]
 drop          = "You drop {what}."
-nothing       = "You have nothing to drop."
 no_room       = "There is no room to drop that here."
-drop_prompt   = "Drop what?"
 amount_prompt = "Drop how many?"
 inv_title     = "Your pack"
 inv_empty     = "You are carrying nothing."
@@ -95,27 +97,46 @@ progress_chapters = "Chapters"
 # Scoring > Rooms body (DELVE-0055): the legend line after the pass-map rows. The glyphs
 # (· sealed, ░ sat, ▒ ok, █ clear) never translate; only the words do.
 rooms_legend  = "· sealed   ░ sat   ▒ ok   █ clear"
-# Status tab body (DELVE-0044): plain key/value rows of app and run diagnostics. `status_size` is
+# Status tab body (DELVE-0044): plain key/value rows of app and run diagnostics, "Label: value"
+# (DELVE-0078, matching Objectives' own convention so `ui` can colour the label). `status_size` is
 # only the row's label; `ui` appends the live "rows x cols" at paint time (rule 2, see
-# windows._fill_status_size). `status_grader` is omitted, not shown blank, with no model configured.
-status_version = "Version     {version}"
-status_pack    = "Pack        {pack}"
-status_locale  = "Locale      {locale}"
-status_size    = "Terminal   "
-status_grader  = "Grader      {model} @ {host}"
-# Grader tab body (DELVE-0054, INFOSCREEN.md §7): read from LLMGrader's run-scoped GraderMetrics
-# (DELVE-0053). `grader_offline` is the whole body when no model is configured (the default
-# keyword floor); `grader_model`/`grader_status_*`/`grader_run` are the three rows shown when one
-# is. `grader_status_none` covers a configured grader with no grade yet this run. `grader_run`'s
-# `ambient` and `grader_avg` (DELVE-0062 follow-up) fold in the ambient toast's own calls, which
-# share the same GraderMetrics instance so the tab actually changes after one resolves.
-grader_offline     = "Keyword floor, no model configured."
-grader_model       = "Model       {model} @ {host}"
-grader_status_warm = "Status      warm, last grade {ms} ms"
-grader_status_cold = "Status      cold, last grade {ms} ms"
-grader_status_none = "Status      no grade yet this run"
-grader_run         = "This run    In {tin}   Out {tout}   LLM {llm}   keyword {keyword}   ambient {ambient}"
-grader_avg         = "Avg latency {ms} ms"
+# windows._fill_status_size). `status_grader`/`status_ambient` (DELVE-0066) are both omitted, not
+# shown blank, with no model configured; they share that one condition.
+status_version = "Version: {version}"
+status_pack    = "Pack: {pack}"
+status_locale  = "Locale: {locale}"
+status_size    = "Terminal:"
+status_grader  = "Grader: {model} @ {host}"
+status_ambient = "Ambient: {model} @ {host}"
+# Grader tab body (DELVE-0054, INFOSCREEN.md §7; split into a grading and an ambient section at
+# DELVE-0066), "Label: value" per row (DELVE-0078). `grader_offline` is the whole body when no
+# model is configured (the default keyword floor). `grader_section_grading`/`grader_section_ambient`
+# head each section; `grader_model`/`grader_status_*`/`grader_run` are the grading section's own
+# rows, read from the configured LLMGrader's own run-scoped GraderMetrics (DELVE-0053).
+# `grader_status_none` covers a configured grader with no grade yet this run. `grader_latency`
+# (DELVE-0077) is the block-glyph sparkline, shown only once two or more calls have been recorded
+# this run; the axis is calls, not sittings, matching what GraderMetrics tracks.
+grader_offline         = "Keyword floor, no model configured."
+grader_section_grading = "Grading"
+grader_section_ambient = "Ambient toast"
+grader_model       = "Model: {model} @ {host}"
+grader_status_warm = "Status: warm, last grade {ms} ms"
+grader_status_cold = "Status: cold, last grade {ms} ms"
+grader_status_none = "Status: no grade yet this run"
+grader_run         = "This run: In {tin}   Out {tout}   LLM {llm}   keyword {keyword}"
+grader_avg         = "Avg latency: {ms} ms"
+grader_latency     = "Latency: {spark}  (calls)"
+# The ambient toast's own section (DELVE-0066): the same Model/Status/This run/Avg latency/Latency
+# shape as the grading section above, but `ambient_run` counts calls, not verdicts, since a
+# scene-setting passage is never graded. Always rendered, even at zero calls, so the section's
+# presence never depends on whether a room with a toast has been entered yet this run.
+ambient_model       = "Model: {model} @ {host}"
+ambient_status_warm = "Status: warm, last call {ms} ms"
+ambient_status_cold = "Status: cold, last call {ms} ms"
+ambient_status_none = "Status: no call yet this run"
+ambient_run         = "This run: In {tin}   Out {tout}   Calls {calls}"
+ambient_avg         = "Avg latency: {ms} ms"
+ambient_latency     = "Latency: {spark}  (calls)"
 reward        = "{name} leaves {coins} on the floor."
 amount_range  = "1 to {max}"
 pet_grab      = "{name} pounces on {coins} and pockets them."
@@ -192,13 +213,14 @@ ascend   = "Ascend: <    Move: arrows    Quit: q    Help: ?"
 rest     = "Move: arrows    Rest: s    Quit: q    Help: ?"
 answer_two  = "Answer: {k1} or {k2}    Ask companion: @    Put it down: Esc    Help: ?"
 answer_many = "Answer: 1-{last}    Ask companion: @    Put it down: Esc    Help: ?"
+answer_many_buy = "Answer: 1-{last}    Ask companion: @    Eliminate ({price}): $    Put it down: Esc    Help: ?"
 answer_text = "Type your answer    Backspace: fix    Answer: Enter    Put it down: Esc    Help: ?"
 grading     = "Checking your answer..."
 pickup      = "Pick up: ,    Move: arrows    Quit: q    Help: ?"
-carrying    = "Move: arrows    Info: i    Drop: d    Help: ?"
+carrying    = "Move: arrows    Info: i    Help: ?"
 inventory   = "Tabs: arrows or Tab    Put away: Esc    Help: ?"
 inventory_sub = "Tabs: left/right    Rows: up/down    Put away: Esc    Help: ?"
-drop_menu   = "Drop which? press its number    Cancel: Esc    Help: ?"
+inventory_pack = "Tabs: arrows or Tab    Rows: up/down    Drop: d    Put away: Esc    Help: ?"
 drop_amount = "Type a number    Backspace: fix    Drop: Enter    Cancel: Esc    Help: ?"
 help        = "Tabs: Tab or arrows    Put away: ? or Esc"
 
@@ -215,7 +237,7 @@ rest            = "Rest until your HP is full"
 descend         = "Take the stairs down, while standing on them"
 ascend          = "Take the stairs up, while standing on them"
 pickup          = "Pick up whatever is on your tile"
-drop            = "Drop something from your pack"
+drop            = "Drop the focused item"
 inventory       = "Open your pack and progress"
 wait            = "Stand still for a turn"
 quit            = "Quit"
@@ -229,6 +251,7 @@ answer_select   = "Move the highlight, then answer with Enter"
 answer_two      = "Choose one of the two answers"
 answer_text     = "Type your answer, then submit"
 consult         = "Ask your companion for a hint (costs score)"
+eliminate       = "Spend gold to remove a wrong answer"
 tab_cycle       = "Switch tabs"
 subtab_cycle    = "Switch the second row of tabs"
 focus_row       = "Move keyboard focus between the tab rows"
@@ -281,6 +304,11 @@ pet_key_dog  = "d"
 pet_key_none = "n"
 pet_name_cat = "What is your cat's name?"
 pet_name_dog = "What is your dog's name?"
+
+# The ambient toast's own loading line (DELVE-0082): shown in a small spinner window while a
+# room's background passage is still generating, in place of the toast itself.
+[toast]
+loading = "You hear a distant muttering, growing clearer..."
 
 [format]
 currency     = "$"

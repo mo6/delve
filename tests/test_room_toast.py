@@ -5,12 +5,16 @@ panel, and ageing out on its own. Replaces DELVE-0028/0057's single once-per-run
 passage, which routinely landed on page 2 behind a `--More--` a learner had no reason to press.
 """
 
+import threading
+
 from test_dungeon import _approach, _pass_room, _path, _walk
 
 from delve.assess.grader import LLMGrader
 from delve.assess.llm import ChatMetrics, ChatReply, LLMUnavailable
+from delve.engine import actions
+from delve.engine.world import Direction
 from delve.session import backstory
-from delve.session.commands import Talk
+from delve.session.commands import Inventory, Move, Talk
 from delve.session.grading import ThreadedGrader
 from delve.session.run import _TOAST_TTL, new_run
 from delve.session.snapshot import apply_dict, to_dict
@@ -54,6 +58,27 @@ def _settle(run) -> None:
     thread = run._room_backstory._thread
     if thread is not None:
         thread.join(timeout=2)
+
+
+def _free_step(run):
+    """A direction the player can step, and the tile it lands on (never a keeper's); mirrors
+    test_items.py's own helper, needed here only for the doomed-nudge tests below."""
+    for d in Direction:
+        dest = actions.step(run.chapter, run.player.pos, d)
+        if dest is not None and dest not in run.keepers:
+            return d, dest
+    raise AssertionError("player is boxed in")
+
+
+def _bounce(run, times: int) -> None:
+    """Step back and forth between two adjacent tiles `times` times, advancing `run.turn` without
+    ever leaving the room (so no new room submission gets queued): the only way to age a toast out
+    via its real TTL clock (`_TOAST_TTL` turns after the first move) without walking somewhere
+    that would itself queue another call and confuse the doomed-nudge tests below."""
+    d, _ = _free_step(run)
+    opposite = next(o for o in Direction if o.delta.x == -d.delta.x and o.delta.y == -d.delta.y)
+    for i in range(times):
+        run.apply(Move(d if i % 2 == 0 else opposite))
 
 
 def _enter_room(run, room_id: str) -> None:
@@ -104,26 +129,27 @@ def test_reentering_a_room_never_queues_a_second_call():
     assert client.calls == calls_after_both       # no third call
 
 
-# -- the shared GraderMetrics (DELVE-0062 follow-up) ---------------------------------------------
+# -- per-model GraderMetrics (DELVE-0066) ---------------------------------------------------------
 
 
-def test_an_ambient_call_is_recorded_in_the_grader_tabs_own_metrics():
-    """A playtesting note: the Grader tab showed no change at all right after an ambient toast
-    appeared, because `RoomBackstoryRunner` never touched `LLMGrader`'s `GraderMetrics`. It now
-    shares the same instance (`RunState._backstory_metrics`) and counts itself separately from an
-    actual verdict."""
+def test_an_ambient_call_is_recorded_in_the_runs_own_ambient_metrics():
+    """A playtesting note (DELVE-0062) found the Grader tab showed no change at all right after an
+    ambient toast appeared, because `RoomBackstoryRunner` never touched any metrics. DELVE-0066
+    then split grading and ambient into two separate `GraderMetrics` instances, so an ambient call
+    is counted on `RunState._ambient_metrics` and never on the configured `LLMGrader`'s own."""
     client = FakeClient(reply="text")
     client.model, client.host = "qwen2.5:3b", "http://localhost:11434"
     grader = LLMGrader(client)
     run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(grader))
     _settle(run)
-    assert grader.metrics.ambient_calls == 1
+    assert run._ambient_metrics.ambient_calls == 1
+    assert grader.metrics.ambient_calls == 0
     assert grader.metrics.llm_verdicts == 0 and grader.metrics.keyword_verdicts == 0
     texts = [b.text for b in run._grader_body()]
-    assert any("ambient 1" in t.lower() for t in texts)
+    assert any("calls 1" in t.lower() for t in texts)
 
 
-def test_grader_body_shows_average_latency_across_ambient_and_grading_calls():
+def test_grader_body_reports_grading_and_ambient_latency_separately():
     class TimedClient:
         model = "qwen2.5:3b"
         host = "http://localhost:11434"
@@ -142,8 +168,9 @@ def test_grader_body_shows_average_latency_across_ambient_and_grading_calls():
     run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(grader))
     _settle(run)                                        # the starting room's own call, 800ms
     texts = [b.text for b in run._grader_body()]
-    assert any("ambient 1" in t.lower() for t in texts)
-    assert any("600 ms" in t for t in texts)             # mean of 400 and 800
+    assert any("calls 1" in t.lower() for t in texts)
+    assert any("400 ms" in t for t in texts)             # the grading section's own mean
+    assert any("800 ms" in t for t in texts)             # the ambient section's own mean
 
 
 # -- non-blocking, ageing -----------------------------------------------------------------------
@@ -168,6 +195,74 @@ def test_toast_appears_once_the_call_resolves():
     assert frame.toast is not None
     assert "Dust and quiet." in frame.toast.body[0].text
     assert frame.overlay is None                  # still nothing blocking
+
+
+# -- the loading indicator while a call is still running (DELVE-0082) ----------------------------
+
+
+class _BlockingClient:
+    """A client whose `chat` blocks until the test releases it (`release`), so a test can observe
+    `Frame.toast_loading` deterministically while a real call is still in flight, rather than
+    racing the daemon thread the way `FakeClient`'s near-instant reply would."""
+
+    def __init__(self, reply: str):
+        self.reply = reply
+        self._gate = threading.Event()
+
+    def release(self) -> None:
+        self._gate.set()
+
+    def chat(self, prompt: str, *, json_mode: bool = True, temperature: float = 0,
+             model: str | None = None) -> ChatReply:
+        self._gate.wait(timeout=2)
+        return ChatReply(text=self.reply, metrics=_NO_METRICS)
+
+
+def test_toast_loading_is_set_while_the_call_is_still_running():
+    client = _BlockingClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    frame = run.frame()
+    assert frame.toast is None
+    assert frame.toast_loading == run.strings("toast.loading")
+    client.release()
+    _settle(run)
+    frame = run.frame()
+    assert frame.toast_loading is None
+    assert frame.toast is not None
+
+
+def test_toast_and_toast_loading_are_never_both_set():
+    client = _BlockingClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    frame = run.frame()
+    assert frame.toast is None or frame.toast_loading is None
+    client.release()
+    _settle(run)
+    frame = run.frame()
+    assert frame.toast is None or frame.toast_loading is None
+
+
+def test_toast_loading_is_none_while_a_panel_is_open():
+    client = _BlockingClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    run.apply(Inventory())
+    frame = run.frame()
+    assert frame.toast_loading is None
+    client.release()
+    _settle(run)
+
+
+def test_toast_loading_is_none_while_the_idle_nudge_is_merely_waiting():
+    """The nudge's own "waiting" state is an armed timer, not yet a submitted call, so nothing is
+    actually generating yet; only once it queues (`RunState._poll_nudge_timer`) does a real call
+    exist for `toast_loading` to name."""
+    client = FakeClient(reply="Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    _settle(run)
+    run.frame()                       # consumes the starting room's own toast, arms the nudge
+    assert run._nudge_state == "waiting"
+    frame = run.frame()
+    assert frame.toast_loading is None
 
 
 def _settle_nudge(run) -> None:
@@ -267,6 +362,85 @@ def test_nudge_never_fires_twice():
     for _ in range(5):
         run.frame()
     assert client.calls == calls_after_firing
+
+
+# -- the loading spinner must not outlive a doomed nudge (DELVE-0083) ----------------------------
+
+
+class _CallGatedClient:
+    """Resolves its first call immediately (the starting room's own toast); every call after that
+    blocks until the test releases it, so a test can hold the *nudge's* own call in flight for as
+    long as it needs to inspect `Frame.toast_loading` before letting it resolve."""
+
+    def __init__(self, reply: str):
+        self.reply = reply
+        self.calls = 0
+        self._gate = threading.Event()
+
+    def release(self) -> None:
+        self._gate.set()
+
+    def chat(self, prompt: str, *, json_mode: bool = True, temperature: float = 0,
+             model: str | None = None) -> ChatReply:
+        self.calls += 1
+        if self.calls > 1:
+            self._gate.wait(timeout=2)
+        return ChatReply(text=self.reply, metrics=_NO_METRICS)
+
+
+def test_toast_loading_is_suppressed_for_a_doomed_nudge_with_nothing_else_pending():
+    """A playtesting report: the spinner appeared in a room that already had its own toast, then
+    just vanished with nothing to show for it. Root cause is the idle nudge (DELVE-0061): it fires
+    only for the starting room, and once fired keeps running even after the learner moves, at
+    which point `_poll_toast`'s own drop rule (`is_nudge and self.turn != 0`) discards its text.
+    The spinner must not keep naming a call already known to be a dead end."""
+    client = _CallGatedClient("Dust and quiet.")
+    run = new_run(seed=1, cols=100, rows=30, grader_runner=ThreadedGrader(LLMGrader(client)))
+    _settle(run)                    # the starting room's own call (#1) resolves immediately
+    run.frame()                     # delivers it, arms the nudge
+    assert run._nudge_state == "waiting"
+    run._nudge_deadline -= 999
+    run.frame()                     # fires the nudge: its own call (#2) is now blocked
+    assert run._nudge_state == "queued"
+
+    # The learner moves (dooming the nudge's own result) and keeps moving long enough for the
+    # *original* toast to age out via its own TTL clock, the state the real report was seen in.
+    _bounce(run, _TOAST_TTL + 1)
+    assert run.turn != 0
+    frame = run.frame()
+    assert frame.toast is None                # confirmed: the original toast is gone
+    assert run._room_backstory.pending()       # the doomed nudge call really is still running
+    assert frame.toast_loading is None         # but nothing is left to promise for it
+
+    client.release()
+    _settle(run)
+    frame = run.frame()
+    assert frame.toast is None                 # confirmed: it never arrives
+    assert frame.toast_loading is None
+
+
+def test_toast_loading_still_shows_when_something_real_is_queued_behind_a_doomed_nudge():
+    client = _CallGatedClient("A quiet room.")
+    run = new_run(seed=1, cols=100, rows=30, pet_species="none",
+                  grader_runner=ThreadedGrader(LLMGrader(client)))
+    _settle(run)
+    run.frame()
+    assert run._nudge_state == "waiting"
+    run._nudge_deadline -= 999
+    run.frame()                              # the nudge's own call (#2) is now blocked
+    assert run._nudge_state == "queued"
+
+    _pass_room(run, run.gates["phishing"])   # opens the sealed door onward (rule 2)
+    _enter_room(run, "sorting-2")            # queues a fresh room's own call (#3) behind it
+    frame = run.frame()
+    assert frame.toast_loading is not None   # something real really is still coming
+
+    client.release()
+    _settle(run)                             # the doomed nudge (#2) finishes and gets dropped
+    run.frame()                              # polls it, pumps the queue to start call #3
+    _settle(run)                             # call #3 finishes
+    frame = run.frame()
+    assert frame.toast is not None           # sorting-2's own passage eventually shows
 
 
 def test_no_nudge_with_no_grader_model_configured():
@@ -645,6 +819,26 @@ def test_build_nudge_prompt_also_bans_sunlight():
     prompt = backstory.build_nudge_prompt(pack="p", dlvl=1, chapter_title="c", language="English")
     assert "no sunlight" in prompt.lower()
     assert "torchlight" in prompt.lower()
+
+
+# -- an explicit character budget, on top of "very short" (DELVE-0080) ----------------------------
+
+
+def test_build_prompt_states_an_explicit_character_budget():
+    prompt = backstory.build_prompt(pack="p", dlvl=1, chapter_title="c", language="English")
+    assert f"under {backstory._PASSAGE_CHAR_BUDGET} characters" in prompt
+
+
+def test_build_nudge_prompt_states_its_own_smaller_character_budget():
+    prompt = backstory.build_nudge_prompt(pack="p", dlvl=1, chapter_title="c", language="English")
+    assert f"under {backstory._NUDGE_CHAR_BUDGET} characters" in prompt
+    assert backstory._NUDGE_CHAR_BUDGET < backstory._PASSAGE_CHAR_BUDGET
+
+
+def test_the_passage_budget_leaves_margin_under_the_hard_cap():
+    from delve.session.run import _TOAST_TEXT_CAP
+
+    assert backstory._PASSAGE_CHAR_BUDGET < _TOAST_TEXT_CAP
 
 
 def test_room_prompt_includes_the_lesson_topic_for_a_gated_room():

@@ -90,6 +90,10 @@ def draw(stdscr, frame: Frame, page: int = 1, msg_page: int = 1) -> None:
     # line already follows above), and its geometry is not guaranteed clear of the toast's corner.
     elif frame.toast is not None:
         windows.draw_toast(stdscr, frame.toast, m.cols, _player_x(m))
+    # A small spinner window while that same call is still running (DELVE-0082), replaced by the
+    # toast above the instant it resolves; `RunState.frame()` never sets both at once.
+    elif frame.toast_loading is not None:
+        windows.draw_toast_loading(stdscr, frame.toast_loading, m.cols, _player_x(m))
 
     s = frame.status
     status = (

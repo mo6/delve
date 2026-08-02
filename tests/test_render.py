@@ -523,6 +523,48 @@ def test_toast_anchor_flips_exactly_at_the_screen_midpoint():
     assert right_left > left_left == 0
 
 
+# -- Toast-loading spinner cadence (DELVE-0093) ---------------------------------------------------
+# Braille cell layout for decoding which edge-dot is missing from each `_SPINNER` glyph:
+#   1 4
+#   2 5
+#   3 6
+#   7 8
+
+
+def _missing_dot_pos(glyph: str) -> tuple[int, int]:
+    """(col, row) of the single empty edge-dot in a 7-of-8 braille spinner glyph."""
+    bits = ord(glyph) - 0x2800
+    missing = [d for d in range(1, 9) if not (bits & (1 << (d - 1)))]
+    assert len(missing) == 1, glyph
+    return {1: (0, 0), 2: (0, 1), 3: (0, 2), 7: (0, 3),
+            4: (1, 0), 5: (1, 1), 6: (1, 2), 8: (1, 3)}[missing[0]]
+
+
+def test_toast_poll_is_a_multiple_of_spinner_hold():
+    """The app-loop wake and the per-glyph hold must stay divisible, or redraws land mid-cycle
+    and the spinner jitters again (DELVE-0093). `_TOAST_POLL_MS` is derived from `_SPINNER_MS`,
+    but assert the relationship directly so a later edit that breaks the derivation still fails."""
+    from delve.ui import app
+    assert app._TOAST_POLL_MS % windows._SPINNER_MS == 0
+    assert app._TOAST_POLL_MS // windows._SPINNER_MS == 1   # exactly one glyph per redraw
+
+
+def test_spinner_advances_one_adjacent_glyph_per_toast_poll():
+    """Drive `_spinner_glyph` across timestamps spaced like the app loop's toast-pending wake and
+    assert every consecutive pair is the next glyph in `_SPINNER` *and* a unit step of the missing
+    edge-dot (the orbit the sequence was designed for)."""
+    from delve.ui import app
+    step = app._TOAST_POLL_MS
+    # Two full laps from an unaligned start, so wrap and phase both get exercised.
+    t0 = 37
+    glyphs = [windows._spinner_glyph(t0 + i * step) for i in range(len(windows._SPINNER) * 2)]
+    for a, b in zip(glyphs, glyphs[1:], strict=False):
+        assert b == windows._SPINNER[(windows._SPINNER.index(a) + 1) % len(windows._SPINNER)]
+        ax, ay = _missing_dot_pos(a)
+        bx, by = _missing_dot_pos(b)
+        assert abs(ax - bx) + abs(ay - by) == 1, (a, b)
+
+
 def test_player_x_distinguishes_the_learner_from_a_keeper_drawn_the_same_glyph():
     from delve.session.views import Cell, Colour, MapView
     from delve.ui.render import _player_x
@@ -559,11 +601,12 @@ def test_pack_view_draws_the_list_and_the_selected_rows_description_side_by_side
     assert "A hand torch." in text                          # the focused row's description
 
 
-def test_pack_views_focused_list_row_is_highlighted_not_the_description():
-    # DELVE-0076: reverses DELVE-0075's original placement. "gadget" appears both as the list's
-    # own row label and as the description's bold title, so they land on the same drawn row (the
-    # list column, then the description column beside it), letting one row settle which
-    # occurrence is highlighted.
+def test_pack_views_focused_list_row_is_highlighted_and_the_description_title_is_styled():
+    # DELVE-0076 reversed DELVE-0075's original placement so the list row, not the description,
+    # carries the reverse-video highlight; DELVE-0078 restored the description title's own bold
+    # styling, which had been silently flattened to plain text. "gadget" appears both as the
+    # list's own row label and as the description's bold title, so they land on the same drawn row
+    # (the list column, then the description column beside it), letting one row check both.
     scr = CursesEmu(30, 100)
     body = [TextBlock("para", "gadget\nAn urgent memo.", spans=(("gadget", True),
                                                                 ("\nAn urgent memo.", False)))]
@@ -574,7 +617,10 @@ def test_pack_views_focused_list_row_is_highlighted_not_the_description():
     list_col = scr.row(row).index("gadget")
     desc_col = scr.row(row).rindex("gadget")
     assert scr.attr_row(row)[list_col] != curses.A_NORMAL     # the list row is highlighted
-    assert scr.attr_row(row)[desc_col] == curses.A_NORMAL     # the description stays plain
+    assert scr.attr_row(row)[desc_col] != curses.A_NORMAL     # the description title is styled too
+    body_row = next(r for r in range(30) if "An urgent memo." in scr.row(r))
+    body_col = scr.row(body_row).index("An urgent memo.")
+    assert scr.attr_row(body_row)[body_col] == curses.A_NORMAL   # the description body stays plain
 
 
 def test_pack_view_scrolls_the_list_to_keep_a_far_focused_row_in_view():
@@ -593,3 +639,42 @@ def test_pack_scroll_offset_keeps_selection_in_view_and_never_overscrolls():
     assert windows._pack_scroll_offset(9, 20, 5) == 5         # bottom-pinned once past the window
     assert windows._pack_scroll_offset(0, 20, 5) == 0         # back at the top: no scroll
     assert windows._pack_scroll_offset(19, 20, 5) == 15       # never scrolls past the list's end
+
+
+# -- 'kv' blocks: label/value colouring (DELVE-0078) ----------------------------------------------
+
+
+def test_kv_spans_colours_the_label_up_to_the_first_colon_space():
+    spans = windows._kv_spans("Model: qwen2.5:3b @ localhost:11434")
+    assert spans[0] == ("Model:", windows.LABEL_COLOUR)
+    assert spans[1] == (" qwen2.5:3b @ localhost:11434", False)
+
+
+def test_kv_spans_only_splits_on_the_first_colon_space_even_with_more_in_the_value():
+    # Neither "qwen2.5:3b" nor "localhost:11434" has a space right after its colon, so only the
+    # label's own "Model: " counts as the separator.
+    spans = windows._kv_spans("Status: warm, last grade 520 ms")
+    assert spans[0][1] is windows.LABEL_COLOUR
+    assert "warm" in spans[1][0] and spans[1][1] is False
+
+
+def test_kv_spans_leaves_a_colonless_line_unstyled():
+    assert windows._kv_spans("no colon here") == (("no colon here", False),)
+
+
+def test_kv_spans_handles_multiple_newline_joined_lines():
+    spans = windows._kv_spans("Model: x\nStatus: y")
+    labels = [t for t, c in spans if c is windows.LABEL_COLOUR]
+    assert labels == ["Model:", "\nStatus:"]
+
+
+def test_a_kv_block_renders_its_label_in_colour_and_its_value_plain():
+    scr = CursesEmu(30, 100)
+    body = [TextBlock("kv", "Model: qwen2.5:3b")]
+    view = InfoView(tabs=_tabs(), active=0, body=body)
+    windows.draw(scr, view, map_cols=100, page=1)
+    row = next(r for r in range(30) if "Model:" in scr.row(r))
+    label_col = scr.row(row).index("Model:")
+    value_col = scr.row(row).index("qwen2.5:3b")
+    assert scr.attr_row(row)[label_col] == attrs.attr_for(windows.LABEL_COLOUR)
+    assert scr.attr_row(row)[value_col] == curses.A_NORMAL
