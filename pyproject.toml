@@ -9,7 +9,7 @@ version = "1.34.0"
 description = "A NetHack-style training application: descend a dungeon, learn a topic, pass the keeper."
 readme = "README.md"
 requires-python = ">=3.14"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 authors = [{ name = "George Moses", email = "gmo6nl@gmail.com" }]
 
 # The only runtime dependency, and it is platform-conditional and invisible on Unix.
