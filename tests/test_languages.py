@@ -62,8 +62,6 @@ def test_status_tab_strings_exist_in_both_locales_and_differ():
     # vocabulary term (CLAUDE.md), untranslated in either locale; only checked for presence here.
     assert en("item.status_locale", locale="en") != nl("item.status_locale", locale="en")
     assert en("item.status_size") and nl("item.status_size")
-    assert en("item.status_grader", model="m", host="h") != \
-        nl("item.status_grader", model="m", host="h")
 
 
 def test_scoring_sub_tab_strings_exist_in_both_locales():

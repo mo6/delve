@@ -1,23 +1,23 @@
 ---
 id: DELVE-0097
 title: Drop the Status tab's Grader/Ambient rows, now that the Grader tab holds all the detail
-status: proposed
+status: implemented
 area: [session, ui]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.35.1
 version_span:
 created: 2026-08-02
 updated: 2026-08-02
-accepted_by:
-accepted_at:
-commits: []
+accepted_by: George Moses
+accepted_at: 2026-08-02
+commits: [4b80b76, 2fe7ae9]
 related: [DELVE-0066, DELVE-0054]
 supersedes: []
 docs: [docs/INFOSCREEN.md]
-changelog:
+changelog: "1.35.1"
 reason:
 ---
 
@@ -99,3 +99,9 @@ just an obsolete leftover of before the Grader tab existed in its current form.
 - `./run-tests.sh` green, both locales, with the two now-obsolete assertions in
   `tests/test_items.py` removed or rewritten to match the new behaviour rather than deleted
   silently (their DELVE-0066 history is still worth a comment pointing at this issue).
+
+## Peer review
+
+- Auto (implementing agent), 2026-08-02: `_status_body` no longer appends Grader/Ambient rows; dead `item.status_grader`/`item.status_ambient` keys removed from both locales; INFOSCREEN.md §9 updated. The two obsolete Status assertions rewritten as omit-with-grader tests (en + nl) with a DELVE-0097 comment, plus a Grader-tab regression that still names both models. `./run-tests.sh` green (682). Ready to land once you say so.
+- Claude Code, 2026-08-02: peer-reviewed the core fix (verified `_status_body`/locale/doc changes, confirmed no other reader of the dropped keys, ran the full suite green) and implemented an addendum, moving the Status tab to the last position in the strip; updated every hardcoded tab-index test/fixture affected by the reorder.
+- George Moses (maintainer), 2026-08-02: peer-reviewed; implementation accepted.

@@ -159,10 +159,12 @@ _HISTORY_MAX = 10
 # "Progress" since it shows score, not completion), Grader (DELVE-0054) and Status (DELVE-0044)
 # all have real content now. Messages (a playtesting request) folds the former standalone message
 # log panel (once its own `p` key) in here; that key is retired, reachable only via this tab now.
-# Trophies (DELVE-0085) shows finished packs from before this run started.
+# Trophies (DELVE-0085) shows finished packs from before this run started. Status moved to the
+# last position (an addendum to DELVE-0097): it's app/run diagnostics, the least gameplay-relevant
+# tab, so it belongs at the far end of the strip rather than ahead of Messages/Trophies.
 _INFO_TABS = (("pack", "item.tab_pack"), ("scoring", "item.tab_scoring"),
-              ("grader", "item.tab_grader"), ("status", "item.tab_status"),
-              ("messages", "item.tab_messages"), ("trophies", "item.tab_trophies"))
+              ("grader", "item.tab_grader"), ("messages", "item.tab_messages"),
+              ("trophies", "item.tab_trophies"), ("status", "item.tab_status"))
 
 # A sentinel `def_id` for a Pack-tab drop only, never a real `ItemDef.id`: the currently-burning
 # torch is never a `Stack` (DELVE-0062, a steps-remaining counter, not a spare count), so it can't
@@ -1826,10 +1828,9 @@ class RunState:
 
     def _status_body(self) -> list[TextBlock]:
         """The Status tab's body (DELVE-0044, INFOSCREEN.md §9): plain key/value rows of app and
-        run diagnostics that already exist elsewhere, no new plumbing. The grader row, and the
-        ambient row beside it (DELVE-0066), are both omitted, not shown blank, when no model is
-        configured; they share that one condition, since the ambient toast is never reachable
-        without the same client the grader uses.
+        run diagnostics that already exist elsewhere, no new plumbing. Version, pack, locale, and
+        terminal size only; the Grader/Ambient model rows that used to sit here (DELVE-0066) moved
+        out at DELVE-0097, since the Grader tab already shows both models' full detail.
 
         Every row, including the terminal-size one, condenses into a single `kind="kv"` block via
         `_condensed(kv=True)` (DELVE-0059/DELVE-0078): a playtesting fix closed the tab's last
@@ -1847,15 +1848,8 @@ class RunState:
             self.strings("item.status_version", version=delve.__version__),
             self.strings("item.status_pack", pack=self.pack.title if self.pack else ""),
             self.strings("item.status_locale", locale=self.strings.lang),
+            self.strings("item.status_size"),
         ]
-        grader = self._grader_info()
-        if grader is not None:
-            model, host = grader
-            lines.append(self.strings("item.status_grader", model=model, host=host))
-            ambient_model, ambient_host = self._ambient_info()
-            lines.append(self.strings(
-                "item.status_ambient", model=ambient_model, host=ambient_host))
-        lines.append(self.strings("item.status_size"))
         return self._condensed(lines, kv=True)
 
     def _info_overlay(self) -> InfoView:
