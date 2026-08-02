@@ -291,7 +291,7 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
              difficulty: str | None = None, recorder=None, *, strings: Strings | None = None,
              tutorial: Pack | None = None, skip_tutorial: bool = False,
              pet_species: str = "cat", pet_name: str | None = None,
-             grader_runner=None) -> RunState:
+             grader_runner=None, observe: bool = True) -> RunState:
     """Build a full multi-chapter dungeon from a parsed pack. Every pack room is gated; each
     chapter is generated from a seed derived from `seed` so the whole run is reproducible, and
     only the last chapter's final keeper reveals the pedestal. `recorder`, if given, persists it.
@@ -301,6 +301,8 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
     into the chapter list so a resumed run's chapter count is stable; `skip_tutorial` only starts
     the learner below it, on the pack's first floor. The pack's first floor gains stairs up
     whenever a tutorial sits above it, so a learner can always climb back for a reminder.
+    `observe=False` defers the constructor's `_observe` (DELVE-0094); `launch.resume` uses it so
+    the ambient toast is queued for the restored position, not the transient pre-restore spawn.
     """
     strings = strings or _default_strings()
     difficulty = difficulty or pack.difficulty
@@ -345,7 +347,8 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
     return RunState(chapters, player, Rng(seed), pack=pack, welcome=welcome, recorder=recorder,
                     idx=start_idx, strings=strings, pet_rng=Rng(seed * 100 + 777),
                     flavour_rng=Rng(seed * 100 + 333), seed=seed,
-                    pet_species=pet_species, pet_name=pet_name, grader_runner=grader_runner)
+                    pet_species=pet_species, pet_name=pet_name, grader_runner=grader_runner,
+                    observe=observe)
 
 
 def _scatter_tutorial_coins(cr: ChapterRun, rng: Rng) -> None:
@@ -480,7 +483,7 @@ class RunState:
                  strings: Strings | None = None, pet_rng: Rng | None = None,
                  flavour_rng: Rng | None = None, seed: int = 0,
                  pet_species: str = "cat", pet_name: str | None = None,
-                 grader_runner=None):
+                 grader_runner=None, observe: bool = True):
         self.chapters = chapters
         self.idx = idx
         self.player = player
@@ -589,7 +592,12 @@ class RunState:
         self.pet = self._make_pet(pet_species, pet_name)
         if self.pet is not None:
             self.pet.pos = self._pet_spot()
-        self._observe()
+        # `observe=False` is resume's path (DELVE-0094): `launch.resume` builds via `new_game`,
+        # then lays the snapshot over with `apply_dict`, then calls `_observe` itself for the
+        # restored position. Running it here would queue an ambient toast for the pre-restore
+        # spawn room that `apply_dict` is about to discard, leaving a doomed loading spinner.
+        if observe:
+            self._observe()
 
     def _make_pet(self, species: str, name: str | None) -> Pet | None:
         if species == "none":

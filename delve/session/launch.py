@@ -156,11 +156,19 @@ def resume(store: Store, pack: Pack, *, run_row: Run, name: str, strings: String
     """Continue an unfinished run from its snapshot, rebuilding the exact dungeon it was laid on
     (its stored seed and size), then re-opening every door the learner had earned. The `tutorial`
     is rebuilt in too, so the chapter list matches the snapshot it is laid back over. The
-    `grader_runner` is rebuilt from config, not the snapshot: it is policy, not run state."""
+    `grader_runner` is rebuilt from config, not the snapshot: it is policy, not run state.
+
+    Construction skips the constructor's `_observe` (DELVE-0094): a brand-new `RunState` would
+    otherwise queue an ambient toast for the pack's spawn room before `apply_dict` moves the
+    learner elsewhere, and that call's chapter almost never matches the restored one, so
+    `_poll_toast` would silently drop it after the loading spinner had already promised it.
+    `_observe` runs once below, against the restored position, so a genuinely unvisited restored
+    room still gets its toast and an already-visited one queues nothing."""
     recorder = Recorder(store, run_row.user_id, run_row.id, pack.id)
     run = new_game(pack, run_row.seed, run_row.map_cols, run_row.map_rows,
                    name=name, recorder=recorder, strings=strings, tutorial=tutorial,
-                   grader_runner=grader_runner)
+                   grader_runner=grader_runner, observe=False)
     if run_row.snapshot:
         apply_dict(run, json.loads(run_row.snapshot))
+    run._observe()
     return run

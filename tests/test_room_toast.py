@@ -7,14 +7,16 @@ passage, which routinely landed on page 2 behind a `--More--` a learner had no r
 
 import threading
 
-from test_dungeon import _approach, _pass_room, _path, _walk
+from test_dungeon import PILOT, _approach, _clear_chapter, _pass_room, _path, _stand_on, _walk
 
 from delve.assess.grader import LLMGrader
 from delve.assess.llm import ChatMetrics, ChatReply, LLMUnavailable
+from delve.content.parser import load_pack
 from delve.engine import actions
-from delve.engine.world import Direction
-from delve.session import backstory
-from delve.session.commands import Inventory, Move, Talk
+from delve.engine.world import Direction, TileKind
+from delve.progress.store import SQLiteStore
+from delve.session import backstory, launch
+from delve.session.commands import Descend, Inventory, Move, Talk
 from delve.session.grading import ThreadedGrader
 from delve.session.run import _TOAST_TTL, new_run
 from delve.session.snapshot import apply_dict, to_dict
@@ -977,6 +979,94 @@ def test_visited_rooms_survive_a_snapshot_round_trip():
     calls_before = client.calls
     fresh._observe()                              # re-checking the same spot re-triggers nothing
     assert client.calls == calls_before
+
+
+# -- resume must not queue a doomed toast for the pre-restore spawn room (DELVE-0094) ------------
+
+
+def _resume_past_start(*, client, seed: int = 8):
+    """Start a pilot run with an ambient client, descend past chapter 0, quit, and resume via
+    `launch.resume` with the same client wired back in. Returns the resumed `RunState`."""
+    store = SQLiteStore(":memory:")
+    pack = load_pack(PILOT, "en")
+    runner = ThreadedGrader(LLMGrader(client))
+    run = launch.start(store, pack, name="Mara", seed=seed, cols=100, rows=30,
+                       grader_runner=runner, pet_species="none")
+    _settle(run)
+    run.frame()
+    _clear_chapter(run)
+    _stand_on(run, TileKind.STAIRS_DOWN)
+    run.apply(Descend())
+    assert run.idx == 1
+    user = store.user_by_name("Mara")
+    row = store.unfinished_run(user.id, pack.id)
+    return launch.resume(store, pack, run_row=row, name="Mara",
+                         grader_runner=ThreadedGrader(LLMGrader(client)))
+
+
+def test_resume_past_start_queues_no_doomed_spawn_toast():
+    """Acceptance: after resuming on a chapter past the pack's start, nothing is in flight for the
+    discarded pre-restore spawn room."""
+    client = FakeClient(reply="text")
+    resumed = _resume_past_start(client=client)
+    assert resumed.idx == 1
+    assert not resumed._room_backstory.pending()
+
+
+def test_resume_of_an_unvisited_restored_room_queues_that_room_only():
+    """Acceptance: if the restored room is not yet in `visited_rooms`, resume queues exactly one
+    call keyed to that restored room/chapter, not the transient spawn chapter 0."""
+    client = FakeClient(reply="a restored room.")
+    store = SQLiteStore(":memory:")
+    pack = load_pack(PILOT, "en")
+    runner = ThreadedGrader(LLMGrader(client))
+    run = launch.start(store, pack, name="Mara", seed=8, cols=100, rows=30,
+                       grader_runner=runner, pet_species="none")
+    _settle(run)
+    run.frame()
+    _clear_chapter(run)
+    _stand_on(run, TileKind.STAIRS_DOWN)
+    run.apply(Descend())
+    # Craft the edge case: the current room has never shown a toast this run (visited_rooms from
+    # the snapshot excludes it), so resume must queue it for the restored chapter, not spawn.
+    room = next(r for r in run.chapter.rooms if r.contains(run.player.pos))
+    run.cur.visited_rooms.discard(room.id)
+    run.recorder.save(run)
+
+    user = store.user_by_name("Mara")
+    row = store.unfinished_run(user.id, pack.id)
+    client.calls = 0
+    resumed = launch.resume(store, pack, run_row=row, name="Mara",
+                            grader_runner=ThreadedGrader(LLMGrader(client)))
+    assert resumed._room_backstory.pending()
+    bs = resumed._room_backstory
+    # The call may already have resolved into `_ready` (FakeClient is instant); whatever stage
+    # it is at, it must be keyed to the restored room, never a leftover spawn-chapter call.
+    pending_ids = set()
+    if bs._current is not None:
+        pending_ids.add(bs._current)
+    pending_ids.update(rid for rid, _, _ in bs._queue)
+    pending_ids.update(rid for rid, _, _ in bs._ready)
+    assert pending_ids == {room.id}
+    for _, ctx, _ in list(bs._queue) + list(bs._ready):
+        assert ctx[1] == resumed.idx == 1
+    _settle(resumed)
+    frame = resumed.frame()
+    assert frame.toast is not None
+    assert "a restored room." in frame.toast.body[0].text
+    assert client.calls == 1
+
+
+def test_resume_of_an_already_visited_room_shows_no_loading_spinner():
+    """Acceptance: when the restored room is already in `visited_rooms`, the first frame has
+    neither a toast nor a loading spinner; nothing was queued to promise."""
+    client = FakeClient(reply="text")
+    resumed = _resume_past_start(client=client)
+    room = next(r for r in resumed.chapter.rooms if r.contains(resumed.player.pos))
+    assert room.id in resumed.cur.visited_rooms
+    frame = resumed.frame()
+    assert frame.toast_loading is None
+    assert frame.toast is None
 
 
 # -- items-first prompt rework (DELVE-0064) ------------------------------------------------------
