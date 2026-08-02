@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "delve"
 # 1.0.0 release; ordinary semver from here. See delve/__init__.py. Keep the two in step.
-version = "1.35.0"
+version = "1.35.1"
 description = "A NetHack-style training application: descend a dungeon, learn a topic, pass the keeper."
 readme = "README.md"
 requires-python = ">=3.14"
