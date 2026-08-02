@@ -364,7 +364,7 @@ def sc_trophies() -> Shot:
     run = new_run(seed=1, cols=COLS, rows=ROWS, pet_species="none", name="Ada")
     run._trophy_rows = rows
     run.apply(Inventory())
-    return Shot(run.apply(TabCycle(5)))
+    return Shot(run.apply(TabCycle(4)))
 
 
 SCENARIOS: dict[str, tuple[str, Callable[[], Shot]]] = {

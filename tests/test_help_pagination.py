@@ -89,11 +89,11 @@ def test_pack_spacing_is_unaffected():
 
 
 def test_message_log_is_condensed_too():
-    # The message log is the Info panel's Messages tab now (index 4), not a standalone panel.
+    # The message log is the Info panel's Messages tab now (index 3), not a standalone panel.
     run = new_run(seed=1, cols=100, rows=30)
     run.messages.extend(["one", "two", "three"])
     run.apply(Inventory())
-    log = run.apply(TabCycle(4))
+    log = run.apply(TabCycle(3))
     assert log.overlay.tabs[log.overlay.active].key == "messages"
     assert len(log.overlay.body) == 1
     assert log.overlay.body[0].spans

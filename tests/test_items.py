@@ -430,7 +430,7 @@ def test_info_panel_defaults_to_pack_and_cycles_tabs():
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     inv = run.apply(Inventory())
     assert [t.key for t in inv.overlay.tabs] == \
-        ["pack", "scoring", "grader", "status", "messages", "trophies"]
+        ["pack", "scoring", "grader", "messages", "trophies", "status"]
     assert inv.overlay.active == 0                       # Pack, unasked
 
     frame = run.apply(TabCycle(1))
@@ -441,13 +441,13 @@ def test_info_panel_defaults_to_pack_and_cycles_tabs():
     assert frame.overlay.active == 2                     # Grader
 
     frame = run.apply(TabCycle(1))
-    assert frame.overlay.active == 3                     # Status
+    assert frame.overlay.active == 3                     # Messages
 
     frame = run.apply(TabCycle(1))
-    assert frame.overlay.active == 4                     # Messages
+    assert frame.overlay.active == 4                     # Trophies
 
     frame = run.apply(TabCycle(1))
-    assert frame.overlay.active == 5                     # Trophies
+    assert frame.overlay.active == 5                     # Status
 
     frame = run.apply(TabCycle(1))
     assert frame.overlay.active == 0                      # wraps back to Pack
@@ -477,8 +477,10 @@ def test_info_panel_reopens_on_pack_not_the_last_tab_visited():
     run.apply(Inventory())
     run.apply(TabCycle(1))
     run.apply(TabCycle(1))
+    run.apply(TabCycle(1))
+    run.apply(TabCycle(1))
     frame = run.apply(TabCycle(1))
-    assert frame.overlay.active == 3                      # Status, mid-panel navigation
+    assert frame.overlay.active == 5                      # Status, mid-panel navigation
     run.apply(Dismiss())
     frame = run.apply(Inventory())
     assert frame.overlay.active == 0                      # back to Pack on the fresh open
@@ -673,7 +675,7 @@ def test_sub_tab_cycle_is_a_no_op_on_tabs_without_subtabs():
     run.apply(TabCycle(2))                                # Grader
     frame = run.apply(SubTabCycle(1))
     assert not frame.overlay.subtabs
-    run.apply(TabCycle(1))                                # Status
+    run.apply(TabCycle(1))                                # Messages
     frame = run.apply(SubTabCycle(1))
     assert not frame.overlay.subtabs
 
@@ -897,8 +899,8 @@ def test_status_body_condenses_every_row_including_the_size_one():
 def test_info_panel_status_tab_renders_the_body():
     run = _pilot_game(pet_species="none")
     run.apply(Inventory())
-    frame = run.apply(TabCycle(3))                    # Status
-    assert frame.overlay.active == 3
+    frame = run.apply(TabCycle(5))                    # Status
+    assert frame.overlay.active == 5
     assert frame.overlay.body == run._status_body()
 
 
@@ -1114,9 +1116,9 @@ def test_trophies_tab_shows_the_rows_as_a_date_descending_table():
             ("91.7%", "holy-grail", "12 June 2026")]
     run = _pilot_game(pet_species="none", trophy_rows=rows)
     run.apply(Inventory())
-    frame = run.apply(TabCycle(5))                    # Trophies
-    assert frame.overlay.active == 5
-    assert frame.overlay.tabs[5].key == "trophies"
+    frame = run.apply(TabCycle(4))                    # Trophies
+    assert frame.overlay.active == 4
+    assert frame.overlay.tabs[4].key == "trophies"
     body = frame.overlay.body
     assert len(body) == 1 and body[0].kind == "table"
     assert body[0].table[0][0][0][0] == "Date"        # header: Date | Pack | Score
@@ -1132,7 +1134,7 @@ def test_trophies_tab_empty_state_when_no_completions():
     run = _pilot_game(pet_species="none")             # default: no trophy_rows
     assert run._trophy_rows == []
     run.apply(Inventory())
-    frame = run.apply(TabCycle(5))
+    frame = run.apply(TabCycle(4))
     assert len(frame.overlay.body) == 1
     assert frame.overlay.body[0].text == run.strings("item.trophies_empty")
 

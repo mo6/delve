@@ -198,14 +198,15 @@ def test_the_message_line_ages_out():
 
 
 def test_the_message_log_shows_recent_lines_and_closes():
-    # Lives in the Info panel as its own tab, index 4 (a playtesting request; the standalone 'p'
-    # shortcut is retired).
+    # Lives in the Info panel as its own tab, index 3 (a playtesting request; the standalone 'p'
+    # shortcut is retired). Status moved to the last position at DELVE-0097's addendum, so
+    # Messages sits one earlier than it used to.
     from delve.session.commands import Dismiss, Inventory, TabCycle
     from delve.session.views import InfoView
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.messages.extend(["first thing", "", "second thing", "first thing"])   # first repeats
     run.apply(Inventory())
-    frame = run.apply(TabCycle(4))
+    frame = run.apply(TabCycle(3))
     assert isinstance(frame.overlay, InfoView)
     assert frame.overlay.tabs[frame.overlay.active].key == "messages"
     # Condensed into one block (DELVE-0059 generalised): its own lines are its `spans`, each
@@ -223,7 +224,7 @@ def test_the_message_log_holds_ten_recent_lines_not_five():
     run = new_run(seed=99, cols=100, rows=30, pet_species="none")
     run.messages.extend(f"line {i}" for i in range(12))
     run.apply(Inventory())
-    frame = run.apply(TabCycle(4))
+    frame = run.apply(TabCycle(3))
     lines = frame.overlay.body[0].text.split("\n")
     assert len(lines) == 10
     assert lines[0] == "1. line 11"                     # newest first
