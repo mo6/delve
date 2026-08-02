@@ -2126,11 +2126,19 @@ class RunState:
 
     def _lit_tiles(self) -> set[Point]:
         """The current frame's lit set: the player's own light (DELVE-0062), plus, while
-        torchless, every keeper's own candle halo (DELVE-0065). A lit room already reveals
-        everything a halo would add, so the halo is only computed when torchless."""
+        torchless, every *visited* keeper's own candle halo (DELVE-0065, narrowed by
+        DELVE-0086). A lit room already reveals everything a halo would add, so the halo is
+        only computed when torchless. Never-visited rooms stay dark even torchless; a room
+        visited once keeps its keeper halo from anywhere on the floor."""
         lit = vision.lit_tiles(self.chapter, self.player.pos, lit=self.has_light)
         if not self.has_light:
-            lit |= vision.keeper_halo(self.chapter, (g.keeper.pos for g in self.gates.values()))
+            visited = self.cur.visited_rooms
+            keepers = (
+                g.keeper.pos for g in self.gates.values()
+                if (room := vision.room_at(self.chapter, g.keeper.pos)) is not None
+                and room.id in visited
+            )
+            lit |= vision.keeper_halo(self.chapter, keepers)
         return lit
 
     def _observe(self) -> None:

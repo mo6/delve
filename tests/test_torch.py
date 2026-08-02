@@ -190,6 +190,92 @@ def test_a_lit_torch_room_is_unaffected_by_the_keeper_halo():
     assert lit == vision.lit_tiles(run.chapter, run.player.pos, lit=True)
 
 
+def test_torchless_halo_skips_a_keeper_in_a_never_visited_room():
+    """DELVE-0086: going dark must not light keepers the learner has never met."""
+    from delve.content.parser import load_pack
+    pack = load_pack(PILOT, "en")
+    run = new_game(pack, seed=1, cols=100, rows=30, skip_tutorial=True, pet_species="none")
+    run.player.torch_charge = 0
+    run.cur.discovered.clear()
+    foreign = next(
+        g for g in run.gates.values()
+        if (r := vision.room_at(run.chapter, g.keeper.pos)) is not None
+        and r.id not in run.cur.visited_rooms
+    )
+    kp = foreign.keeper.pos
+    lit = run._lit_tiles()
+    assert kp not in lit
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        assert Point(kp.x + dx, kp.y + dy) not in lit
+    run._observe()
+    assert kp not in run.discovered
+    frame = run.frame()
+    assert frame.map.cells[kp.y][kp.x].glyph == " "
+
+
+def test_torchless_halo_still_lights_a_visited_rooms_keeper_from_elsewhere():
+    """DELVE-0086 / DELVE-0065: once visited, the keeper halo stays from elsewhere in that room."""
+    from delve.content.parser import load_pack
+    pack = load_pack(PILOT, "en")
+    run = new_game(pack, seed=1, cols=100, rows=30, skip_tutorial=True, pet_species="none")
+    visited_gate = next(
+        g for g in run.gates.values()
+        if (r := vision.room_at(run.chapter, g.keeper.pos)) is not None
+        and r.id in run.cur.visited_rooms
+    )
+    kp = visited_gate.keeper.pos
+    # A sealed exit keeps the learner inside the starting room until the exam is passed, so
+    # "elsewhere" here is a far interior tile of that same visited room (the acceptance's own
+    # wording). The visited_rooms filter itself is covered by the never-visited skip and by
+    # test_torchless_halo_follows_visited_rooms_not_current_presence.
+    room = vision.room_at(run.chapter, run.player.pos)
+    far = max(room.interior(), key=lambda p: abs(p.x - kp.x) + abs(p.y - kp.y))
+    assert abs(far.x - kp.x) + abs(far.y - kp.y) > 2
+    path = _path(run.chapter.grid, run.player.pos, far, blocked=set(run.keepers))
+    assert path is not None
+    _walk(run, path)
+    run.player.torch_charge = 0
+    run.cur.discovered.clear()
+    lit = run._lit_tiles()
+    assert kp in lit
+    assert Point(kp.x + 1, kp.y) in lit or Point(kp.x - 1, kp.y) in lit
+
+
+def test_torchless_halo_follows_visited_rooms_not_current_presence():
+    """DELVE-0086: a once-visited room's keeper stays lit torchless from elsewhere."""
+    from delve.content.parser import load_pack
+    pack = load_pack(PILOT, "en")
+    run = new_game(pack, seed=1, cols=100, rows=30, skip_tutorial=True, pet_species="none")
+    foreign = next(
+        g for g in run.gates.values()
+        if (r := vision.room_at(run.chapter, g.keeper.pos)) is not None
+        and r.id not in run.cur.visited_rooms
+    )
+    room = vision.room_at(run.chapter, foreign.keeper.pos)
+    run.cur.visited_rooms.add(room.id)          # mark visited without walking there
+    run.player.torch_charge = 0
+    run.cur.discovered.clear()
+    lit = run._lit_tiles()
+    assert foreign.keeper.pos in lit            # halo from visited_rooms, not from standing in it
+    assert vision.room_at(run.chapter, run.player.pos).id != room.id
+
+
+def test_a_lit_torch_still_reveals_only_the_current_room_not_foreign_halos():
+    """DELVE-0086 MUST 3: a working torch is unaffected; foreign rooms stay unlit until entered."""
+    from delve.content.parser import load_pack
+    pack = load_pack(PILOT, "en")
+    run = new_game(pack, seed=1, cols=100, rows=30, skip_tutorial=True, pet_species="none")
+    assert run.has_light
+    lit = run._lit_tiles()
+    assert lit == vision.lit_tiles(run.chapter, run.player.pos, lit=True)
+    foreign = next(
+        g for g in run.gates.values()
+        if (r := vision.room_at(run.chapter, g.keeper.pos)) is not None
+        and r.id not in run.cur.visited_rooms
+    )
+    assert foreign.keeper.pos not in lit
+
+
 # -- draining and relighting -------------------------------------------------------------------
 
 

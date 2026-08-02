@@ -1,7 +1,7 @@
 ---
 id: DELVE-0086
 title: A burned-out torch reveals every keeper's candle halo, including in rooms never visited
-status: proposed
+status: in-progress
 area: [engine, session]
 type: bug
 epic:
@@ -10,9 +10,9 @@ milestone:
 version:
 version_span:
 created: 2026-07-31
-updated: 2026-07-31
-accepted_by:
-accepted_at:
+updated: 2026-08-02
+accepted_by: George Moses
+accepted_at: 2026-08-02
 commits: []
 related: [DELVE-0065, DELVE-0062]
 supersedes: []
@@ -74,14 +74,7 @@ not do.
   `_maybe_enter_room`'s `self.cur.visited_rooms` already tracks exactly the "has the learner been
   in this room" fact the fix needs; `vision.room_at` can map a keeper's `Point` back to its `Room`
   to check membership.
-- Open question worth settling before implementing (the two stories above leave it ambiguous):
-  should the halo, once unlocked, show for a visited-but-currently-unoccupied room's keeper from
-  anywhere else torchless on the floor (as it does today, minus the never-visited case), or should
-  it also require the learner to currently be in that room? DELVE-0065's own stories only tested
-  "elsewhere in the *same* room", so extending it to "anywhere on the floor, once visited once" is
-  a judgement call, not something DELVE-0065 already settled. Recommend the narrower reading
-  (visited rooms only, from anywhere) since it's the smaller change and matches the letter of
-  DELVE-0065's non-goal, but confirm before building.
+- Settled on accept (2026-08-02): once a room has been visited, that keeper's halo stays visible from anywhere on the floor while torchless; it does not also require the learner to currently stand in that room. Never-visited rooms stay dark.
 
 ## Acceptance / verification
 
@@ -92,3 +85,8 @@ not do.
   elsewhere in a room they *have* visited still sees that room's keeper and halo.
 - A regression test confirming a lit (torch-working) room's full reveal is unaffected.
 - `./run-tests.sh` green.
+
+## Peer review
+
+- Auto (implementing agent), 2026-08-02: `_lit_tiles` filters `keeper_halo` to keepers whose room is in `visited_rooms`; `vision.py` untouched; four new torch tests cover never-visited skip, elsewhere-in-visited-room, visited-not-presence, and lit-torch unchanged. `./run-tests.sh` green (672).
+- George Moses (maintainer), 2026-08-02: peer-reviewed; implementation accepted.
