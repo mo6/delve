@@ -226,7 +226,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0083](archive/DELVE-0083-doomed-nudge-loading-spinner.md) | The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge | bug | low | implemented | 1.32.1 |
 | [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | proposed | - |
 | [DELVE-0085](DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | proposed | - |
-| [DELVE-0086](DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | proposed | - |
+| [DELVE-0086](archive/DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | implemented | 1.34.2 |
 | [DELVE-0087](DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | proposed | - |
 | [DELVE-0088](DELVE-0088-pet-ignores-you-leaving-for-a-reward-coin.md) | The pet chases a keeper's dropped reward coin even after you've already left for the next room | bug | medium | proposed | - |
 | [DELVE-0089](DELVE-0089-rebalance-ambient-toast-prompt.md) | Rebalance the ambient toast prompt away from carried items, toward the keeper and the room's lesson goal | feature | medium | proposed | - |
@@ -235,6 +235,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0092](archive/DELVE-0092-retire-screens-md-for-an-on-demand-screenshot-tool.md) | Retire docs/SCREENS.md for an on-demand screenshot tool driven by the real renderer | story | medium | implemented | 1.34.0 |
 | [DELVE-0093](archive/DELVE-0093-toast-spinner-redraw-cadence.md) | Fix the toast-loading spinner's redraw cadence so it steps one adjacent glyph at a time | bug | low | implemented | 1.33.1 |
 | [DELVE-0094](archive/DELVE-0094-resume-queues-a-doomed-ambient-toast-for-the-spawn-room.md) | Resuming a run queues an ambient toast for the pre-restore spawn room, then silently discards it | bug | medium | implemented | 1.34.1 |
+| [DELVE-0095](DELVE-0095-keeper-halo-never-dims-at-a-distance.md) | A visited room's keeper halo never dims, so going dark shows it brighter than a lit torch would | bug | medium | proposed | - |
 
 ### Epics
 
@@ -323,5 +324,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0095**.
+Next free id: **DELVE-0096**.
 <!-- issues:index:end -->
