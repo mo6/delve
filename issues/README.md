@@ -238,6 +238,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0095](DELVE-0095-keeper-halo-never-dims-at-a-distance.md) | A visited room's keeper halo never dims, so going dark shows it brighter than a lit torch would | bug | medium | proposed | - |
 | [DELVE-0096](archive/DELVE-0096-security-onboarding-last-question-free-text.md) | Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader | story | medium | implemented | 1.36.0 |
 | [DELVE-0097](archive/DELVE-0097-drop-obsolete-status-grader-rows.md) | Drop the Status tab's Grader/Ambient rows, now that the Grader tab holds all the detail | bug | low | implemented | 1.35.1 |
+| [DELVE-0098](DELVE-0098-security-onboarding-free-text-refinements.md) | Investigate the free-text candidate-answer research for security-onboarding and refine the pack's accept/reject lists and lesson prose | story | medium | proposed | - |
 
 ### Epics
 
@@ -326,5 +327,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0098**.
+Next free id: **DELVE-0099**.
 <!-- issues:index:end -->
