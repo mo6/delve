@@ -1,23 +1,23 @@
 ---
 id: DELVE-0086
 title: A burned-out torch reveals every keeper's candle halo, including in rooms never visited
-status: in-progress
+status: implemented
 area: [engine, session]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.34.2
 version_span:
 created: 2026-07-31
 updated: 2026-08-02
 accepted_by: George Moses
 accepted_at: 2026-08-02
-commits: []
+commits: [01ba4b2]
 related: [DELVE-0065, DELVE-0062]
 supersedes: []
 docs: []
-changelog:
+changelog: "1.34.2"
 reason:
 ---
 

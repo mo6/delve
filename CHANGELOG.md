@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.34.2] — 2026-08-02
+
+- **A burned-out torch no longer reveals keepers in rooms never visited** (DELVE-0086, bug, engine/session): torchless vision was unioning every keeper's candle halo on the floor, so going dark lit up posts in rooms the learner had never entered and spoiled the layout. `RunState._lit_tiles` now only passes keepers whose room is in `visited_rooms` to `vision.keeper_halo`; once a room has been visited, that keeper's halo still shows from anywhere on the floor while torchless, and a working torch is unchanged.
+
 ## [1.34.1] — 2026-08-02
 
 - **Resuming a run no longer queues an ambient toast for the pre-restore spawn room** (DELVE-0094, bug, session/progress): `session/launch.py:resume` built a brand-new `RunState` via `new_game` (spawning at chapter 0, turn 0, an empty `visited_rooms`) before laying the snapshot over it with `apply_dict`; the constructor's own `_observe()` queued a real ambient-toast call for that pre-restore spawn room, which `RunState._poll_toast`'s cross-chapter guard then silently dropped once it resolved for a chapter the learner was no longer on, leaving the loading spinner promising a toast that never arrived. `new_game`/`RunState.__init__` gain `observe: bool = True`; `resume` passes `observe=False` and calls `run._observe()` itself once `apply_dict` has restored the real position, so the correct room (or none, if already visited) is queued instead.
