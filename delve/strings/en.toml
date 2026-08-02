@@ -119,22 +119,29 @@ status_ambient = "Ambient: {model} @ {host}"
 grader_offline         = "Keyword floor, no model configured."
 grader_section_grading = "Grading"
 grader_section_ambient = "Ambient toast"
-grader_model       = "Model: {model} @ {host}"
+# Model/This run split onto two lines each (DELVE-0087) so they fit the Grader tab's half-width
+# columns; the host and the verdict counts are their own follow-on lines, not mid-word wraps.
+grader_model       = "Model: {model}"
+grader_model_host  = "@ {host}"
 grader_status_warm = "Status: warm, last grade {ms} ms"
 grader_status_cold = "Status: cold, last grade {ms} ms"
 grader_status_none = "Status: no grade yet this run"
-grader_run         = "This run: In {tin}   Out {tout}   LLM {llm}   keyword {keyword}"
+grader_run         = "This run: In {tin}   Out {tout}"
+grader_run_verdicts = "LLM {llm}   keyword {keyword}"
 grader_avg         = "Avg latency: {ms} ms"
 grader_latency     = "Latency: {spark}  (calls)"
 # The ambient toast's own section (DELVE-0066): the same Model/Status/This run/Avg latency/Latency
 # shape as the grading section above, but `ambient_run` counts calls, not verdicts, since a
 # scene-setting passage is never graded. Always rendered, even at zero calls, so the section's
-# presence never depends on whether a room with a toast has been entered yet this run.
-ambient_model       = "Model: {model} @ {host}"
+# presence never depends on whether a room with a toast has been entered yet this run. Host and
+# call-count lines split the same way as the grading section (DELVE-0087).
+ambient_model       = "Model: {model}"
+ambient_model_host  = "@ {host}"
 ambient_status_warm = "Status: warm, last call {ms} ms"
 ambient_status_cold = "Status: cold, last call {ms} ms"
 ambient_status_none = "Status: no call yet this run"
-ambient_run         = "This run: In {tin}   Out {tout}   Calls {calls}"
+ambient_run         = "This run: In {tin}   Out {tout}"
+ambient_run_calls   = "Calls {calls}"
 ambient_avg         = "Avg latency: {ms} ms"
 ambient_latency     = "Latency: {spark}  (calls)"
 reward        = "{name} leaves {coins} on the floor."

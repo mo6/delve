@@ -16,7 +16,9 @@ from _fakescreen import CursesEmu  # noqa: E402
 from delve.engine.world import Direction, Point
 from delve.session.commands import Move, Talk
 from delve.session.run import new_run
-from delve.session.views import AmountView, Cell, InfoTab, InfoView, PromptView, TextBlock, TextView
+from delve.session.views import (
+    AmountView, Cell, Colour, InfoTab, InfoView, PromptView, TextBlock, TextView,
+)
 from delve.ui import attrs, render, walls, windows
 
 _BOX = set("═║╔╗╚╝")
@@ -625,6 +627,40 @@ def test_pack_scroll_offset_keeps_selection_in_view_and_never_overscrolls():
     assert windows._pack_scroll_offset(19, 20, 5) == 15       # never scrolls past the list's end
 
 
+# -- Grader tab two-column layout (DELVE-0087) ---------------------------------------------------
+
+
+def test_grader_view_draws_both_sections_side_by_side():
+    scr = CursesEmu(30, 100)
+    left = [TextBlock("kv", "Grading\nModel: qwen2.5:3b\n@ http://localhost:11434\n"
+                            "Status: warm, last grade 400 ms\nThis run: In 180   Out 40\n"
+                            "LLM 1   keyword 0\nAvg latency: 400 ms\n"
+                            "Latency: ▁▄█  (calls)")]
+    right = [TextBlock("kv", "Ambient toast\nModel: qwen3.5:9b\n@ http://localhost:11434\n"
+                             "Status: warm, last call 800 ms\nThis run: In 50   Out 20\n"
+                             "Calls 2\nAvg latency: 800 ms\nLatency: ▁█  (calls)")]
+    view = InfoView(tabs=_tabs(), active=2, body=[], grader_left=left, grader_right=right)
+    windows.draw(scr, view, map_cols=100, page=1)
+    text = "\n".join(scr.row(r) for r in range(30))
+    assert "Grading" in text and "Ambient toast" in text
+    assert "qwen2.5:3b" in text and "qwen3.5:9b" in text
+    # Both section headings land on the same drawn row (left column, then right beside it),
+    # and each is highlighted like a Pack-tab item title (bright yellow bold).
+    row = next(r for r in range(30) if "Grading" in scr.row(r) and "Ambient" in scr.row(r))
+    assert scr.row(row).index("Grading") < scr.row(row).index("Ambient")
+    gcol = scr.row(row).index("Grading")
+    acol = scr.row(row).index("Ambient")
+    title_attr = attrs.attr_for(Colour.BRIGHT_YELLOW)
+    assert scr.attr_row(row)[gcol] == title_attr
+    assert scr.attr_row(row)[acol] == title_attr
+    assert windows.page_count(view, 30) == 1
+
+
+def test_grader_column_widths_are_even_halves_of_text_w():
+    assert windows.GRADER_COL_W + windows.GRADER_COL_RIGHT_W + 3 == windows.TEXT_W
+    assert windows.GRADER_COL_W == windows.GRADER_COL_RIGHT_W
+
+
 # -- 'kv' blocks: label/value colouring (DELVE-0078) ----------------------------------------------
 
 
@@ -642,8 +678,14 @@ def test_kv_spans_only_splits_on_the_first_colon_space_even_with_more_in_the_val
     assert "warm" in spans[1][0] and spans[1][1] is False
 
 
-def test_kv_spans_leaves_a_colonless_line_unstyled():
-    assert windows._kv_spans("no colon here") == (("no colon here", False),)
+def test_kv_spans_marks_a_leading_colonless_line_as_a_section_heading():
+    # DELVE-0087: the Grader column's first line (`Grading` / `Ambient toast`) has no ": ", and
+    # is the section title; later colon-less follow-ons (`@ host`, `Calls N`) stay plain.
+    assert windows._kv_spans("Grading") == (("Grading", True),)
+    spans = windows._kv_spans("Grading\n@ http://localhost:11434\nCalls 2")
+    assert spans[0] == ("Grading", True)
+    assert spans[1] == ("\n@ http://localhost:11434", False)
+    assert spans[2] == ("\nCalls 2", False)
 
 
 def test_kv_spans_handles_multiple_newline_joined_lines():

@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.34.3] — 2026-08-02
+
+- **The Grader tab lays its two model sections side by side so the latency sparkline fits on one page** (DELVE-0087, bug, ui/session): stacking `Grading` above `Ambient toast` forced a second page once either section held a `Latency` sparkline (DELVE-0077). The tab now splits into even half-width columns (Pack's divider arithmetic, `GRADER_COL_W` = 33), folds each section's heading into its own `kv` block (no blank row before the data), wraps long `Model`/`This run` strings onto two localised lines each, and paints the column titles bright yellow bold. Offline still renders as one full-width line. New `grader` screenshot scenario.
+
 ## [1.34.2] — 2026-08-02
 
 - **A burned-out torch no longer reveals keepers in rooms never visited** (DELVE-0086, bug, engine/session): torchless vision was unioning every keeper's candle halo on the floor, so going dark lit up posts in rooms the learner had never entered and spoiled the layout. `RunState._lit_tiles` now only passes keepers whose room is in `visited_rooms` to `vision.keeper_halo`; once a room has been visited, that keeper's halo still shows from anywhere on the floor while torchless, and a working torch is unchanged.

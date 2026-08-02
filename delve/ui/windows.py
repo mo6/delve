@@ -52,6 +52,12 @@ BAR_EMPTY = "░"             # plain attribute: not yet scored
 PACK_LIST_W = 26
 PACK_DESC_W = TEXT_W - PACK_LIST_W - 3
 
+# The Grader tab's two-column layout (DELVE-0087): even halves of TEXT_W with the same one-column
+# gap on each side of the vertical divider as Pack. Even (not Pack's list/desc asymmetry) because
+# both columns carry the same Model/Status/This run/… row shapes.
+GRADER_COL_W = (TEXT_W - 3) // 2
+GRADER_COL_RIGHT_W = TEXT_W - GRADER_COL_W - 3
+
 # The ambient room-entry toast (DELVE-0060): its own, smaller right-anchored block, deliberately
 # narrower than PANEL_W and top-anchored rather than vertically centred like every blocking panel,
 # so it visibly reads as ambient weather over the room rather than a panel the room is paused for.
@@ -212,15 +218,18 @@ LABEL_COLOUR = Colour.BRIGHT_CYAN  # a 'kv' block's label half (DELVE-0078)
 def _kv_spans(text: str) -> tuple:
     """Split each of a `kind="kv"` block's `"\\n"`-joined lines at its first `": "`, colouring the
     label half (including the colon) `LABEL_COLOUR` and leaving the value half plain. A line with
-    no `": "` (should not happen for a genuine label/value row, but never crashes) passes through
-    unstyled. Only the *first* `": "` counts, so a value containing its own colon (a host:port, a
-    model tag like `qwen2.5:3b`) never gets mistaken for a second label."""
+    no `": "` passes through: the *first* such line is a section heading (DELVE-0087's Grader
+    column titles `Grading` / `Ambient toast`), marked bold so `_put_line` paints it bright yellow
+    like a Pack-tab item title; later colon-less lines (a host follow-on `@ …`, a verdict-count
+    follow-on) stay plain. Only the *first* `": "` on a labelled line counts, so a value containing
+    its own colon (a host:port, a model tag like `qwen2.5:3b`) never gets mistaken for a second
+    label."""
     spans = []
     for i, line in enumerate(text.split("\n")):
         prefix = "\n" if i else ""
         cut = line.find(": ")
         if cut == -1:
-            spans.append((prefix + line, False))
+            spans.append((prefix + line, i == 0))   # first colon-less line = section heading
             continue
         spans.append((prefix + line[: cut + 1], LABEL_COLOUR))
         spans.append((line[cut + 1 :], False))
@@ -390,10 +399,11 @@ def _text_pages(view, body: int) -> list[list[str]]:
 
 def page_count(overlay, rows: int) -> int:
     """Pages the overlay needs at this terminal height. Menus and prompts are always one; so is
-    the Pack tab's compact row list (DELVE-0069, `overlay.pack_rows` non-empty), the same
-    never-paginated treatment MenuView/PromptView already get, since a learner's carried-kind
-    count stays well within the panel's body height."""
-    if isinstance(overlay, InfoView) and overlay.pack_rows:
+    the Pack tab's compact row list (DELVE-0069, `overlay.pack_rows` non-empty) and the Grader
+    tab's two-column layout (DELVE-0087, `overlay.grader_left` non-empty), the same
+    never-paginated treatment MenuView/PromptView already get, since both layouts are sized to
+    fit the panel's body height on one page."""
+    if isinstance(overlay, InfoView) and (overlay.pack_rows or overlay.grader_left):
         return 1
     if isinstance(overlay, (TextView, InfoView, HelpView)):
         return len(_text_pages(overlay, _body(rows)))
@@ -590,6 +600,33 @@ def _draw_pack_columns(stdscr, view: InfoView, r: int, col: int, bottom: int) ->
             dr += 1
 
 
+def _draw_grader_columns(stdscr, view: InfoView, r: int, col: int, bottom: int) -> None:
+    """The Grader tab's side-by-side Grading / Ambient toast sections (DELVE-0087): the same
+    vertical-divider arithmetic as Pack (`GRADER_COL_W` / `GRADER_COL_RIGHT_W`), but both panes
+    are ordinary paginated text blocks rather than a list-plus-description. Each column wraps to
+    its own half-width so the Model/This run two-line strings session already prepared fit
+    without running past the divider."""
+    visible = max(0, bottom - r)
+    sep_col = col + GRADER_COL_W + 1
+    for dr in range(visible):
+        _put(stdscr, r + dr, sep_col, "│")
+    dr = r
+    for block in _blocks(view.grader_left, GRADER_COL_W):
+        for quote, segs in block:
+            if dr >= bottom:
+                break
+            _put_line(stdscr, dr, col, quote, segs)
+            dr += 1
+    right_col = sep_col + 2
+    dr = r
+    for block in _blocks(view.grader_right, GRADER_COL_RIGHT_W):
+        for quote, segs in block:
+            if dr >= bottom:
+                break
+            _put_line(stdscr, dr, right_col, quote, segs)
+            dr += 1
+
+
 def _draw_info(stdscr, view: InfoView | HelpView, top: int, col: int, h: int, page: int) -> None:
     view = _fill_status_size(stdscr, view)
     r = top + 2
@@ -605,6 +642,10 @@ def _draw_info(stdscr, view: InfoView | HelpView, top: int, col: int, h: int, pa
     r += 1
     if isinstance(view, InfoView) and view.pack_rows:
         _draw_pack_columns(stdscr, view, r, col, top + h - 2)
+        _put(stdscr, top + h - 2, col, view.end_label)
+        return
+    if isinstance(view, InfoView) and view.grader_left:
+        _draw_grader_columns(stdscr, view, r, col, top + h - 2)
         _put(stdscr, top + h - 2, col, view.end_label)
         return
     pages = _text_pages(view, h - CHROME)      # same body the box was sized to, so the tail aligns
