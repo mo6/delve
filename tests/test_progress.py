@@ -134,12 +134,15 @@ def test_trophies_list_every_completion_newest_first():
     assert len(lines) == 2
     assert "95.0%" in lines[0] and pack.title in lines[0]   # newest first
     assert "80.0%" in lines[1]
+    # Structured rows (DELVE-0085) keep the same date-descending order for the Info table.
+    assert [score for score, _, _ in launch.trophy_rows(store, pack, "ada")] == ["95.0%", "80.0%"]
 
 
 def test_trophies_empty_for_a_new_learner():
     store = SQLiteStore(":memory:")
     pack = load_pack(PILOT, "en")
     assert launch.trophies(store, pack, "Nobody") == []
+    assert launch.trophy_rows(store, pack, "Nobody") == []
 
 
 def test_default_db_path_is_created(tmp_path):

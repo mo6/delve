@@ -39,12 +39,15 @@ def test_both_locales_load_and_differ():
 
 def test_info_panel_tab_strings_exist_in_both_locales():
     # DELVE-0040/0041: the i panel's title, tab labels and hint line, so a fresh locale can never
-    # ship the tab strip half-translated.
+    # ship the tab strip half-translated. DELVE-0085 adds Trophies.
     en, nl = strings_pkg.load("en"), strings_pkg.load("nl")
     assert en("item.info_title") == "Info" and nl("item.info_title") == "Info"
     assert en("item.tab_pack") == "Pack" and nl("item.tab_pack") == "Rugzak"
     assert en("item.tab_scoring") and nl("item.tab_scoring")
     assert en("item.tab_grader") and nl("item.tab_grader")
+    assert en("item.tab_trophies") == "Trophies" and nl("item.tab_trophies") == "Prijzen"
+    assert en("item.trophies_empty") and nl("item.trophies_empty")
+    assert en("item.trophies_col_score") and nl("item.trophies_col_date") == "Datum"
     assert en("item.tab_soon") and nl("item.tab_soon")
     assert "Tab" in en("hint.inventory") and "Tab" in nl("hint.inventory")
 

@@ -115,22 +115,33 @@ def pending_run(store: Store, pack: Pack, name: str) -> Run | None:
     return store.unfinished_run(user.id, pack.id)
 
 
-def trophies(store: Store, pack: Pack, name: str, strings: Strings | None = None) -> list[str]:
-    """The learner's trophy case as ready-to-print lines, newest first, so the UI never touches a
-    progress type (rule 2). Every completion is its own line; re-taking a pack shows both. Only
-    the loaded pack's id resolves to a title (the others print their id) until packs are indexed.
-    Score and date format in `strings`' locale (English if none is given)."""
+def trophy_rows(store: Store, pack: Pack, name: str,
+                strings: Strings | None = None) -> list[tuple[str, str, str]]:
+    """The learner's trophy case as `(score, title, date)` rows, newest `awarded_at` first
+    (DELVE-0085). Ready-to-print cell values so the Info tab can lay them in a table without
+    touching a progress type (rule 2). Only the loaded pack's id resolves to a title (the others
+    print their id) until packs are indexed. Score and date format in `strings`' locale (English
+    if none is given)."""
     fmt = strings.fmt if strings is not None else None
     user = store.user_by_name(name)
-    lines: list[str] = []
-    for s in store.trophy_case(user.id):
+    scrolls = sorted(store.trophy_case(user.id), key=lambda s: s.awarded_at, reverse=True)
+    rows: list[tuple[str, str, str]] = []
+    for s in scrolls:
         title = pack.title if s.pack_id == pack.id else s.pack_id
         try:
             when = format_date(datetime.fromisoformat(s.awarded_at), fmt)
         except ValueError:
             when = s.awarded_at
-        lines.append(f"{format_score(s.score, fmt):>6}   {title}   {when}")
-    return lines
+        rows.append((format_score(s.score, fmt), title, when))
+    return rows
+
+
+def trophies(store: Store, pack: Pack, name: str, strings: Strings | None = None) -> list[str]:
+    """The learner's trophy case as ready-to-print lines for the pre-run screen, newest first.
+    Same rows as `trophy_rows`, joined into the one-line-per-completion shape `_show_trophies`
+    centres; the Info tab uses the structured rows directly."""
+    return [f"{score:>6}   {title}   {when}"
+            for score, title, when in trophy_rows(store, pack, name, strings)]
 
 
 def start(store: Store, pack: Pack, *, name: str, seed: int, cols: int, rows: int,
@@ -144,9 +155,10 @@ def start(store: Store, pack: Pack, *, name: str, seed: int, cols: int, rows: in
     user = store.user_by_name(name)
     row = store.create_run(user.id, pack.id, PACK_VERSION, seed, cols, rows)
     recorder = Recorder(store, user.id, row.id, pack.id)
+    trophies_ = trophy_rows(store, pack, name, strings)
     run = new_game(pack, seed, cols, rows, name=name, recorder=recorder, strings=strings,
                    tutorial=tutorial, skip_tutorial=skip_tutorial, pet_species=pet_species,
-                   pet_name=pet_name, grader_runner=grader_runner)
+                   pet_name=pet_name, grader_runner=grader_runner, trophy_rows=trophies_)
     recorder.save(run)
     return run
 
@@ -165,9 +177,10 @@ def resume(store: Store, pack: Pack, *, run_row: Run, name: str, strings: String
     `_observe` runs once below, against the restored position, so a genuinely unvisited restored
     room still gets its toast and an already-visited one queues nothing."""
     recorder = Recorder(store, run_row.user_id, run_row.id, pack.id)
+    trophies_ = trophy_rows(store, pack, name, strings)
     run = new_game(pack, run_row.seed, run_row.map_cols, run_row.map_rows,
                    name=name, recorder=recorder, strings=strings, tutorial=tutorial,
-                   grader_runner=grader_runner, observe=False)
+                   grader_runner=grader_runner, observe=False, trophy_rows=trophies_)
     if run_row.snapshot:
         apply_dict(run, json.loads(run_row.snapshot))
     run._observe()

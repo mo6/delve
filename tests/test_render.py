@@ -17,7 +17,14 @@ from delve.engine.world import Direction, Point
 from delve.session.commands import Move, Talk
 from delve.session.run import new_run
 from delve.session.views import (
-    AmountView, Cell, Colour, InfoTab, InfoView, PromptView, TextBlock, TextView,
+    AmountView,
+    Cell,
+    Colour,
+    InfoTab,
+    InfoView,
+    PromptView,
+    TextBlock,
+    TextView,
 )
 from delve.ui import attrs, render, walls, windows
 

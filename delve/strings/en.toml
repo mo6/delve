@@ -86,7 +86,15 @@ tab_scoring   = "Scoring"
 tab_grader    = "Grader"
 tab_status    = "Status"
 tab_messages  = "Messages"
+tab_trophies  = "Trophies"
 tab_soon      = "Coming soon."
+# Trophies tab body (DELVE-0085): empty when the learner has never finished a pack; otherwise a
+# Date/Pack/Score table from `launch.trophy_rows` (newest date first). Column headers are
+# localised; "Pack" stays the vocabulary term in both locales.
+trophies_empty = "No completed runs yet."
+trophies_col_score = "Score"
+trophies_col_pack = "Pack"
+trophies_col_date = "Date"
 # Scoring's own sub-tab strip (DELVE-0055, INFOSCREEN.md §5): Now is the DELVE-0042/0043 bars,
 # unchanged; Rooms is the room pass map.
 tab_now       = "Now"
