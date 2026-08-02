@@ -2037,7 +2037,7 @@ class RunState:
                 or [TextBlock("para", self.strings("ui.no_messages"))])
 
     def _trophies_body(self) -> list[TextBlock]:
-        """The Trophies tab's body (DELVE-0085): a Score/Pack/Date table from the
+        """The Trophies tab's body (DELVE-0085): a Date/Pack/Score table from the
         `(score, title, date)` rows threaded in at start/resume (`self._trophy_rows`), newest
         date first. Empty (no completions yet) is a single explanatory line rather than a blank
         panel, since the pre-run screen itself skips entirely when the case is empty and the tab
@@ -2045,15 +2045,15 @@ class RunState:
         if not self._trophy_rows:
             return [TextBlock("para", self.strings("item.trophies_empty"))]
         header = (
-            ((self.strings("item.trophies_col_score"), False),),
-            ((self.strings("item.trophies_col_pack"), False),),
             ((self.strings("item.trophies_col_date"), False),),
+            ((self.strings("item.trophies_col_pack"), False),),
+            ((self.strings("item.trophies_col_score"), False),),
         )
         data = tuple(
-            (((score, False),), ((title, False),), ((when, False),))
+            (((when, False),), ((title, False),), ((score, False),))
             for score, title, when in self._trophy_rows
         )
-        text = "\n".join(f"{score}  {title}  {when}" for score, title, when in self._trophy_rows)
+        text = "\n".join(f"{when}  {title}  {score}" for score, title, when in self._trophy_rows)
         return [TextBlock("table", text, table=(header,) + data)]
 
     def _text(self, title: str, body) -> TextView:

@@ -355,7 +355,7 @@ def sc_grader() -> Shot:
 
 
 def sc_trophies() -> Shot:
-    """Info / Trophies tab as a Score/Pack/Date table, newest date first."""
+    """Info / Trophies tab as a Date/Pack/Score table, newest date first."""
     rows = [
         ("95.0%", "Security Onboarding", "18 July 2026"),
         ("80.0%", "Security Onboarding", "17 July 2026"),

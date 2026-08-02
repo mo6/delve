@@ -1096,11 +1096,12 @@ def test_trophies_tab_shows_the_rows_as_a_date_descending_table():
     assert frame.overlay.tabs[5].key == "trophies"
     body = frame.overlay.body
     assert len(body) == 1 and body[0].kind == "table"
-    assert body[0].table[0][0][0][0] == "Score"       # header
-    assert body[0].table[0][2][0][0] == "Date"
+    assert body[0].table[0][0][0][0] == "Date"        # header: Date | Pack | Score
+    assert body[0].table[0][2][0][0] == "Score"
     # Data rows keep the date-descending order threaded in at start.
-    assert [row[2][0][0] for row in body[0].table[1:]] == [
+    assert [row[0][0][0] for row in body[0].table[1:]] == [
         "18 July 2026", "17 July 2026", "12 June 2026"]
+    assert [row[2][0][0] for row in body[0].table[1:]] == ["95.0%", "80.0%", "91.7%"]
     assert "95.0%" in body[0].text and "holy-grail" in body[0].text
 
 

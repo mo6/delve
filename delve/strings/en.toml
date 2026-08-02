@@ -89,7 +89,7 @@ tab_messages  = "Messages"
 tab_trophies  = "Trophies"
 tab_soon      = "Coming soon."
 # Trophies tab body (DELVE-0085): empty when the learner has never finished a pack; otherwise a
-# Score/Pack/Date table from `launch.trophy_rows` (newest date first). Column headers are
+# Date/Pack/Score table from `launch.trophy_rows` (newest date first). Column headers are
 # localised; "Pack" stays the vocabulary term in both locales.
 trophies_empty = "No completed runs yet."
 trophies_col_score = "Score"
