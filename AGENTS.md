@@ -83,7 +83,13 @@ descriptions, a `--More--` message line). **The
 version-by-version history lives in [CHANGELOG.md](CHANGELOG.md)** — read it when you need to know
 *when* or *why* a specific feature landed. It is kept out of this file on purpose so it stays out of
 context unless a task actually needs it; this section is only the current shape plus the gotchas
-that are expensive to rediscover.
+that are expensive to rediscover. **It only ever grows, so read it with a small `limit`, not in
+full.** Appending an entry needs only the top few lines (the newest `## [x.y.z]` heading, to anchor
+the insertion above it); a full read costs more with every release and is almost never the part
+actually needed. Reach for the full file, or a `grep`, only when a task genuinely needs to search
+deep history (e.g. tracing when a since-removed behaviour first shipped). The same applies to
+`issues/README.md`'s generated index: `./tools.sh issues`/`--check` regenerate and verify it without
+ever needing it read into context first.
 
 **Still outstanding: Windows verification** (windows-curses render, é/€, the double-line frame
 fallback per the cross-platform section); needs a Windows host. The Dutch UI routes euro and
