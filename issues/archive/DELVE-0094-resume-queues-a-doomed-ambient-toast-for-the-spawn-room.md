@@ -1,23 +1,23 @@
 ---
 id: DELVE-0094
 title: Resuming a run queues an ambient toast for the pre-restore spawn room, then silently discards it
-status: in-progress
+status: implemented
 area: [session, progress]
 type: bug
 epic:
 effort: medium
 milestone:
-version:
+version: 1.34.1
 version_span:
 created: 2026-08-02
 updated: 2026-08-02
 accepted_by: George Moses
 accepted_at: 2026-08-02
-commits: []
+commits: [968adf7]
 related: [DELVE-0060, DELVE-0083]
 supersedes: []
 docs: []
-changelog:
+changelog: "1.34.1"
 reason:
 ---
 
@@ -115,4 +115,5 @@ the rare one.
 ## Peer review
 
 - Auto (implementing agent), 2026-08-02: fix matches the issue's preferred shape (`observe=False` through `new_game`/`RunState`, then `_observe` after `apply_dict`); `_poll_toast` and the snapshot shape are untouched; the three acceptance tests cover past-start quiet resume, unvisited-restored-room re-queue keyed to the restored chapter, and `toast_loading is None` when the room was already visited. `./run-tests.sh` green (668). Ready to land once you say so.
+- Claude (agent), 2026-08-02: verified `_observe()` fires exactly once under both `observe` values (no double-fire, no dropped unvisited-room case); confirmed every other `new_game` call site is unaffected by the new default; checked the new tests' `RoomBackstoryRunner` internals and helpers are real, not fabricated. `./run-tests.sh` green (668 tests, ruff, pip-audit, issues index, all packs). No findings; matches the issue's design notes and stays inside its non-goals.
 
