@@ -18,14 +18,10 @@ never does:
 
 | Tier | Roughly | If it got out |
 |---|---|---|
-| **Public** | Already published, or intended to be | Nothing |
-| **Internal** | The everyday business of the place | Awkward. Useful to a competitor or an attacker. |
-| **Confidential** | Customer data, contracts, finances, personal records | Serious. Legal, financial, and human consequences. |
-| **Restricted** | Credentials, keys, security details, unannounced plans | Severe. This is what the dungeon is for. |
-
-> **Placeholder. Replace with your organisation's real tiers and their real names
-> before running this training.** The reasoning below is what matters; the labels are
-> yours.
+| **{{tier_public}}** | Already published, or intended to be | Nothing |
+| **{{tier_internal}}** | The everyday business of the place | Awkward. Useful to a competitor or an attacker. |
+| **{{tier_confidential}}** | Customer data, contracts, finances, personal records | Serious. Legal, financial, and human consequences. |
+| **{{tier_restricted}}** | Credentials, keys, security details, unannounced plans | Severe. This is what the dungeon is for. |
 
 "Now, the useful part," Marisol says, "which is not the table."
 
@@ -34,7 +30,7 @@ never does:
 The first is under-classifying: treating something valuable as ordinary. This is the one
 the table is meant to prevent, and it's the one everyone worries about.
 
-The second is over-classifying: marking everything Restricted because it's the safe
+The second is over-classifying: marking everything {{tier_restricted}} because it's the safe
 choice for you personally. It feels responsible. It is not. When everything is secret,
 the label stops carrying information, people route around it to do their jobs, and the
 genuinely dangerous document sits in a pile of two thousand identically-marked ones
@@ -64,7 +60,7 @@ usually answers itself. Answer it lazily and no table on any wall will save you.
 - [ ] It prevents legitimate business from happening
 - [ ] It's a compliance violation in most frameworks
 
-> A label only works if it's *informative*. Mark everything Restricted and it stops
+> A label only works if it's *informative*. Mark everything {{tier_restricted}} and it stops
 > meaning "be careful" and starts meaning "ignore me", and the one document that
 > mattered is now camouflaged among two thousand that didn't.
 >
@@ -72,7 +68,7 @@ usually answers itself. Answer it lazily and no table on any wall will save you.
 > disease, and it's what causes the routing-around. Compliance mostly doesn't care if
 > you're too careful.
 
-### A document containing only publicly available information is always Public.
+### A document containing only publicly available information is always {{tier_public}}.
 
 - [ ] True
 - [x] False
@@ -88,7 +84,7 @@ usually answers itself. Answer it lazily and no table on any wall will save you.
 
 - [ ] The document's format; a slide deck is less sensitive than a database export
 - [ ] The size of the audience it's going to
-- [x] What someone could do with it, which here means it's customer and financial data, so Confidential at least
+- [x] What someone could do with it, which here means it's customer and financial data, so {{tier_confidential}} at least
 - [ ] Whether the customer has asked for confidentiality
 
 > "What could someone do with this?" is the question that survives every edge case.

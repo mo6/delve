@@ -56,9 +56,7 @@ near-miss is the early warning that saves the next person.
 
 Wren stands, and the last door is behind her.
 
-**Report to:** `security@example.com`, or `#security-help`, or call the service desk.
-*(Placeholder. Replace with your organisation's real channels before running this
-training, and put the emergency route first.)*
+**Report to:** `{{security_email}}`, or `{{help_channel}}`, or call the service desk.
 
 "Twelve keepers told you how to be careful," she says. "I'm telling you what happens when
 careful wasn't enough. Tell us fast, and tell us early, and we will take it from there.

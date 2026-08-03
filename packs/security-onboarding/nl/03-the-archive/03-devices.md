@@ -109,4 +109,4 @@ op tien meter afstand en laat het ding alsnog ontgrendeld liggen in een broodjes
 > geïsoleerd noemen is dat niet, en dit is een hobby en geen functie. Laten liggen is passief; de
 > volgende persoon raapt hem op, en dáárvoor is hij neergelegd.
 >
-> **Plaatshouder:** vervang `#security-help` door het echte kanaal van je organisatie.
+> Twijfel je wat "aan security geven" precies is? Vraag het in {{help_channel}}.

@@ -21,6 +21,7 @@ from delve.content.errors import PackError
 from delve.content.lesson import Block, Lesson
 from delve.content.markup import LESSON_KINDS, Token, tokenize
 from delve.content.pack import Chapter, Pack, Room
+from delve.content.variables import load_variables
 from delve.engine.items import ItemDef
 
 KEEPERS = ("wizard", "shopkeeper", "gatekeeper")
@@ -387,4 +388,5 @@ def load_pack(root: Path, locale: str) -> Pack:
     scroll = _read(scroll_path).strip() if scroll_path.is_file() else ""
     return Pack(id=meta["id"], title=meta["title"], difficulty=meta["difficulty"],
                 scroll_name=meta["scroll"], intro=intro, chapters=tuple(chapters),
-                scroll=scroll, locale=locale, reward=reward, items=items)
+                scroll=scroll, locale=locale, reward=reward, items=items,
+                variables=load_variables(base))

@@ -36,6 +36,7 @@ and group them into chapters. That's the whole job.
 packs/security-onboarding/
 └── en/                          one subtree per language
     ├── pack.md                  what the dungeon is
+    ├── variables.template.md    declared {{tokens}} with example values
     ├── 01-email-threats/        chapter = one dungeon floor
     │   ├── chapter.md             title, intro
     │   ├── 01-phishing.md         room = one lesson
@@ -47,6 +48,10 @@ packs/security-onboarding/
     │   └── 02-mfa.md
     └── scroll.md                the award text
 ```
+
+A maintainer copies `variables.template.md` to `variables.md` (same folder) and fills in real
+values for their deployment. That filled file is instance-specific and gitignored; only the
+template ships with the pack. See [Pack variables](#15-pack-variables).
 
 **Order comes from filenames.** `01-`, `02-`, `03-` — that's it. To reorder a chapter, rename
 its files. There is no manifest listing them and no `order:` field to keep in sync.
@@ -471,6 +476,10 @@ or two. The full architecture, the local model, and the one-step install are in
 `scroll.md` is the award, picked up from a pedestal in the final chamber. It supports
 `{name}`, `{score}`, `{date}`, and `{pack}`.
 
+Pack `{{tokens}}` from [variables](#15-pack-variables) also work in the scroll body (and in
+lesson prose); the four single-brace fields above are scroll-specific for now and will fold into
+the same `{{ }}` grammar later.
+
 **`{score}` and `{date}` render themselves in the reader's language, and you must not
 second-guess them.** Write `{date}`, never `17 July 2026`; write `{score}`, never `91.7%`. The
 engine formats both from the locale's `[format]` table, so the same scroll reads
@@ -521,6 +530,7 @@ someone.
 - [ ] Assertions state misconceptions, not truisms.
 - [ ] `pass` is set deliberately, not left at default by accident.
 - [ ] Objects, if any, are seasoning: one or two, none needed to progress.
+- [ ] If the pack uses `{{tokens}}`, both locales ship a matching `variables.template.md`, and a deployer knows to copy it to `variables.md`.
 - [ ] You played it start to finish yourself, and it took the time you expected.
 
 ---
@@ -571,3 +581,42 @@ and colour is legal, every `place:` names a kind you actually defined, and that 
 the same items. That is the whole vocabulary: effects are **data, not code**, so a pack is always
 safe to download. If you want an effect that isn't here (a lantern, a key), it is a change to the
 engine, not something a pack can smuggle in.
+
+---
+
+## 15. Pack variables
+
+A pack can declare named tokens, written `{{like_this}}`, so a real-world value (a security email, a help channel, a classification tier name) is stated once per locale instead of repeated through lesson prose.
+
+### Template and filled file
+
+Each locale root ships a `variables.template.md` beside `pack.md`. It lists every token the pack uses, with an example value:
+
+```markdown
+# Variables
+
+- `{{security_email}}`: security@example.com
+- `{{help_channel}}`: #security-help
+- `{{tier_public}}`: Public
+```
+
+A maintainer deploying the pack copies that file to `variables.md` in the same folder and replaces each value with their organisation's real one. They edit no lesson prose and no template. `variables.md` is gitignored; only the template is tracked, so instance-specific values never enter the shared pack.
+
+If a token is missing from `variables.md`, or there is no filled file at all, the engine uses the template's example value. Validation that every referenced token is declared, and that locales declare the same set, is a separate check.
+
+Values live in the document body, never in frontmatter. The bullet form is greppable and parses with the ordinary Markdown layer: the token in backticks, then a colon, then the value.
+
+### Where tokens work
+
+Any displayed pack text: a lesson, a question prompt, an option, an explanation, a chapter or pack intro line, and the scroll body. Substitution is plain string replacement, so a stray single `{` in a code span is left alone. The same run with the same identity and the same filled values always produces the same text.
+
+### Built-ins
+
+Two tokens come from the engine, not from either variables file:
+
+| Token | Meaning |
+|---|---|
+| `{{player}}` | the learner's name from identity |
+| `{{pack_title}}` | the pack's title |
+
+An author does not declare these, and a line in the template cannot override them.

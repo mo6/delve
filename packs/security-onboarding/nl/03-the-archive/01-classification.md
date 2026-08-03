@@ -17,14 +17,10 @@ Elke organisatie sorteert informatie in niveaus. De namen verschillen; de vorm b
 
 | Niveau | Ongeveer | Als het uitlekt |
 |---|---|---|
-| **Openbaar** | Al gepubliceerd, of daarvoor bedoeld | Niets |
-| **Intern** | De dagelijkse gang van zaken | Ongemakkelijk. Bruikbaar voor een concurrent of een aanvaller. |
-| **Vertrouwelijk** | Klantgegevens, contracten, financiën, persoonsgegevens | Ernstig. Juridische, financiële en menselijke gevolgen. |
-| **Geheim** | Inloggegevens, sleutels, beveiligingsdetails, onaangekondigde plannen | Zwaar. Hiervoor bestaat deze kerker. |
-
-> **Plaatshouder. Vervang dit door de werkelijke niveaus van je organisatie en hun
-> werkelijke namen voordat je deze training gebruikt.** De redenering hieronder is wat
-> telt; de etiketten zijn van jou.
+| **{{tier_public}}** | Al gepubliceerd, of daarvoor bedoeld | Niets |
+| **{{tier_internal}}** | De dagelijkse gang van zaken | Ongemakkelijk. Bruikbaar voor een concurrent of een aanvaller. |
+| **{{tier_confidential}}** | Klantgegevens, contracten, financiën, persoonsgegevens | Ernstig. Juridische, financiële en menselijke gevolgen. |
+| **{{tier_restricted}}** | Inloggegevens, sleutels, beveiligingsdetails, onaangekondigde plannen | Zwaar. Hiervoor bestaat deze kerker. |
 
 "Nu het bruikbare deel," zegt Marisol, "en dat is niet de tabel."
 
@@ -33,7 +29,7 @@ Elke organisatie sorteert informatie in niveaus. De namen verschillen; de vorm b
 De eerste is te laag inschalen: iets waardevols als gewoon behandelen. Dit is degene die de
 tabel moet voorkomen, en degene waar iedereen zich zorgen over maakt.
 
-De tweede is te hoog inschalen: alles als Geheim markeren omdat dat voor je persoonlijk de
+De tweede is te hoog inschalen: alles als {{tier_restricted}} markeren omdat dat voor je persoonlijk de
 veilige keuze is. Het voelt verantwoordelijk. Dat is het niet. Wanneer alles geheim is,
 draagt het etiket geen informatie meer, gaan mensen eromheen werken om hun werk te doen, en
 ligt het werkelijk gevaarlijke document op een stapel van tweeduizend identiek gemarkeerde
@@ -64,7 +60,7 @@ muur redt je."
 - [ ] Het verhindert dat legitiem werk gedaan wordt
 - [ ] Het is in de meeste kaders een nalevingsovertreding
 
-> Een etiket werkt alleen als het *informatief* is. Markeer alles als Geheim en het betekent
+> Een etiket werkt alleen als het *informatief* is. Markeer alles als {{tier_restricted}} en het betekent
 > niet langer "wees voorzichtig" maar "negeer mij", en het ene document dat ertoe deed staat
 > nu gecamoufleerd tussen tweeduizend die dat niet deden.
 >
@@ -72,7 +68,7 @@ muur redt je."
 > dezelfde ziekte, en het is wat het eromheen werken veroorzaakt. En naleving maakt het
 > meestal niet uit als je té voorzichtig bent.
 
-### Een document dat uitsluitend openbaar beschikbare informatie bevat, is altijd Openbaar.
+### Een document dat uitsluitend openbaar beschikbare informatie bevat, is altijd {{tier_public}}.
 
 - [ ] Waar
 - [x] Niet waar
@@ -88,7 +84,7 @@ muur redt je."
 
 - [ ] Het formaat van het document; een presentatie is minder gevoelig dan een database-export
 - [ ] De omvang van het publiek waar het heen gaat
-- [x] Wat iemand ermee zou kunnen doen, hier klant- en financiële gegevens, dus minstens Vertrouwelijk
+- [x] Wat iemand ermee zou kunnen doen, hier klant- en financiële gegevens, dus minstens {{tier_confidential}}
 - [ ] Of de klant om vertrouwelijkheid heeft gevraagd
 
 > "Wat zou iemand hiermee kunnen doen?" is de vraag die elk grensgeval overleeft. Een klantnaam
