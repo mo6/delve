@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.36.1] — 2026-08-03
+
+- **The resume prompt stops offering a stale abandoned run once the pack has since been completed** (DELVE-0084, bug, progress): `SQLiteStore.unfinished_run` picked the most recent unfinished run for a user/pack regardless of any later, completed run of the same pack, so a learner who abandoned an attempt, then started fresh and finished it, kept being asked to resume the old abandoned run on every subsequent launch. The query now excludes an unfinished run older than the same user/pack's most recent finished run; a pack never yet completed is unaffected, and the abandoned row itself is left in place, just no longer offered.
+
 ## [1.36.0] — 2026-08-02
 
 - **`security-onboarding` gains a free-text question per room, so a playthrough exercises the LLM grader** (DELVE-0096, story, content): every question in the pack was checkbox (MCQ or True/False), so `LLMGrader` never saw a call and the Grader tab (DELVE-0054) always read "no grade yet this run". The last question of 11 of the pack's 12 rooms, `en` and `nl`, is now a `- ?answer:` free-text question (docs/AUTHORING.md §10); Dutch accept/reject sets are idiomatic phrasings, not literal translations, since compounding defeats the offline substring fallback. `01-phishing.md` (chapter 1's first room) is the one exception, unchanged and still all-checkbox: it doubles as the hardcoded M2 "golden slice" (`delve.content.pilot.PHISHING_ROOM`) reused as the default single-room fixture across unrelated engine-mechanics tests. No engine or parser code changed.

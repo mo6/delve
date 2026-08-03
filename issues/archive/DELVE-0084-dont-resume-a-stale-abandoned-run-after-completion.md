@@ -1,23 +1,23 @@
 ---
 id: DELVE-0084
 title: Don't offer to resume a stale abandoned run once the pack has since been completed
-status: in-progress
+status: implemented
 area: [progress, session]
 type: bug
 epic:
 effort: low
 milestone:
-version:
+version: 1.36.1
 version_span:
 created: 2026-07-31
 updated: 2026-08-03
 accepted_by: George Moses
 accepted_at: 2026-08-03T18:14:56Z
-commits: []
+commits: [515004c, 7da6364]
 related: []
 supersedes: []
 docs: []
-changelog:
+changelog: "1.36.1"
 reason:
 ---
 
@@ -95,3 +95,4 @@ already walked away from and superseded.
 
 - Auto (implementing agent), 2026-08-03: store-only query change as the design notes preferred (`id` greater than the latest finished run of the same pack); `pending_run` / `_begin` untouched; abandoned-only path still returns the unfinished row; abandoned row is left in the table (not deleted). New store and launch tests match the acceptance criteria. `./run-tests.sh` green (688). Ready to land once you say so.
 - Claude (peer review), 2026-08-03: confirmed the `COALESCE(..., 0)` fallback keeps the no-completed-run case identical to the old query (any `id > 0` passes), so the "never completed" non-goal holds; the id-ordering assumption is the same one `ORDER BY id DESC` already relied on, not a new one. Verified all three acceptance-criteria scenarios (superseded-abandoned, still-resumable-abandoned, never-completed) are covered by name in `tests/test_progress.py`, and that the abandoned row is left in place (`store._run(abandoned.id).finished_at is None`), matching the issue's non-goal against deleting/marking it. `./run-tests.sh` green locally. No changes requested.
+- George Moses (maintainer), 2026-08-03: peer-reviewed; implementation accepted.
