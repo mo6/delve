@@ -17,8 +17,16 @@ looks like, run the relevant scenario and note anything notable in the issue.
 and CHANGELOG (*when*). Implemented ones move to `issues/archive/` carrying their commit ids,
 rejected ones to `issues/rejected/`; the seed set (`DELVE-0001`–`DELVE-0014`) was backfilled from
 history by feature arc. The index in `issues/README.md` is generated and gate-checked by
-`./tools.sh issues` (`--check`). **Before adding
-an issue, run `./tools.sh issues --check`** — it prints the next free id (`DELVE-NNNN`) to
+`./tools.sh issues` (`--check`). **Before adding an issue, check the current branch is `develop`**
+(`git branch --show-current`): with multiple agents working the repo at once, the branch checked
+out when a new issue is created is often another agent's own issue branch (`story/DELVE-NNNN`,
+`bug/DELVE-NNNN`, `epic/DELVE-NNNN`), mid implementation, not `develop`. A new issue's own commits
+are unrelated to whatever that branch is building and do not belong mixed into its history. If the
+current branch is not `develop`, stop and ask outright whether to continue anyway (and on which
+branch), rather than silently creating the issue where `git status` happens to have left you; only
+proceed once the answer is explicit. This check is about the branch *creating* the new issue file,
+never about which branch the new issue's own work is later reviewed or implemented on. Once clear
+to proceed, **run `./tools.sh issues --check`** — it prints the next free id (`DELVE-NNNN`) to
 name the new file, then regenerate the index with `./tools.sh issues` once the file is written.
 **To list or filter issues (e.g. "what's proposed", "what's left to pick up"), use
 `./tools.sh effort_table`** rather than grepping front matter by hand — it defaults to
