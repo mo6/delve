@@ -160,7 +160,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | epic | high | proposed | - |
 | [DELVE-0018](archive/DELVE-0018-eliminate-wrong-answer-for-gold.md) | Eliminate a wrong answer for gold, priced against the room reward | story | high | implemented | 1.33.0 |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | epic | high | proposed | - |
-| [DELVE-0020](DELVE-0020-declare-and-substitute-variables.md) | Declare and substitute translatable pack variables | story | medium | proposed | - |
+| [DELVE-0020](DELVE-0020-declare-and-substitute-variables.md) | Declare and substitute translatable pack variables | story | medium | in-progress | - |
 | [DELVE-0021](DELVE-0021-validate-variables-available.md) | Validate that every referenced pack variable is available | story | medium | proposed | - |
 | [DELVE-0022](DELVE-0022-global-variable-values.md) | Set pack variable values globally for a deployment | story | high | proposed | - |
 | [DELVE-0023](DELVE-0023-unify-scroll-tokens.md) | Unify the scroll's placeholders into the {{ }} variable mechanism | story | medium | proposed | - |

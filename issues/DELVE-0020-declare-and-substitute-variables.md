@@ -1,7 +1,7 @@
 ---
 id: DELVE-0020
 title: Declare and substitute translatable pack variables
-status: proposed
+status: in-progress
 area: [content, session]
 type: story
 epic: DELVE-0019
@@ -13,7 +13,9 @@ related: [DELVE-0008, DELVE-0023]
 supersedes: []
 docs: [docs/AUTHORING.md]
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-03
+accepted_by: George Moses
+accepted_at: 2026-08-03
 commits: []
 changelog:
 ---
