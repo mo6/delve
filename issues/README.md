@@ -175,7 +175,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0032](archive/DELVE-0032-tutorial-purse-exam-followups.md) | Backfill process and content gaps left by the tutorial purse exam | bug | - | implemented | 1.11.0 |
 | [DELVE-0033](archive/DELVE-0033-require-llm-grader.md) | Require a reachable LLM grader; play refuses to start without one | feature | low | implemented | 1.13.0 |
 | [DELVE-0034](archive/DELVE-0034-issue-assets.md) | Attach files (screenshots) to issues via issues/assets | feature | - | implemented | 1.11.1 |
-| [DELVE-0035](DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | epic | high | in-progress | - |
+| [DELVE-0035](archive/DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | epic | high | implemented | 1.14.0-1.28.0 |
 | [DELVE-0036](archive/DELVE-0036-cap-asset-image-width.md) | Cap issue asset images at 800px wide, and lint for it | bug | - | implemented | 1.11.2 |
 | [DELVE-0037](archive/DELVE-0037-asset-recompression-quality.md) | Recompress issue screenshot assets so resizing always shrinks them | bug | - | implemented | 1.11.3 |
 | [DELVE-0038](archive/DELVE-0038-arrow-key-navigation.md) | Move to arrow-key-only navigation | feature | - | implemented | 1.12.0 |
@@ -249,7 +249,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0017](DELVE-0017-exam-economy.md) | An exam economy - spend gathered money for help in the examination | DELVE-0018 |
 | [DELVE-0019](DELVE-0019-pack-variables.md) | Pack variables - translatable tokens that replace placeholders | DELVE-0020, DELVE-0021, DELVE-0022, DELVE-0023 |
 | [DELVE-0024](archive/DELVE-0024-security-scanning.md) | Security scanning for code and dependencies | DELVE-0025, DELVE-0026, DELVE-0027 |
-| [DELVE-0035](DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055, DELVE-0056, DELVE-0077 |
+| [DELVE-0035](archive/DELVE-0035-information-screen.md) | Grow the pack key (i) into a tabbed information screen | DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055, DELVE-0056, DELVE-0077 |
 
 ```mermaid
 flowchart LR

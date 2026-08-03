@@ -1,22 +1,22 @@
 ---
 id: DELVE-0035
 title: Grow the pack key (i) into a tabbed information screen
-status: in-progress
+status: implemented
 area: [ui, session, assess, docs]
 type: epic
 effort: high
 milestone:
-version:
-version_span:
+version: 1.28.0
+version_span: 1.14.0-1.28.0
 created: 2026-07-26
-updated: 2026-07-30
+updated: 2026-08-03
 accepted_by: George Moses
 accepted_at: 2026-07-26
-commits: []
+commits: [5c808a9]
 related: [DELVE-0040, DELVE-0041, DELVE-0042, DELVE-0043, DELVE-0044, DELVE-0053, DELVE-0054, DELVE-0055]
 supersedes: []
 docs: [docs/INFOSCREEN.md, docs/DISPLAY.md, docs/BUTTONS.md]
-changelog:
+changelog: "1.28.0"
 reason:
 ---
 
