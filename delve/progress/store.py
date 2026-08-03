@@ -117,10 +117,16 @@ class SQLiteStore:
 
     def unfinished_run(self, user_id: int, pack_id: str) -> Run | None:
         """The learner's most recent run of this pack that was never finished, or None. This is
-        the run the resume prompt offers to continue (PLAN.md section 10)."""
+        the run the resume prompt offers to continue (PLAN.md section 10). An unfinished row older
+        than a later completed run of the same pack is superseded and not offered (DELVE-0084)."""
         row = self.conn.execute(
             "SELECT * FROM runs WHERE user_id = ? AND pack_id = ? AND finished_at IS NULL "
-            "ORDER BY id DESC LIMIT 1", (user_id, pack_id)).fetchone()
+            "AND id > COALESCE(("
+            "  SELECT MAX(id) FROM runs "
+            "  WHERE user_id = ? AND pack_id = ? AND finished_at IS NOT NULL"
+            "), 0) "
+            "ORDER BY id DESC LIMIT 1",
+            (user_id, pack_id, user_id, pack_id)).fetchone()
         return Run(**dict(row)) if row else None
 
     def save_snapshot(self, run_id: int, snapshot: str) -> None:

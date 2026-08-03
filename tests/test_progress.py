@@ -64,6 +64,19 @@ def test_unfinished_run_is_the_resume_candidate():
     assert store.unfinished_run(user.id, "p") is None
 
 
+def test_unfinished_run_superseded_by_a_later_completion():
+    # Abandoned, then a fresh completion of the same pack: the old row stays unfinished in the
+    # table but is not a resume candidate (DELVE-0084).
+    store = SQLiteStore(":memory:")
+    user = store.user_by_name("Ada")
+    abandoned = store.create_run(user.id, "p", "1", 1, 100, 30)
+    completed = store.create_run(user.id, "p", "1", 2, 100, 30)
+    store.finish_run(completed.id, "completed")
+    assert store.unfinished_run(user.id, "p") is None
+    # The abandoned row is still there; only the resume query excludes it.
+    assert store._run(abandoned.id).finished_at is None
+
+
 # -- launch: start, persist, resume ---------------------------------------------------------
 
 
@@ -88,6 +101,25 @@ def test_completing_a_run_writes_results_and_a_scroll():
     assert got == n_rooms == 12
     assert len(store.trophy_case(user.id)) == 1
     assert store.unfinished_run(user.id, pack.id) is None   # the run is finished, not resumable
+
+
+def test_pending_run_ignores_an_abandoned_run_after_a_later_completion():
+    # Start, quit without finishing, then complete a fresh run: the next launch must not offer
+    # to resume the abandoned attempt (DELVE-0084).
+    store = SQLiteStore(":memory:")
+    pack = load_pack(PILOT, "en")
+    launch.start(store, pack, name="Mara", seed=5, cols=100, rows=30)   # abandon: drop the RunState
+    assert launch.pending_run(store, pack, "Mara") is not None
+
+    run = launch.start(store, pack, name="Mara", seed=6, cols=100, rows=30)
+    for i in range(len(pack.chapters)):
+        _clear_chapter(run)
+        if i < len(pack.chapters) - 1:
+            _stand_on(run, TileKind.STAIRS_DOWN)
+            run.apply(Descend())
+    _stand_on(run, TileKind.PEDESTAL)
+    assert run.finished
+    assert launch.pending_run(store, pack, "Mara") is None
 
 
 def test_resume_rebuilds_the_run_from_its_record():
