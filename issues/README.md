@@ -239,9 +239,6 @@ otherwise the single first-shipped `version`.
 | [DELVE-0096](archive/DELVE-0096-security-onboarding-last-question-free-text.md) | Convert the last question of every room in security-onboarding to free text, so the pack exercises the grader | story | medium | implemented | 1.36.0 |
 | [DELVE-0097](archive/DELVE-0097-drop-obsolete-status-grader-rows.md) | Drop the Status tab's Grader/Ambient rows, now that the Grader tab holds all the detail | bug | low | implemented | 1.35.1 |
 | [DELVE-0098](DELVE-0098-security-onboarding-free-text-refinements.md) | Investigate the free-text candidate-answer research for security-onboarding and refine the pack's accept/reject lists and lesson prose | story | medium | proposed | - |
-| [DELVE-0099](DELVE-0099-skip-pre-run-trophy-case-screen.md) | Skip the pre-run trophy case screen, now that Info/Trophies covers it in-run | bug | low | proposed | - |
-| [DELVE-0100](DELVE-0100-pack-picker-when-no-pack-argument.md) | Offer a pack picker, list-plus-description like Info/Pack, when no --pack is given | feature | medium | proposed | - |
-| [DELVE-0101](DELVE-0101-two-stage-ambient-loading-toast.md) | A two-stage loading toast, a shorter line first, the growing-clearer one after 5 seconds | feature | low | proposed | - |
 
 ### Epics
 
@@ -330,5 +327,5 @@ flowchart LR
     DELVE_0035 --> DELVE_0077
 ```
 
-Next free id: **DELVE-0102**.
+Next free id: **DELVE-0099**.
 <!-- issues:index:end -->
