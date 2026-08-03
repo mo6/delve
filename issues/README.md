@@ -224,7 +224,7 @@ otherwise the single first-shipped `version`.
 | [DELVE-0081](archive/DELVE-0081-drop-from-pack.md) | Drop an item straight from Info/Pack instead of a standalone drop menu | feature | medium | implemented | 1.31.0 |
 | [DELVE-0082](archive/DELVE-0082-toast-loading-indicator.md) | Show a small spinner window while the ambient toast is still generating | feature | low | implemented | 1.32.0 |
 | [DELVE-0083](archive/DELVE-0083-doomed-nudge-loading-spinner.md) | The toast loading spinner can show, then resolve into nothing, for a doomed idle nudge | bug | low | implemented | 1.32.1 |
-| [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | proposed | - |
+| [DELVE-0084](DELVE-0084-dont-resume-a-stale-abandoned-run-after-completion.md) | Don't offer to resume a stale abandoned run once the pack has since been completed | bug | low | in-progress | - |
 | [DELVE-0085](archive/DELVE-0085-trophies-tab-in-info-panel.md) | Add a Trophies tab to the Info panel showing finished packs and their scores | feature | medium | implemented | 1.35.0 |
 | [DELVE-0086](archive/DELVE-0086-keeper-halo-leaks-through-undiscovered-rooms.md) | A burned-out torch reveals every keeper's candle halo, including in rooms never visited | bug | low | implemented | 1.34.2 |
 | [DELVE-0087](archive/DELVE-0087-grader-tab-two-column-layout.md) | Lay the Grader tab's two model sections out side by side so the latency sparkline fits on one page | bug | medium | implemented | 1.34.3 |

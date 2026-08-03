@@ -1,7 +1,7 @@
 ---
 id: DELVE-0084
 title: Don't offer to resume a stale abandoned run once the pack has since been completed
-status: proposed
+status: in-progress
 area: [progress, session]
 type: bug
 epic:
@@ -10,9 +10,9 @@ milestone:
 version:
 version_span:
 created: 2026-07-31
-updated: 2026-07-31
-accepted_by:
-accepted_at:
+updated: 2026-08-03
+accepted_by: George Moses
+accepted_at: 2026-08-03T18:14:56Z
 commits: []
 related: []
 supersedes: []
@@ -90,3 +90,7 @@ already walked away from and superseded.
   quit without finishing (no `finish_run`), start and complete a second run of the same pack, then
   assert `launch.pending_run` returns `None`.
 - `./run-tests.sh` green.
+
+## Peer review
+
+- Auto (implementing agent), 2026-08-03: store-only query change as the design notes preferred (`id` greater than the latest finished run of the same pack); `pending_run` / `_begin` untouched; abandoned-only path still returns the unfinished row; abandoned row is left in the table (not deleted). New store and launch tests match the acceptance criteria. `./run-tests.sh` green (688). Ready to land once you say so.
