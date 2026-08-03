@@ -5,6 +5,10 @@ All notable changes to Delve, newest first. Dates are the release date.
 From 1.0.0 on the scheme is ordinary semver (`MAJOR.MINOR.PATCH`); the pre-1.0
 scheme was `0.<milestone>.<patch>`.
 
+## [1.37.0] — 2026-08-03
+
+- **Packs can declare translatable `{{token}}` variables instead of hard-coding real-world values in prose** (DELVE-0020, story, content/session): each locale root ships a `variables.template.md` declaring every token with an example value; a maintainer copies it to a gitignored `variables.md` and fills in their organisation's real values, editing no lesson prose. Tokens work in a lesson, a question, an option, an explanation, and the scroll body, filled at view-build (plain string replacement, so a stray brace in a code span is untouched) from `Pack.variables` merged with the built-ins `{{player}}` (the learner's name) and `{{pack_title}}`, which a template cannot shadow. A token missing from `variables.md`, or no `variables.md` at all, falls back to the template's placeholder value. The pilot pack's own placeholders (the classification tiers, the security email, the help channel) are migrated onto declared tokens in both locales. `docs/AUTHORING.md` gains a "Pack variables" section (§15).
+
 ## [1.36.1] — 2026-08-03
 
 - **The resume prompt stops offering a stale abandoned run once the pack has since been completed** (DELVE-0084, bug, progress): `SQLiteStore.unfinished_run` picked the most recent unfinished run for a user/pack regardless of any later, completed run of the same pack, so a learner who abandoned an attempt, then started fresh and finished it, kept being asked to resume the old abandoned run on every subsequent launch. The query now excludes an unfinished run older than the same user/pack's most recent finished run; a pack never yet completed is unaffected, and the abandoned row itself is left in place, just no longer offered.

@@ -100,6 +100,8 @@ def _check_emoji(base: Path) -> list[Issue]:
     oddly, it tears the panel frame."""
     issues: list[Issue] = []
     for f in sorted(base.rglob("*.md")):
+        if f.name in ("variables.md", "variables.template.md"):
+            continue
         for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), start=1):
             if any(_emoji_hazard(ch) for ch in line):
                 issues.append(Issue(str(f), n, "multi-codepoint emoji (a joined, flag, skin-tone, "
@@ -112,9 +114,13 @@ def _check_placeholders(base: Path) -> list[Issue]:
     """Warn on every line an author flagged as a placeholder (the pilot ships several: the
     classification tiers, `#security-help`, the reporting channels). Advisory, never blocking:
     the pack plays fine with them, but nobody should run it for real before replacing them
-    (CLAUDE.md 'The pilot pack'). One warning per line, so a whole run lists every spot to fix."""
+    (CLAUDE.md 'The pilot pack'). One warning per line, so a whole run lists every spot to fix.
+    The variables template (DELVE-0020) may say 'Placeholder' as an example value; that is not a
+    lesson-prose flag, and DELVE-0021 turns unfilled tokens into their own warning."""
     issues: list[Issue] = []
     for f in sorted(base.rglob("*.md")):
+        if f.name in ("variables.md", "variables.template.md"):
+            continue
         for n, line in enumerate(f.read_text(encoding="utf-8").splitlines(), start=1):
             if PLACEHOLDER_MARKER.search(line):
                 issues.append(Issue(str(f), n, "marks a placeholder; replace it with your "
@@ -245,4 +251,7 @@ def _check_tree_parity(locales: list[Path]) -> list[Issue]:
 
 
 def _relative_files(base: Path) -> set[str]:
-    return {str(p.relative_to(base)) for p in base.rglob("*.md")}
+    # variables.md is instance-specific and gitignored (DELVE-0020); it must not break locale
+    # tree parity when only one locale has a filled copy. The shipped template stays in the set.
+    return {str(p.relative_to(base)) for p in base.rglob("*.md")
+            if p.name != "variables.md"}

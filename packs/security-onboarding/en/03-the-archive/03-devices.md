@@ -111,4 +111,4 @@ phishing email at ten paces and still leave the thing unlocked in a Pret."
 > idea of isolated isn't, and this is a hobby not a job. Leaving it there is passive;
 > the next person picks it up, and that's what the drop was for.
 >
-> **Placeholder:** replace `#security-help` with your organisation's real channel.
+> Unsure what counts as "hand it to security"? Ask in {{help_channel}}.

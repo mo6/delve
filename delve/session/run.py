@@ -33,6 +33,7 @@ from delve.assess.grader import GraderMetrics
 from delve.content.markup import inline_spans, tokenize
 from delve.content.pack import Pack
 from delve.content.pilot import PHISHING_ROOM
+from delve.content.variables import substitute, substitute_spans, substitute_table
 from delve.engine import actions, layout, vision
 from delve.engine import pet as petmod
 from delve.engine.entities import Pet, Player
@@ -347,7 +348,12 @@ def new_game(pack: Pack, seed: int, cols: int, rows: int, name: str = "Adventure
     start_idx = n_tut if (skip_tutorial and n_tut) else 0
     player = Player(pos=chapters[start_idx].chapter.start, name=name,
                     torch_charge=TORCH_DURATION_STEPS)
-    welcome = _first_line(chapters[start_idx].intro) or pack.title
+    # Substitute before locking the welcome: chapter intros may use {{player}} / pack tokens
+    # (DELVE-0020). Built-ins come from identity and the pack title.
+    values = dict(pack.variables)
+    values["player"] = name
+    values["pack_title"] = pack.title
+    welcome = substitute(_first_line(chapters[start_idx].intro) or pack.title, values)
     return RunState(chapters, player, Rng(seed), pack=pack, welcome=welcome, recorder=recorder,
                     idx=start_idx, strings=strings, pet_rng=Rng(seed * 100 + 777),
                     flavour_rng=Rng(seed * 100 + 333), seed=seed,
@@ -2464,19 +2470,36 @@ class RunState:
 
     # -- overlay builders ---------------------------------------------------------------
 
+    def _var_values(self) -> dict[str, str]:
+        """Pack variables merged with built-ins. Built-ins always win so a template cannot shadow
+        `{{player}}` / `{{pack_title}}` (DELVE-0020)."""
+        values = dict(self.pack.variables) if self.pack is not None else {}
+        values["player"] = self.player.name
+        if self.pack is not None:
+            values["pack_title"] = self.pack.title
+        return values
+
+    def _sub(self, text: str) -> str:
+        return substitute(text, self._var_values())
+
     def _lesson_overlay(self, gate: Gate) -> TextView:
-        body = [TextBlock(b.kind, b.text, spans=b.spans, table=b.table)
+        values = self._var_values()
+        body = [TextBlock(b.kind, substitute(b.text, values),
+                          spans=substitute_spans(b.spans, values),
+                          table=substitute_table(b.table, values))
                 for b in gate.lesson.blocks]
-        return self._text(title=gate.lesson.title, body=body)
+        return self._text(title=self._sub(gate.lesson.title), body=body)
 
     def _question_overlay(self, gate: Gate):
         q = gate.current_question()
-        options = gate.display_options()
+        values = self._var_values()
+        options = [substitute(t, values) for t in gate.display_options()]
         idx, total = gate.progress()
         footer = self.strings("question.counter", idx=idx, total=total)
-        # Garnish the *displayed* prompt only; grading reads the options/answer, never this string,
-        # so an added emoji cannot change what is correct (session/flavour.py).
-        prompt = flavour.augment(q.prompt, self.strings.flavour_emoji())
+        # Substitute first, then garnish the *displayed* prompt only; grading reads the options/
+        # answer, never this string, so neither tokens nor an added emoji can change what is
+        # correct (session/flavour.py, DELVE-0020).
+        prompt = flavour.augment(substitute(q.prompt, values), self.strings.flavour_emoji())
         struck = gate.struck
         elim = gate.eliminated
         if q.kind == "freetext":
@@ -2499,8 +2522,10 @@ class RunState:
                            body=self.strings("grading.body"))
 
     def _explanation_overlay(self, header: str, explanation: str) -> TextView:
-        body = [TextBlock("plain", header)]
-        body += [TextBlock("para", p) for p in explanation.split("\n\n")]
+        values = self._var_values()
+        body = [TextBlock("plain", substitute(header, values))]
+        body += [TextBlock("para", p)
+                 for p in substitute(explanation, values).split("\n\n")]
         return self._text(title="", body=body)
 
     def _repelled_overlay(self, keeper) -> TextView:
@@ -2516,14 +2541,17 @@ class RunState:
     def _scroll_overlay(self) -> TextView:
         """The award, rendered from the pack's scroll.md with the four placeholders filled. The
         H1 in the source is the scroll's title, so it becomes the panel title rather than a block,
-        and the `---` rule is dropped (the panel has no horizontal rule)."""
+        and the `---` rule is dropped (the panel has no horizontal rule). Pack `{{tokens}}` are
+        filled first (DELVE-0020); the scroll's legacy `{name}`/`{score}`/`{date}`/`{pack}` stay
+        until DELVE-0023 unifies them."""
         if self.pack is None:
             return self._text(title=self.strings("overlay.scroll_fallback_title"),
                             body=[TextBlock("para", self.strings("overlay.scroll_fallback_body"))])
-        filled = render_scroll(self.pack.scroll, name=self.player.name, score=self.pack_score(),
+        templated = substitute(self.pack.scroll, self._var_values())
+        filled = render_scroll(templated, name=self.player.name, score=self.pack_score(),
                                date=datetime.now(), pack=self.pack.title, fmt=self.strings.fmt)
         cleaned = "\n".join("" if ln.strip() == "---" else ln for ln in filled.split("\n"))
-        title = self.pack.scroll_name
+        title = self._sub(self.pack.scroll_name)
         body: list[TextBlock] = []
         for t in tokenize(cleaned):
             if t.kind == "heading":

@@ -47,15 +47,12 @@ def test_pilot_validate_cli_exits_zero():
     assert main(["validate", PILOT]) == 0
 
 
-def test_pilot_placeholders_warn():
-    # Every author-marked spot that must be replaced before real use surfaces as a warning, in
-    # both locales, so nobody ships the pilot as-is (CLAUDE.md 'The pilot pack').
+def test_pilot_placeholders_are_gone_after_variables_migration():
+    # DELVE-0020 moved the six author-marked spots onto {{tokens}}; the per-line placeholder
+    # warning is empty until DELVE-0021 adds an unfilled-token warning of its own.
     warns = [i for i in validate_pack(PILOT)
              if i.level == "warning" and "placeholder" in i.message]
-    assert warns, "expected placeholder warnings in the pilot"
-    paths = " ".join(i.path for i in warns)
-    assert "classification.md" in paths and "reporting.md" in paths
-    assert "/en/" in paths and "/nl/" in paths
+    assert warns == []
 
 
 # -- capacity ----------------------------------------------------------------------------------
@@ -89,6 +86,19 @@ def test_drifted_locale_tree_is_reported_both_ways(tmp_path):
 def test_identical_trees_raise_no_parity_issue(tmp_path):
     _pack(tmp_path, "en", rooms=2)
     _pack(tmp_path, "nl", rooms=2)
+    assert validate_pack(tmp_path) == []
+
+
+def test_variables_md_does_not_break_locale_tree_parity(tmp_path):
+    # Instance fills are gitignored and may exist in only one locale; parity ignores them.
+    _pack(tmp_path, "en", rooms=2)
+    _pack(tmp_path, "nl", rooms=2)
+    (tmp_path / "en" / "variables.template.md").write_text(
+        "# V\n\n- `{{team}}`: Security\n", encoding="utf-8")
+    (tmp_path / "nl" / "variables.template.md").write_text(
+        "# V\n\n- `{{team}}`: Beveiliging\n", encoding="utf-8")
+    (tmp_path / "en" / "variables.md").write_text(
+        "# V\n\n- `{{team}}`: Acme Sec\n", encoding="utf-8")
     assert validate_pack(tmp_path) == []
 
 

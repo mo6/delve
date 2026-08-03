@@ -1,13 +1,13 @@
 ---
 id: DELVE-0020
 title: Declare and substitute translatable pack variables
-status: in-progress
+status: implemented
 area: [content, session]
 type: story
 epic: DELVE-0019
 effort: medium
 milestone:
-version:
+version: 1.37.0
 version_span:
 related: [DELVE-0008, DELVE-0023]
 supersedes: []
@@ -16,8 +16,8 @@ created: 2026-07-25
 updated: 2026-08-03
 accepted_by: George Moses
 accepted_at: 2026-08-03
-commits: []
-changelog:
+commits: [a252260, 8fcb531]
+changelog: "1.37.0"
 ---
 
 # Declare and substitute translatable pack variables
@@ -194,3 +194,9 @@ built-in list).
   template defaults (with the unfilled warnings from DELVE-0021).
 - `./run-tests.sh` passes (pytest, ruff, screens, issues-index, `delve validate`), with `en`/`nl` trees
   still diffing clean now that each carries a `variables.template.md`.
+
+## Peer review
+
+- Auto (implementing agent), 2026-08-03: `content/variables.py` owns parse/merge/`substitute` (plain `str.replace`, builtins skipped at parse); `Pack.variables` filled by `load_pack`; session applies at view-build in lesson/question/explanation/scroll overlays plus the welcome line, with `{{player}}`/`{{pack_title}}` always winning. `variables.md` gitignored and excluded from locale tree parity; placeholder/emoji checks skip the variables files. Pilot placeholders in both locales moved onto `{{security_email}}`/`{{help_channel}}`/`{{tier_*}}` with shipped `variables.template.md` defaults; classification-stamp look text no longer trips the old placeholder warning. `docs/AUTHORING.md` §2/§11/§15 updated. `tests/test_variables.py` covers filled surfaces, template fallback, locale isolation, builtin shadowing, and determinism; `test_validate` updated for the migration. Left for DELVE-0021 (unknown/unfilled validation, cross-locale token-set equality) and DELVE-0023 (scroll `{name}` unification). `./run-tests.sh` green (701). Ready to land once you say so.
+- Claude (peer review), 2026-08-03: verdict accept, two non-blocking notes. (1) `Pack.intro` (the pack-level "dungeon's opening screen" text, distinct from a chapter's own intro) has no reader anywhere in `session`/`ui` today, only `chapters[start_idx].intro` (the chapter's own) feeds the welcome line, so "pack intro" in this issue's stories and in `docs/AUTHORING.md` §15's "chapter or pack intro line" is currently untestable, not a gap this diff introduces; worth a follow-up once something actually renders `Pack.intro`. (2) `Pack.variables: dict[str, str]` is a mutable field on an otherwise all-tuple frozen dataclass (`chapters`/`items`); every current caller copies it (`dict(pack.variables)`) before use so nothing mutates the shared instance today, but a `Mapping` type hint or a comment noting "treat as read-only" would match the rest of the class's immutability convention more explicitly. Verified: token/builtin precedence, locale isolation, stray-brace and determinism behaviour, the pilot's full placeholder migration (4 files x 2 locales, `test_pilot_placeholders_are_gone_after_variables_migration` confirms zero remaining), `variables.md` correctly excluded from locale tree-parity and the placeholder/emoji checks, and MCQ/option text re-wrapping at render time (so a longer real-world substituted value doesn't need its own capacity rule). `./run-tests.sh` green (701, ruff clean, pip-audit ok, `delve validate` clean) on `story/DELVE-0020`. Ready to land.
+- George Moses (maintainer), 2026-08-03: peer-reviewed; implementation accepted.

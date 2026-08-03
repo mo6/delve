@@ -23,3 +23,7 @@ delve.log
 # Distribution builds (./dist.sh output)
 delve-*-windows-test.zip
 ANNOUNCEMENT.md
+
+# Instance-specific pack variable values (DELVE-0020). The shipped template is
+# variables.template.md; a maintainer copies it to variables.md and fills real values.
+packs/*/*/variables.md

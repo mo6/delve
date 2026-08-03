@@ -61,3 +61,7 @@ class Pack:
     # The kinds this pack defines, one per `items/*.md` file (OBJECTS.md 1.3.0). Money is built in
     # and never appears here. The session registers these so a placed or carried stack round-trips.
     items: tuple[ItemDef, ...] = ()
+    # Per-locale `{{token}}` values from variables.template.md merged with an optional filled
+    # variables.md (DELVE-0020). Bare names; the session adds built-ins (`player`, `pack_title`)
+    # at view-build. Empty when the locale ships no template.
+    variables: dict[str, str] = field(default_factory=dict)

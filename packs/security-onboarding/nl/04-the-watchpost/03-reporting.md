@@ -54,9 +54,7 @@ anders is de vroege waarschuwing die de volgende persoon redt.
 
 Winterkoning staat op, en de laatste deur is achter haar.
 
-**Melden bij:** `security@example.com`, of `#security-help`, of bel de servicedesk. *(Plaatshouder.
-Vervang dit door de echte kanalen van je organisatie voordat je deze training gebruikt, en zet de
-spoedroute vooraan.)*
+**Melden bij:** `{{security_email}}`, of `{{help_channel}}`, of bel de servicedesk.
 
 "Twaalf poortwachters vertelden je hoe je voorzichtig moet zijn," zegt ze. "Ik vertel je wat er gebeurt
 als voorzichtig niet genoeg was. Vertel het ons snel, en vertel het ons vroeg, en wij nemen het over.
